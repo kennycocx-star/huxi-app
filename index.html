@@ -1112,7 +1112,7 @@ function TreeSVG({
 }
 const W = {
   width: "100%",
-  height: "100vh",
+  height: "100dvh",
   maxWidth: 430,
   margin: "0 auto",
   position: "relative",
@@ -1917,7 +1917,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
             value: loginPin, onChange: e => setLoginPin(e.target.value.slice(0,4)),
             style: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 15, outline: "none", marginBottom: 8, boxSizing: "border-box", color: "#3D4A58", background: "white" }
           }),
-          /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.45)", fontSize: 11, margin: "0 0 4px", textAlign: "center" } }, "Nieuw? Kies gewoon een naam en pincode om te starten.")
+          /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.45)", fontSize: 11, margin: "0 0 4px", textAlign: "center" } }, "Bestaand profiel? Gebruik je naam en pincode. Nieuw? Kies gewoon een naam en 4 cijfers.")
         ),
         loginError && /*#__PURE__*/React.createElement("p", { style: { color: "#E07850", fontSize: 12, textAlign: "center", marginBottom: 10 } }, loginError),
         /*#__PURE__*/React.createElement("button", {
@@ -1968,7 +1968,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
         }, loginLoading ? "Even laden... \uD83C\uDF3F" : "Ga naar mijn wereld \uD83C\uDF31"),
         /*#__PURE__*/React.createElement("button", {
           onClick: () => { setLoginMode("forgot"); setLoginError(""); },
-          style: { background: "none", border: "none", color: "rgba(168,213,181,0.5)", fontSize: 12, cursor: "pointer" }
+          style: { background: "none", border: "none", color: "rgba(168,213,181,0.5)", fontSize: 12, cursor: "pointer", display: "block", marginBottom: 6 }
         }, "Pincode vergeten?")
       ),
       loginMode === "forgot" && /*#__PURE__*/React.createElement(React.Fragment, null,
@@ -3758,25 +3758,18 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       left: 0,
       right: 0,
       zIndex: 20,
-      padding: "8px 12px 14px",
+      padding: "8px 12px 28px",
       background: "linear-gradient(0deg,rgba(245,247,250,0.97) 70%,rgba(245,247,250,0))"
     }
-  }, allDone ? /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("p", {
     style: {
       textAlign: "center",
-      color: "#4CAF7A",
-      fontSize: 11,
-      fontWeight: 600,
-      marginBottom: 6
-    }
-  }, "Goed gedaan vandaag! Tot morgen \uD83C\uDF31") : /*#__PURE__*/React.createElement("p", {
-    style: {
-      textAlign: "center",
-      color: g5,
+      color: allDone ? "#4CAF7A" : g5,
       fontSize: 10,
+      fontWeight: allDone ? 600 : 400,
       marginBottom: 6
     }
-  }, "Jouw moment van de dag"), /*#__PURE__*/React.createElement("div", {
+  }, allDone ? "Goed gedaan vandaag! \uD83C\uDF31" : "Jouw moment van de dag"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "center",
