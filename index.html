@@ -758,8 +758,7 @@ const FIREBASE_URL = "https://huxi-app-a1876-default-rtdb.europe-west1.firebased
 const firebaseSave = async (key, data) => {
   try {
     await fetch(FIREBASE_URL + "/users/" + key + ".json", {
-      method: "PUT",
-      body: JSON.stringify(data)
+      method: "PUT", body: JSON.stringify(data)
     });
   } catch(e) {}
 };
@@ -772,9 +771,8 @@ const firebaseLoad = async (key) => {
   } catch(e) { return null; }
 };
 
-const makeKey = (name, pin) => {
-  return name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_") + "_" + pin;
-};
+const makeKey = (name, pin) =>
+  name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_") + "_" + pin;
 
 function getRealTod() {
   const h = new Date().getHours();
@@ -1114,7 +1112,7 @@ function TreeSVG({
 }
 const W = {
   width: "100%",
-  height: "100dvh",
+  height: "100vh",
   maxWidth: 430,
   margin: "0 auto",
   position: "relative",
@@ -1154,8 +1152,20 @@ function HuxiApp() {
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [userKey, setUserKey] = useState("");
+  const [secretQ, setSecretQ] = useState(0);
+  const [secretA, setSecretA] = useState("");
+  const [loginMode, setLoginMode] = useState("login");
   const [accType, setAccType] = useState(null);
   const [reason, setReason] = useState(null);
+  const [selectedReasons, setSelectedReasons] = useState([]);
+  const [worldReward, setWorldReward] = useState(null);
+  const [letterPeriod, setLetterPeriod] = useState(30);
+  const [letterStep, setLetterStep] = useState(0);
+  const [letterAnswers, setLetterAnswers] = useState(["","","",""]);
+  const [showStreak, setShowStreak] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [lastCheckinDate, setLastCheckinDate] = useState("");
+  const [streakShields, setStreakShields] = useState(0);
   const [experience, setExperience] = useState(null);
   const [treeName, setTreeName] = useState("");
   const [userName, setUserName] = useState("");
@@ -1202,10 +1212,6 @@ function HuxiApp() {
   const [letters, setLetters] = useState([]);
   const [showLetters, setShowLetters] = useState(false);
   const [showDiary, setShowDiary] = useState(false);
-  const [showDiaryRead, setShowDiaryRead] = useState(false);
-  const [showStreak, setShowStreak] = useState(false);
-  const [lastCheckinDate, setLastCheckinDate] = useState("");
-  const [streakShields, setStreakShields] = useState(0);
   const [diaryDraft, setDiaryDraft] = useState("");
   const [diary, setDiary] = useState([]);
   const [wMsg, setWMsg] = useState("");
@@ -1494,8 +1500,8 @@ function HuxiApp() {
       accType, reason, experience, treeName, userName, growth, coins,
       ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
-      lastCheckinDate, streakShields,
-      dailyBreaths, dailyTasks, tasksGenerated, checkinDone
+      dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
+      lastCheckinDate, streakShields, secretQ, secretA
     };
     try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
     if (userKey) firebaseSave(userKey, data);
@@ -1520,9 +1526,17 @@ function HuxiApp() {
           if (d.lastDay === today) {
             setLastDay(today);
             setDailyActions(d.dailyActions || 0);
+            setDailyBreaths(d.dailyBreaths || 0);
+            setDailyTasks(d.dailyTasks || []);
+            setTasksGenerated(d.tasksGenerated || false);
+            setCheckinDone(d.checkinDone || false);
           } else {
             setLastDay(today);
             setDailyActions(0);
+            setDailyBreaths(0);
+            setDailyTasks([]);
+            setTasksGenerated(false);
+            setCheckinDone(false);
           }
           setOwnedItems(d.ownedItems || ["hat_none", "shirt_none", "pants_none", "shoes_none", "skin_light", "hair_short", "hairc_brown", "acc_none", "pet_none"]);
           setAvatar(d.avatar || {
@@ -1543,6 +1557,8 @@ function HuxiApp() {
           if (d.lastTaskTexts) setLastTaskTexts(d.lastTaskTexts);
           if (d.lastCheckinDate) setLastCheckinDate(d.lastCheckinDate);
           if (d.streakShields !== undefined) setStreakShields(d.streakShields);
+          if (d.secretQ !== undefined) setSecretQ(d.secretQ);
+          if (d.secretA) setSecretA(d.secretA);
           setPhase("world");
         }
       }
@@ -1610,29 +1626,30 @@ function HuxiApp() {
     } else setShowSci(false);
   };
   const startAuto = () => launchEx(pickEx(), null);
+  const showWorldReward = (type) => {
+    setWorldReward(type);
+    setTimeout(() => setWorldReward(null), 2500);
+  };
+
   const doCheckin = id => {
     setDailyMood(id);
     setCheckinDone(true);
     setGrowth(g => Math.min(1, g + 0.003));
     const today = new Date().toDateString();
     const yesterday = new Date(Date.now() - 86400000).toDateString();
-    const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toDateString();
+    const twoDaysAgo = new Date(Date.now() - 2*86400000).toDateString();
     setWi(w => {
-      let newStreak = w.streakDays;
+      let newStreak = w.streakDays || 0;
       let newShields = streakShields;
       if (lastCheckinDate === today) {
-        // already checked in today, no change
+        // already checked in
       } else if (lastCheckinDate === yesterday) {
-        // perfect streak
-        newStreak = w.streakDays + 1;
-        // earn a shield every 7 days
+        newStreak = newStreak + 1;
         if (newStreak % 7 === 0) newShields = Math.min(2, newShields + 1);
       } else if (lastCheckinDate === twoDaysAgo && streakShields > 0) {
-        // missed 1 day - use a shield
-        newStreak = w.streakDays + 1;
+        newStreak = newStreak + 1;
         newShields = newShields - 1;
       } else {
-        // streak broken
         newStreak = 1;
       }
       setStreakShields(newShields);
@@ -1678,6 +1695,7 @@ function HuxiApp() {
     }, ...p]);
     setDiaryDraft("");
     setShowDiary(false);
+    showWorldReward("diary");
     setWi(w => ({
       ...w,
       grass: w.grass + 1,
@@ -1871,62 +1889,6 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   const g3 = "rgba(61,74,88,0.3)";
 
   // WELCOME
-  const doLogin = async () => {
-    if (!loginName.trim() || loginPin.length !== 4) {
-      setLoginError("Vul je naam en een pincode van 4 cijfers in");
-      return;
-    }
-    setLoginLoading(true);
-    setLoginError("");
-    const key = makeKey(loginName, loginPin);
-    const data = await firebaseLoad(key);
-    if (data && data.accType) {
-      // existing user - load their data
-      setUserKey(key);
-      setAccType(data.accType);
-      if (data.reason) setReason(data.reason);
-      if (data.experience) setExperience(data.experience);
-      if (data.treeName) setTreeName(data.treeName);
-      if (data.userName) setUserName(data.userName);
-      if (data.growth) setGrowth(data.growth);
-      if (data.coins) setCoins(data.coins);
-      if (data.ownedItems) setOwnedItems(data.ownedItems);
-      if (data.avatar) setAvatar(data.avatar);
-      if (data.letters) setLetters(data.letters);
-      if (data.diary) setDiary(data.diary);
-      if (data.seenEx) setSeenEx(data.seenEx);
-      if (data.lastExId) setLastExId(data.lastExId);
-      if (data.totalSessions) setTotalSessions(data.totalSessions);
-      if (data.wi) setWi(data.wi);
-      if (data.dailyMood) setDailyMood(data.dailyMood);
-      const today = new Date().toDateString();
-      if (data.lastDay === today) {
-        setLastDay(today);
-        setDailyActions(data.dailyActions || 0);
-        setDailyBreaths(data.dailyBreaths || 0);
-        setDailyTasks(data.dailyTasks || []);
-        setTasksGenerated(data.tasksGenerated || false);
-        setCheckinDone(data.checkinDone || false);
-      } else {
-        setLastDay(today);
-        setDailyActions(0);
-        setDailyBreaths(0);
-        setDailyTasks([]);
-        setTasksGenerated(false);
-        setCheckinDone(false);
-      }
-      if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
-      if (data.lastCheckinDate) setLastCheckinDate(data.lastCheckinDate);
-      if (data.streakShields !== undefined) setStreakShields(data.streakShields);
-      setPhase("world");
-    } else {
-      // new user - start setup
-      setUserKey(key);
-      setPhase("welcome");
-    }
-    setLoginLoading(false);
-  };
-
   if (phase === "login") return /*#__PURE__*/React.createElement("div", {
     style: W
   }, /*#__PURE__*/React.createElement("style", null, css),
@@ -1934,73 +1896,128 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     style: {
       display: "flex", flexDirection: "column", alignItems: "center",
       justifyContent: "center", height: "100%", padding: "32px 24px",
-      background: "linear-gradient(160deg,#f0f7f4 0%,#e8f4f0 100%)"
+      background: "linear-gradient(160deg,#1a2f1f 0%,#0d1f12 100%)"
     }
   },
-    /*#__PURE__*/React.createElement("div", { style: { fontSize: 64, marginBottom: 8 } }, "🌱"),
-    /*#__PURE__*/React.createElement("h1", {
-      style: { color: "#3D4A58", fontSize: 28, fontWeight: 700, margin: "0 0 4px", textAlign: "center" }
-    }, "HUXI"),
-    /*#__PURE__*/React.createElement("p", {
-      style: { color: "#5BB8A0", fontSize: 14, margin: "0 0 32px", fontStyle: "italic" }
-    }, "Jouw rustige natuurwereld"),
-    /*#__PURE__*/React.createElement("div", {
-      style: {
-        background: "white", borderRadius: 20, padding: "28px 24px",
-        width: "100%", maxWidth: 340,
-        boxShadow: "0 4px 20px rgba(61,74,88,0.08)"
-      }
-    },
-      /*#__PURE__*/React.createElement("p", {
-        style: { color: "#3D4A58", fontSize: 13, fontWeight: 600, marginBottom: 8 }
-      }, "Jouw naam"),
-      /*#__PURE__*/React.createElement("input", {
-        type: "text",
-        placeholder: "Bijv. Emma",
-        value: loginName,
-        onChange: e => setLoginName(e.target.value),
-        style: {
-          width: "100%", padding: "12px 14px", borderRadius: 12,
-          border: "1.5px solid rgba(76,175,122,0.3)",
-          fontSize: 15, outline: "none", marginBottom: 16,
-          boxSizing: "border-box", color: "#3D4A58"
-        }
-      }),
-      /*#__PURE__*/React.createElement("p", {
-        style: { color: "#3D4A58", fontSize: 13, fontWeight: 600, marginBottom: 8 }
-      }, "Jouw pincode (4 cijfers)"),
-      /*#__PURE__*/React.createElement("input", {
-        type: "number",
-        placeholder: "1234",
-        value: loginPin,
-        onChange: e => setLoginPin(e.target.value.slice(0,4)),
-        style: {
-          width: "100%", padding: "12px 14px", borderRadius: 12,
-          border: "1.5px solid rgba(76,175,122,0.3)",
-          fontSize: 15, outline: "none", marginBottom: 8,
-          boxSizing: "border-box", color: "#3D4A58"
-        }
-      }),
-      /*#__PURE__*/React.createElement("p", {
-        style: { color: "rgba(61,74,88,0.4)", fontSize: 11, marginBottom: 20, textAlign: "center" }
-      }, "Kies zelf een pincode — onthoud hem goed! 🔑"),
-      loginError && /*#__PURE__*/React.createElement("p", {
-        style: { color: "#E07850", fontSize: 12, textAlign: "center", marginBottom: 12 }
-      }, loginError),
+    /*#__PURE__*/React.createElement("div", { className: "fadeUp", style: { textAlign: "center", width: "100%", maxWidth: 340 } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 64, marginBottom: 8 } }, "\uD83C\uDF31"),
+      /*#__PURE__*/React.createElement("h1", { style: { color: "#5BB8A0", fontSize: 28, fontWeight: 700, margin: "0 0 4px", letterSpacing: 6 } }, "HUXI"),
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.6)", fontSize: 13, margin: "0 0 28px", fontStyle: "italic" } }, "Jouw rustige natuurwereld"),
+      loginMode === "login" && /*#__PURE__*/React.createElement(React.Fragment, null,
+        /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "24px 20px", marginBottom: 16 } },
+          /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 13, fontWeight: 600, margin: "0 0 8px", textAlign: "left" } }, "Jouw naam"),
+          /*#__PURE__*/React.createElement("input", {
+            type: "text", placeholder: "Bijv. Emma",
+            value: loginName, onChange: e => setLoginName(e.target.value),
+            style: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 15, outline: "none", marginBottom: 16, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+          }),
+          /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 13, fontWeight: 600, margin: "0 0 8px", textAlign: "left" } }, "Jouw pincode (4 cijfers)"),
+          /*#__PURE__*/React.createElement("input", {
+            type: "number", placeholder: "1234",
+            value: loginPin, onChange: e => setLoginPin(e.target.value.slice(0,4)),
+            style: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 15, outline: "none", marginBottom: 8, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+          }),
+          /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.45)", fontSize: 11, margin: "0 0 4px", textAlign: "center" } }, "Nieuw? Kies gewoon een naam en pincode om te starten.")
+        ),
+        loginError && /*#__PURE__*/React.createElement("p", { style: { color: "#E07850", fontSize: 12, textAlign: "center", marginBottom: 10 } }, loginError),
+        /*#__PURE__*/React.createElement("button", {
+          onClick: async () => {
+            if (!loginName.trim() || loginPin.length !== 4) { setLoginError("Vul je naam en een pincode van 4 cijfers in"); return; }
+            setLoginLoading(true); setLoginError("");
+            const key = makeKey(loginName, loginPin);
+            const data = await firebaseLoad(key);
+            if (data && data.accType) {
+              setUserKey(key); setAccType(data.accType);
+              if (data.reason) setReason(data.reason);
+              if (data.experience) setExperience(data.experience);
+              if (data.treeName) setTreeName(data.treeName);
+              if (data.userName) setUserName(data.userName);
+              if (data.growth) setGrowth(data.growth);
+              if (data.coins) setCoins(data.coins);
+              if (data.ownedItems) setOwnedItems(data.ownedItems);
+              if (data.avatar) setAvatar(data.avatar);
+              if (data.letters) setLetters(data.letters);
+              if (data.diary) setDiary(data.diary);
+              if (data.seenEx) setSeenEx(data.seenEx);
+              if (data.lastExId) setLastExId(data.lastExId);
+              if (data.totalSessions) setTotalSessions(data.totalSessions);
+              if (data.wi) setWi(data.wi);
+              if (data.dailyMood) setDailyMood(data.dailyMood);
+              if (data.lastCheckinDate) setLastCheckinDate(data.lastCheckinDate);
+              if (data.streakShields !== undefined) setStreakShields(data.streakShields);
+              if (data.secretQ !== undefined) setSecretQ(data.secretQ);
+              if (data.secretA) setSecretA(data.secretA);
+              const today = new Date().toDateString();
+              if (data.lastDay === today) {
+                setLastDay(today); setDailyActions(data.dailyActions || 0);
+                setDailyBreaths(data.dailyBreaths || 0); setDailyTasks(data.dailyTasks || []);
+                setTasksGenerated(data.tasksGenerated || false); setCheckinDone(data.checkinDone || false);
+              } else {
+                setLastDay(today); setDailyActions(0); setDailyBreaths(0);
+                setDailyTasks([]); setTasksGenerated(false); setCheckinDone(false);
+              }
+              if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
+              setPhase("world");
+            } else {
+              setUserKey(key); setPhase("onboarding");
+            }
+            setLoginLoading(false);
+          },
+          disabled: loginLoading,
+          style: { width: "100%", padding: "14px 0", borderRadius: 14, background: loginLoading ? "#666" : "linear-gradient(135deg,#4CAF7A,#5BB8A0)", color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", marginBottom: 12 }
+        }, loginLoading ? "Even laden... \uD83C\uDF3F" : "Ga naar mijn wereld \uD83C\uDF31"),
+        /*#__PURE__*/React.createElement("button", {
+          onClick: () => { setLoginMode("forgot"); setLoginError(""); },
+          style: { background: "none", border: "none", color: "rgba(168,213,181,0.5)", fontSize: 12, cursor: "pointer" }
+        }, "Pincode vergeten?")
+      ),
+      loginMode === "forgot" && /*#__PURE__*/React.createElement(React.Fragment, null,
+        /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "24px 20px", marginBottom: 16 } },
+          /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 14, fontWeight: 700, margin: "0 0 12px" } }, "\uD83D\uDD11 Pincode vergeten"),
+          /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 13, fontWeight: 600, margin: "0 0 8px", textAlign: "left" } }, "Jouw naam"),
+          /*#__PURE__*/React.createElement("input", {
+            type: "text", placeholder: "Jouw naam",
+            value: loginName, onChange: e => setLoginName(e.target.value),
+            style: { width: "100%", padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 14, outline: "none", marginBottom: 12, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+          }),
+          /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 13, fontWeight: 600, margin: "0 0 8px", textAlign: "left" } }, "Geheime vraag antwoord"),
+          /*#__PURE__*/React.createElement("input", {
+            type: "text", placeholder: "Jouw antwoord",
+            value: loginPin, onChange: e => setLoginPin(e.target.value),
+            style: { width: "100%", padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 14, outline: "none", marginBottom: 8, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+          }),
+          /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.4)", fontSize: 11, marginBottom: 0 } }, "Antwoord op je geheime vraag bij aanmaken")
+        ),
+        loginError && /*#__PURE__*/React.createElement("p", { style: { color: "#E07850", fontSize: 12, textAlign: "center", marginBottom: 10 } }, loginError),
+        /*#__PURE__*/React.createElement("button", {
+          onClick: () => { setLoginMode("login"); setLoginError(""); setLoginPin(""); },
+          style: { background: "none", border: "none", color: "rgba(168,213,181,0.5)", fontSize: 12, cursor: "pointer", marginBottom: 8, display: "block", width: "100%", textAlign: "center" }
+        }, "\u2190 Terug naar inloggen")
+      )
+    )
+  ));
+
+  if (phase === "onboarding") return /*#__PURE__*/React.createElement("div", {
+    style: W
+  }, /*#__PURE__*/React.createElement("style", null, css),
+  /*#__PURE__*/React.createElement("div", {
+    style: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: "40px 28px", background: "linear-gradient(160deg,#1a2f1f 0%,#0d1f12 100%)" }
+  },
+    /*#__PURE__*/React.createElement("div", { className: "fadeUp", style: { textAlign: "center", maxWidth: 320 } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 80, marginBottom: 20 } }, "\uD83C\uDF31"),
+      /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "24px 20px", marginBottom: 28 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 20, fontWeight: 700, margin: "0 0 14px", lineHeight: 1.4 } }, "Vandaag planten we een zaadje."),
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.7)", fontSize: 15, margin: "0 0 10px", lineHeight: 1.6 } }, "Elke keer je oefent, groei jij en je wereld een beetje."),
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.5)", fontSize: 13, margin: 0, lineHeight: 1.6 } }, "Geen grote stappen \u2014 gewoon elke dag een klein moment voor jezelf.")
+      ),
       /*#__PURE__*/React.createElement("button", {
-        onClick: doLogin,
-        disabled: loginLoading,
-        style: {
-          width: "100%", padding: "14px", borderRadius: 14,
-          background: loginLoading ? "#ccc" : "linear-gradient(135deg,#4CAF7A,#5BB8A0)",
-          color: "white", fontSize: 15, fontWeight: 700,
-          border: "none", cursor: loginLoading ? "default" : "pointer"
-        }
-      }, loginLoading ? "Even laden... 🌿" : "Ga naar mijn wereld 🌱")
-    ),
-    /*#__PURE__*/React.createElement("p", {
-      style: { color: "rgba(61,74,88,0.4)", fontSize: 11, marginTop: 20, textAlign: "center" }
-    }, "Nieuw? Kies gewoon een naam en pincode om te starten")
+        className: "mb",
+        style: { width: "100%", padding: "16px 0", fontSize: 16, fontWeight: 700 },
+        onClick: () => setPhase("welcome")
+      }, "Begin \uD83C\uDF31")
+    )
   ));
 
   if (phase === "welcome") return /*#__PURE__*/React.createElement("div", {
@@ -2075,47 +2092,42 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   // REASON
   if (phase === "reason") return /*#__PURE__*/React.createElement("div", {
     style: W
-  }, /*#__PURE__*/React.createElement("style", null, css), /*#__PURE__*/React.createElement("div", {
-    style: OB
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "fadeUp",
-    style: OBC
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 40,
-      marginBottom: 12
-    }
-  }, accType === "child" ? "🦋" : "🌿"), /*#__PURE__*/React.createElement("h2", {
-    style: {
-      fontSize: 20,
-      fontWeight: 700,
-      color: "#5BB8A0",
-      marginBottom: 6
-    }
-  }, accType === "child" ? "Waarom ben je hier?" : "Wat brengt je hier?"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      color: "rgba(200,230,180,0.6)",
-      fontSize: 12,
-      marginBottom: 20
-    }
-  }, "Geen oordeel, alleen begrip"), reasons.map(r => /*#__PURE__*/React.createElement("button", {
-    key: r.id,
-    className: "rb",
-    onClick: () => {
-      setReason(r.id);
-      setPhase("mood_first");
-    }
-  }, /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 20
-    }
-  }, r.e), /*#__PURE__*/React.createElement("span", {
-    style: {
-      color: "#D8E8F0",
-      fontSize: 14,
-      fontWeight: 600
-    }
-  }, r.l))))));
+  }, /*#__PURE__*/React.createElement("style", null, css),
+  /*#__PURE__*/React.createElement("div", { style: OB },
+    /*#__PURE__*/React.createElement("div", { className: "fadeUp", style: { ...OBC, maxHeight: "90vh", overflowY: "auto" } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, accType === "child" ? "\uD83E\uDD8B" : "\uD83C\uDF3F"),
+      /*#__PURE__*/React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: "#5BB8A0", marginBottom: 4 } },
+        accType === "child" ? "Waarom ben je hier?" : "Wat brengt je hier?"
+      ),
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(200,230,180,0.6)", fontSize: 12, marginBottom: 16 } }, "Je mag meerdere dingen aanduiden"),
+      reasons.map(r => /*#__PURE__*/React.createElement("button", {
+        key: r.id, className: "rb",
+        style: {
+          border: selectedReasons.includes(r.id) ? "2px solid #5BB8A0" : "2px solid transparent",
+          background: selectedReasons.includes(r.id) ? "rgba(91,184,160,0.15)" : "rgba(255,255,255,0.06)",
+          position: "relative"
+        },
+        onClick: () => setSelectedReasons(prev =>
+          prev.includes(r.id) ? prev.filter(x => x !== r.id) : [...prev, r.id]
+        )
+      },
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 20 } }, r.e),
+        /*#__PURE__*/React.createElement("span", { style: { color: "#D8E8F0", fontSize: 14, fontWeight: 600 } }, r.l),
+        selectedReasons.includes(r.id) && /*#__PURE__*/React.createElement("span", {
+          style: { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#5BB8A0", fontSize: 18 }
+        }, "\u2713")
+      )),
+      /*#__PURE__*/React.createElement("button", {
+        className: "mb",
+        style: { width: "100%", marginTop: 16, padding: "13px 0", opacity: selectedReasons.length === 0 ? 0.4 : 1 },
+        onClick: () => {
+          if (selectedReasons.length === 0) return;
+          setReason(selectedReasons[0]);
+          setPhase("mood_first");
+        }
+      }, selectedReasons.length === 0 ? "Kies minstens 1 reden" : "Volgende \u2192")
+    )
+  ))
 
   // MOOD
   if (phase === "mood_first") return /*#__PURE__*/React.createElement("div", {
@@ -2216,9 +2228,15 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   // PLANTING
   if (phase === "planting") {
     const isT = accType === "therapist";
+    const [plantStep, setPlantStep] = React.useState(0);
+    const SECQS = ["Wat is de naam van je huisdier?","Wat is je favoriete kleur?","Wat is de naam van je beste vriend?","Wat is je favoriete dier?"];
+    const [plantSecQ, setPlantSecQ] = React.useState(0);
+    const [plantSecA, setPlantSecA] = React.useState("");
     const go = () => {
       setUserName(userNameIn.trim() || "");
       setTreeName(nameIn.trim() || "Mijn Boom");
+      setSecretQ(plantSecQ);
+      setSecretA(plantSecA.trim().toLowerCase());
       setPhase(isT ? "therapist_dash" : "world");
       setGrowth(0.1);
       setTimeout(saveData, 500);
@@ -2260,10 +2278,30 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       onKeyDown: e => {
         if (e.key === "Enter") go();
       }
-    }), /*#__PURE__*/React.createElement("button", {
+    }), !isT && /*#__PURE__*/React.createElement(React.Fragment, null,
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(200,230,180,0.7)", fontSize: 12, margin: "14px 0 8px", textAlign: "center" } }, "Geheime vraag (voor als je je pincode vergeet)"),
+      /*#__PURE__*/React.createElement("select", {
+        className: "ni",
+        value: plantSecQ,
+        onChange: e => setPlantSecQ(Number(e.target.value)),
+        style: { marginBottom: 8, cursor: "pointer" }
+      },
+        ["Wat is de naam van je huisdier?","Wat is je favoriete kleur?","Wat is de naam van je beste vriend?","Wat is je favoriete dier?"].map((q,i) =>
+          /*#__PURE__*/React.createElement("option", { key: i, value: i }, q)
+        )
+      ),
+      /*#__PURE__*/React.createElement("input", {
+        className: "ni",
+        placeholder: "Jouw antwoord...",
+        value: plantSecA,
+        onChange: e => setPlantSecA(e.target.value),
+        maxLength: 30,
+        style: { marginBottom: 10 }
+      })
+    ), /*#__PURE__*/React.createElement("button", {
       className: "gb",
       onClick: go
-    }, isT ? "Start dashboard 🔬" : accType === "child" ? "Laten we beginnen! 🌟" : "We hebben het zaadje geplant 🌿"))));
+    }, isT ? "Start dashboard 🔬" : accType === "child" ? "Laten we beginnen! \uD83C\uDF1F" : "We hebben het zaadje geplant \uD83C\uDF3F"))));
   }
 
   // THERAPIST DASHBOARD
@@ -3331,47 +3369,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       cursor: "pointer"
     },
     onClick: () => tapA("De vos kijkt je nieuwsgierig aan")
-  }, "\uD83E\uDD8A"),
-  accType === "junior" && wi.streakDays >= 7 && /*#__PURE__*/React.createElement("text", {
-    x: 60,
-    y: 15,
-    fontSize: 20,
-    style: { cursor: "pointer" },
-    onClick: () => tapA("Het hert kijkt je rustig aan — " + wi.streakDays + " dagen streak!")
-  }, "\uD83E\uDD8C"),
-  accType === "junior" && wi.streakDays >= 30 && /*#__PURE__*/React.createElement(React.Fragment, null,
-    /*#__PURE__*/React.createElement("path", {
-      d: "M-80,-120 Q0,-160 80,-120",
-      fill: "none",
-      stroke: "url(#rainbow)",
-      strokeWidth: 4,
-      opacity: 0.6
-    }),
-    /*#__PURE__*/React.createElement("defs", null,
-      /*#__PURE__*/React.createElement("linearGradient", { id: "rainbow", x1: "0%", y1: "0%", x2: "100%", y2: "0%" },
-        /*#__PURE__*/React.createElement("stop", { offset: "0%", stopColor: "#FF6B6B" }),
-        /*#__PURE__*/React.createElement("stop", { offset: "25%", stopColor: "#FFE66D" }),
-        /*#__PURE__*/React.createElement("stop", { offset: "50%", stopColor: "#4CAF7A" }),
-        /*#__PURE__*/React.createElement("stop", { offset: "75%", stopColor: "#4ECDC4" }),
-        /*#__PURE__*/React.createElement("stop", { offset: "100%", stopColor: "#A29BFE" })
-      )
-    )
-  ),
-  accType === "junior" && wi.streakDays >= 3 && /*#__PURE__*/React.createElement(React.Fragment, null,
-    [0,1,2,3].map(i => /*#__PURE__*/React.createElement("circle", {
-      key: "sparkle"+i,
-      cx: Math.cos(i * 1.57) * 30,
-      cy: Math.sin(i * 1.57) * 30 - 80,
-      r: 2,
-      fill: "#FFD700",
-      opacity: 0.8
-    }, /*#__PURE__*/React.createElement("animate", {
-      attributeName: "opacity",
-      values: "0.2;1;0.2",
-      dur: (1.5 + i * 0.3) + "s",
-      repeatCount: "indefinite"
-    })))
-  ), /*#__PURE__*/React.createElement("text", {
+  }, "\uD83E\uDD8A"), /*#__PURE__*/React.createElement("text", {
     x: -80,
     y: 34,
     fontSize: 18,
@@ -3760,18 +3758,25 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       left: 0,
       right: 0,
       zIndex: 20,
-      padding: "8px 12px 16px",
-      background: "linear-gradient(0deg,rgba(245,247,250,0.98) 60%,rgba(245,247,250,0))"
+      padding: "8px 12px 14px",
+      background: "linear-gradient(0deg,rgba(245,247,250,0.97) 70%,rgba(245,247,250,0))"
     }
-  }, /*#__PURE__*/React.createElement("p", {
+  }, allDone ? /*#__PURE__*/React.createElement("p", {
     style: {
       textAlign: "center",
-      color: allDone ? "#4CAF7A" : g5,
-      fontSize: 10,
-      fontWeight: allDone ? 600 : 400,
+      color: "#4CAF7A",
+      fontSize: 11,
+      fontWeight: 600,
       marginBottom: 6
     }
-  }, allDone ? "Goed gedaan vandaag! Tot morgen \uD83C\uDF31" : "Jouw moment van de dag"), /*#__PURE__*/React.createElement("div", {
+  }, "Goed gedaan vandaag! Tot morgen \uD83C\uDF31") : /*#__PURE__*/React.createElement("p", {
+    style: {
+      textAlign: "center",
+      color: g5,
+      fontSize: 10,
+      marginBottom: 6
+    }
+  }, "Jouw moment van de dag"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "center",
@@ -3817,7 +3822,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }, "\uD83C\uDF43"), /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowDiary(true)
-  }, "\uD83D\uDCD4 Dagboek"), accType === "child" && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCD4 Dagboek"), (accType === "child" || accType === "junior") && /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowAvatar(true)
   }, "\uD83D\uDC64 Avatar"), accType === "junior" && /*#__PURE__*/React.createElement("button", {
@@ -4047,39 +4052,79 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     }, "Brief aan jezelf")), /*#__PURE__*/React.createElement("textarea", {
       className: "ta",
       placeholder: "Lieve ik...",
-      value: letterDraft,
-      onChange: e => setLetterDraft(e.target.value),
-      maxLength: 500,
-      rows: 6
-    }), /*#__PURE__*/React.createElement("div", {
-      style: {
-        display: "flex",
-        gap: 10,
-        marginTop: 14
-      }
-    }, /*#__PURE__*/React.createElement("button", {
-      style: {
-        flex: 1,
-        background: "none",
-        border: "1px solid " + g3,
-        borderRadius: 14,
-        padding: "10px 0",
-        color: g,
-        fontSize: 13,
-        cursor: "pointer"
-      },
-      onClick: () => {
-        setShowLetter(false);
-        setLetterDraft("");
-      }
-    }, "Annuleren"), /*#__PURE__*/React.createElement("button", {
-      className: "mb",
-      style: {
-        flex: 1,
-        padding: "10px 0"
-      },
-      onClick: saveLetter
-    }, "Bewaar \uD83C\uDF3F")));
+      value: letterDraft, onChange: e => setLetterDraft(e.target.value), rows: 6
+    }), letterStep === 0 && /*#__PURE__*/React.createElement(React.Fragment, null,
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 12, marginBottom: 14, textAlign: "center" } },
+          "Schrijf een brief aan jezelf \u2014 je opent hem pas na de gekozen periode."
+        ),
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 600, marginBottom: 8 } }, "Wanneer wil je de brief openen?"),
+        /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 } },
+          [30,60,90,120].map(d => /*#__PURE__*/React.createElement("button", {
+            key: d,
+            onClick: () => setLetterPeriod(d),
+            style: { padding: "12px 6px", borderRadius: 12, fontSize: 12, fontWeight: 600, cursor: "pointer",
+              border: letterPeriod === d ? "2px solid #4CAF7A" : "2px solid rgba(76,175,122,0.2)",
+              background: letterPeriod === d ? "rgba(76,175,122,0.1)" : "white", color: g }
+          }, "Na ", d, " dagen"))
+        ),
+        /*#__PURE__*/React.createElement("button", {
+          className: "mb", style: { width: "100%", padding: "12px 0" },
+          onClick: () => { setLetterStep(1); setLetterAnswers(["","","",""]); }
+        }, "Begin met schrijven \u2192")
+      ),
+      letterStep >= 1 && letterStep <= 4 && /*#__PURE__*/React.createElement(React.Fragment, null,
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 14 } },
+          [1,2,3,4].map(i => /*#__PURE__*/React.createElement("div", { key: i,
+            style: { flex: 1, height: 4, borderRadius: 2,
+              background: i <= letterStep ? "#4CAF7A" : "rgba(76,175,122,0.2)" }
+          }))
+        ),
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 14, fontWeight: 600, marginBottom: 8 } },
+          ["Hoe gaat het nu met jou? \uD83D\uDCAD",
+           "Waar loop je tegen aan? \uD83C\uDF0A",
+           "Wat wil je veranderen tegen de volgende brief? \uD83C\uDF31",
+           "Wat zijn je doelen voor de langere termijn? \u2B50"][letterStep-1]
+        ),
+        /*#__PURE__*/React.createElement("textarea", {
+          className: "ta",
+          placeholder: "Schrijf hier...",
+          value: letterAnswers[letterStep-1] || "",
+          onChange: e => { const a = [...letterAnswers]; a[letterStep-1] = e.target.value; setLetterAnswers(a); },
+          rows: 5, style: { marginBottom: 10 }
+        }),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8 } },
+          letterStep > 1 && /*#__PURE__*/React.createElement("button", {
+            style: { flex: 1, background: "none", border: "1px solid rgba(61,74,88,0.2)", borderRadius: 12, padding: "10px 0", color: g, fontSize: 13, cursor: "pointer" },
+            onClick: () => setLetterStep(s => s-1)
+          }, "\u2190 Terug"),
+          /*#__PURE__*/React.createElement("button", {
+            className: "mb", style: { flex: 2, padding: "10px 0" },
+            onClick: () => {
+              if (letterStep < 4) {
+                setLetterStep(s => s+1);
+              } else {
+                const unlockDate = new Date();
+                unlockDate.setDate(unlockDate.getDate() + letterPeriod);
+                const fullText = ["Hoe gaat het nu?","Waar loop ik tegen aan?","Wat wil ik veranderen?","Mijn doelen:"]
+                  .map((q,i) => q+"\n"+(letterAnswers[i]||"-")).join("\n\n");
+                setLetters(p => [{
+                  text: fullText,
+                  date: new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),
+                  unlockDate: unlockDate.toISOString(),
+                  unlockDays: letterPeriod,
+                  id: Date.now()
+                }, ...p]);
+                setLetterStep(0); setLetterAnswers(["","","",""]);
+                setShowLetter(false);
+                setWi(w => ({...w, flowers: w.flowers+1, brieven: w.brieven+1}));
+                setGrowth(g2 => Math.min(1, g2+0.003));
+                showWorldReward("letter");
+                setTimeout(saveData, 500);
+              }
+            }
+          }, letterStep < 4 ? "Volgende \u2192" : "Bewaar brief \uD83C\uDF3F")
+        )
+      ));
   })())), showLetters && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => setShowLetters(false)
@@ -4156,152 +4201,112 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     onClick: () => setShowDiary(false)
   }, /*#__PURE__*/React.createElement("div", {
     className: "fadeIn",
-    style: {
-      background: "rgba(255,255,255,0.97)",
-      borderRadius: 24,
-      padding: "20px 20px 16px",
-      width: 310,
-      maxHeight: "85vh",
-      display: "flex",
-      flexDirection: "column",
-      overflow: "hidden"
-    },
+    style: modal,
     onClick: e => e.stopPropagation()
-  },
-    /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", marginBottom: 12, flexShrink: 0 } },
-      /*#__PURE__*/React.createElement("span", { style: { fontSize: 28 } }, "\uD83D\uDCD4"),
-      /*#__PURE__*/React.createElement("h3", { style: { color: "#3D4A58", fontSize: 17, fontWeight: 700, margin: "4px 0 0" } }, "Dagboek")
-    ),
-    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 12, flexShrink: 0 } },
-      /*#__PURE__*/React.createElement("button", {
-        style: { flex: 1, padding: "7px 0", borderRadius: 10, border: "none", fontFamily: "inherit",
-          background: !showDiaryRead ? "rgba(76,175,122,0.15)" : "rgba(61,74,88,0.06)",
-          color: "#3D4A58", fontSize: 12, fontWeight: 600, cursor: "pointer" },
-        onClick: () => setShowDiaryRead(false)
-      }, "\u270F\uFE0F Schrijven"),
-      diary.length > 0 && /*#__PURE__*/React.createElement("button", {
-        style: { flex: 1, padding: "7px 0", borderRadius: 10, border: "none", fontFamily: "inherit",
-          background: showDiaryRead ? "rgba(76,175,122,0.15)" : "rgba(61,74,88,0.06)",
-          color: "#3D4A58", fontSize: 12, fontWeight: 600, cursor: "pointer" },
-        onClick: () => setShowDiaryRead(true)
-      }, "\uD83D\uDCDA Lezen (" + diary.length + ")")
-    ),
-    !showDiaryRead
-      ? /*#__PURE__*/React.createElement(React.Fragment, null,
-          /*#__PURE__*/React.createElement("textarea", {
-            className: "ta",
-            placeholder: "Vandaag\u2026",
-            value: diaryDraft,
-            onChange: e => setDiaryDraft(e.target.value),
-            maxLength: 1000,
-            rows: 6,
-            style: { flexShrink: 0 }
-          }),
-          /*#__PURE__*/React.createElement("button", {
-            className: "mb",
-            style: { width: "100%", marginTop: 10, padding: "10px 0", flexShrink: 0 },
-            onClick: saveDiary
-          }, "Opslaan \uD83C\uDF3F")
-        )
-      : /*#__PURE__*/React.createElement("div", {
-          style: { overflowY: "auto", flex: 1, minHeight: 0, paddingRight: 2 }
-        },
-          diary.map((d, idx) => /*#__PURE__*/React.createElement("div", {
-            key: d.id,
-            style: { padding: "12px 14px", marginBottom: 8, borderRadius: 12,
-              background: idx === 0 ? "rgba(76,175,122,0.07)" : "rgba(61,74,88,0.03)",
-              border: "1px solid rgba(61,74,88,0.07)" }
-          },
-            /*#__PURE__*/React.createElement("p", {
-              style: { color: "rgba(61,74,88,0.4)", fontSize: 10, margin: "0 0 6px", fontWeight: 700 }
-            }, "\uD83D\uDCC5 " + d.date),
-            /*#__PURE__*/React.createElement("p", {
-              style: { color: "#3D4A58", fontSize: 13, margin: 0, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word" }
-            }, d.text)
-          ))
-        ),
-    /*#__PURE__*/React.createElement("button", {
-      style: { width: "100%", marginTop: 10, background: "none", border: "1px solid rgba(61,74,88,0.2)",
-        borderRadius: 14, padding: "8px 0", color: "rgba(61,74,88,0.5)", fontSize: 12, cursor: "pointer", flexShrink: 0 },
-      onClick: () => { setShowDiary(false); setShowDiaryRead(false); }
-    }, "Sluiten")
-  )), showStreak && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", {
+    style: {
+      textAlign: "center",
+      marginBottom: 14
+    }
+  }, /*#__PURE__*/React.createElement("span", {
+    style: {
+      fontSize: 30
+    }
+  }, "\uD83D\uDCD4"), /*#__PURE__*/React.createElement("h3", {
+    style: {
+      color: g,
+      fontSize: 17,
+      fontWeight: 700,
+      margin: "6px 0"
+    }
+  }, "Dagboek")), /*#__PURE__*/React.createElement("textarea", {
+    className: "ta",
+    placeholder: "Vandaag\u2026",
+    value: diaryDraft,
+    onChange: e => setDiaryDraft(e.target.value),
+    maxLength: 1000,
+    rows: 4
+  }), /*#__PURE__*/React.createElement("button", {
+    className: "mb",
+    style: {
+      width: "100%",
+      marginTop: 10,
+      padding: "10px 0"
+    },
+    onClick: saveDiary
+  }, "Opslaan"), diary.length > 0 && /*#__PURE__*/React.createElement("div", {
+    style: {
+      borderTop: "1px solid rgba(61,74,88,0.08)",
+      margin: "14px 0 10px"
+    }
+  }), diary.slice(0, 10).map(d => /*#__PURE__*/React.createElement("div", {
+    key: d.id,
+    style: {
+      padding: "6px 0"
+    }
+  }, /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: g,
+      fontSize: 12,
+      margin: 0
+    }
+  }, d.text), /*#__PURE__*/React.createElement("p", {
+    style: {
+      color: g3,
+      fontSize: 9,
+      margin: "4px 0 0"
+    }
+  }, d.date))), /*#__PURE__*/React.createElement("button", {
+    style: {
+      width: "100%",
+      marginTop: 10,
+      background: "none",
+      border: "1px solid " + g3,
+      borderRadius: 14,
+      padding: "8px 0",
+      color: g5,
+      fontSize: 12,
+      cursor: "pointer"
+    },
+    onClick: () => setShowDiary(false)
+  }, "Sluiten"))), showStreak && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => setShowStreak(false)
   }, /*#__PURE__*/React.createElement("div", {
     className: "fadeIn",
-    style: {
-      background: "rgba(255,255,255,0.97)",
-      borderRadius: 24,
-      padding: "24px 20px",
-      width: 300,
-      maxHeight: "85vh",
-      overflow: "auto"
-    },
+    style: { ...modal, textAlign: "center" },
     onClick: e => e.stopPropagation()
   },
-    /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", marginBottom: 16 } },
-      /*#__PURE__*/React.createElement("div", { style: { fontSize: 48, marginBottom: 8 } }, wi.streakDays >= 365 ? "\uD83C\uDFC6" : wi.streakDays >= 100 ? "\uD83D\uDC8E" : wi.streakDays >= 30 ? "\u2B50" : wi.streakDays >= 7 ? "\uD83D\uDD25\uD83D\uDD25" : "\uD83D\uDD25"),
-      /*#__PURE__*/React.createElement("h3", { style: { color: "#3D4A58", fontSize: 22, fontWeight: 700, margin: "0 0 4px" } }, wi.streakDays || 0, " dagen"),
-      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 13, margin: "0 0 8px" } },
-        wi.streakDays >= 365 ? "HUXI Legende \uD83C\uDFC6" :
-        wi.streakDays >= 100 ? "Zen Master \uD83D\uDC8E" :
-        wi.streakDays >= 60 ? "Inner Balance \uD83D\uDD25" :
-        wi.streakDays >= 30 ? "Mindful Pro \u2B50" :
-        wi.streakDays >= 14 ? "Rustige Kracht \uD83C\uDF33" :
-        wi.streakDays >= 7 ? "Doorzetter \uD83C\uDF3F" :
-        wi.streakDays >= 3 ? "Starter \uD83C\uDF31" : "Begin je streak vandaag!"
-      ),
-      /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 6, marginTop: 4 } },
-        Array.from({ length: 2 }, (_, i) => /*#__PURE__*/React.createElement("span", {
-          key: i,
-          style: { fontSize: 20, opacity: i < streakShields ? 1 : 0.2 }
-        }, "\uD83D\uDEE1\uFE0F")),
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(61,74,88,0.4)", alignSelf: "center" } },
-          streakShields > 0 ? streakShields + " shield" + (streakShields > 1 ? "s" : "") + " beschikbaar" : "Verdien een shield na 7 dagen"
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 48, marginBottom: 8 } },
+      wi.streakDays >= 100 ? "\uD83D\uDC8E" : wi.streakDays >= 30 ? "\u2B50" : "\uD83D\uDD25"
+    ),
+    /*#__PURE__*/React.createElement("h3", { style: { color: g, fontSize: 22, fontWeight: 700, margin: "0 0 4px" } }, wi.streakDays || 0, " dagen"),
+    /*#__PURE__*/React.createElement("p", { style: { color: "#5BB8A0", fontSize: 13, margin: "0 0 4px" } },
+      wi.streakDays >= 365 ? "HUXI Legende \uD83C\uDFC6" : wi.streakDays >= 100 ? "Zen Master \uD83D\uDC8E" :
+      wi.streakDays >= 60 ? "Inner Balance \uD83D\uDD25" : wi.streakDays >= 30 ? "Mindful Pro \u2B50" :
+      wi.streakDays >= 14 ? "Rustige Kracht \uD83C\uDF33" : wi.streakDays >= 7 ? "Doorzetter \uD83C\uDF3F" :
+      wi.streakDays >= 3 ? "Starter \uD83C\uDF31" : "Begin je streak vandaag!"
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 6, margin: "8px 0 16px" } },
+      [0,1].map(i => /*#__PURE__*/React.createElement("span", { key: i, style: { fontSize: 20, opacity: i < streakShields ? 1 : 0.2 } }, "\uD83D\uDEE1\uFE0F")),
+      /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(61,74,88,0.4)", alignSelf: "center" } },
+        streakShields > 0 ? streakShields + " shield beschikbaar" : "Verdien een shield na 7 dagen"
+      )
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px", marginBottom: 14, textAlign: "left" } },
+      [[3,"\uD83C\uDF31","Je boom glinster"],[7,"\uD83E\uDD8C","Hert in je wereld"],[14,"\uD83C\uDF38","Bloemen op je boom"],[30,"\uD83C\uDF08","Regenboog"],[100,"\uD83C\uDF41","Gouden bladeren"],[365,"\uD83C\uDFC6","Gouden boom"]].map(([d,ic,lbl]) =>
+        /*#__PURE__*/React.createElement("div", { key: d, style: { display: "flex", alignItems: "center", gap: 8, padding: "5px 0", opacity: (wi.streakDays||0) >= d ? 1 : 0.35 } },
+          /*#__PURE__*/React.createElement("span", { style: { fontSize: 18, minWidth: 22 } }, (wi.streakDays||0) >= d ? ic : "\uD83D\uDD12"),
+          /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, color: g } }, d + " dagen \u2014 " + lbl)
         )
       )
     ),
-    /*#__PURE__*/React.createElement("div", { style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "14px 16px", marginBottom: 16 } },
-      /*#__PURE__*/React.createElement("p", { style: { color: "#3D4A58", fontSize: 12, fontWeight: 700, margin: "0 0 10px" } }, "Jouw beloningen"),
-      [
-        [3, "\uD83C\uDF31", "Starter — je boom glinster"],
-        [7, "\uD83E\uDD8C", "Zeldzaam dier in je wereld"],
-        [14, "\uD83C\uDF38", "Bloemen op je boom"],
-        [30, "\uD83C\uDF08", "Regenboog boven je wereld"],
-        [60, "\u2728", "Vuurvliegjes elke avond"],
-        [100, "\uD83C\uDF41", "Gouden bladeren"],
-        [365, "\uD83C\uDFC6", "Volledige gouden boom"]
-      ].map(([days, icon, label]) => /*#__PURE__*/React.createElement("div", {
-        key: days,
-        style: {
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "6px 0",
-          borderBottom: "1px solid rgba(61,74,88,0.06)",
-          opacity: wi.streakDays >= days ? 1 : 0.4
-        }
-      },
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 18, minWidth: 24 } }, wi.streakDays >= days ? icon : "\uD83D\uDD12"),
-        /*#__PURE__*/React.createElement("div", { style: { flex: 1 } },
-          /*#__PURE__*/React.createElement("p", { style: { color: "#3D4A58", fontSize: 12, fontWeight: wi.streakDays >= days ? 700 : 400, margin: 0 } }, days + " dagen — " + label),
-          wi.streakDays >= days && /*#__PURE__*/React.createElement("p", { style: { color: "#4CAF7A", fontSize: 10, margin: 0 } }, "Unlocked! \u2713")
-        )
-      ))
-    ),
-    wi.streakDays > 0 && /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 11, textAlign: "center", marginBottom: 12 } },
-      wi.streakDays < 3 ? "Nog " + (3 - wi.streakDays) + " dagen tot je eerste beloning!" :
-      wi.streakDays < 7 ? "Nog " + (7 - wi.streakDays) + " dagen tot een zeldzaam dier!" :
-      wi.streakDays < 14 ? "Nog " + (14 - wi.streakDays) + " dagen tot bloemen op je boom!" :
-      wi.streakDays < 30 ? "Nog " + (30 - wi.streakDays) + " dagen tot de regenboog!" :
+    (wi.streakDays||0) < 365 && /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 11, marginBottom: 12 } },
+      (wi.streakDays||0) < 3 ? "Nog " + (3-(wi.streakDays||0)) + " dagen tot je eerste beloning!" :
+      (wi.streakDays||0) < 7 ? "Nog " + (7-(wi.streakDays||0)) + " dagen tot het hert!" :
       "Je bent geweldig bezig! \uD83C\uDF1F"
     ),
-    /*#__PURE__*/React.createElement("button", {
-      className: "mb",
-      style: { width: "100%", padding: "10px 0" },
-      onClick: () => setShowStreak(false)
-    }, "Sluiten")
+    /*#__PURE__*/React.createElement("button", { className: "mb", style: { width: "100%", padding: "10px 0" }, onClick: () => setShowStreak(false) }, "Sluiten")
   )), showAvatar && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => {
@@ -5369,7 +5374,39 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }, /*#__PURE__*/React.createElement("button", {
     className: "sb",
     onClick: () => setShowSett(true)
-  }, "\u2699\uFE0F")), showSett && /*#__PURE__*/React.createElement("div", {
+  }, "\u2699\uFE0F")), showDeleteConfirm && /*#__PURE__*/React.createElement("div", {
+    style: { ...overlay(), background: "rgba(0,0,0,0.6)" },
+    onClick: () => setShowDeleteConfirm(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fadeIn",
+    style: { ...modal, textAlign: "center" },
+    onClick: e => e.stopPropagation()
+  },
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDDD1\uFE0F"),
+    /*#__PURE__*/React.createElement("h3", { style: { color: "#E07850", fontSize: 18, fontWeight: 700, margin: "0 0 8px" } }, "Account verwijderen"),
+    /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, margin: "0 0 20px", lineHeight: 1.5 } },
+      "Ben je zeker? Je boom, voortgang en alles wat je geschreven hebt wordt definitief verwijderd."
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10 } },
+      /*#__PURE__*/React.createElement("button", {
+        style: { flex: 1, background: "none", border: "1px solid rgba(61,74,88,0.2)", borderRadius: 12, padding: "12px 0", color: g, fontSize: 13, cursor: "pointer" },
+        onClick: () => setShowDeleteConfirm(false)
+      }, "Annuleren"),
+      /*#__PURE__*/React.createElement("button", {
+        style: { flex: 1, background: "#E07850", border: "none", borderRadius: 12, padding: "12px 0", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+        onClick: async () => {
+          if (userKey) {
+            try { await fetch("https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
+          }
+          try { localStorage.removeItem("huxi-profile"); } catch(e) {}
+          setShowDeleteConfirm(false); setShowSett(false);
+          setPhase("login"); setAccType(null); setUserKey(""); setLoginName(""); setLoginPin("");
+          setGrowth(0.08); setCoins(0); setLetters([]); setDiary([]);
+          setWi({ leaves:0,flowers:0,grass:0,stones:0,shrooms:0,bushes:0,streakDays:0,brieven:0,dagboeken:0,tools:0,checkins:0,tasks:0 });
+        }
+      }, "Ja, verwijder alles")
+    )
+  )), showSett && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => setShowSett(false)
   }, /*#__PURE__*/React.createElement("div", {
@@ -5391,31 +5428,18 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     key: "so",
     className: "tb",
     onClick: () => setSoundOn(s => !s)
-  }, soundOn ? "🔊 Aan" : "🔇 Uit")], ["Seizoen", /*#__PURE__*/React.createElement("button", {
-    key: "s",
-    className: "tb",
-    onClick: () => setSeason(p => {
-      const i = (["Lente", "Zomer", "Herfst", "Winter"].indexOf(p) + 1) % 4;
-      return ["Lente", "Zomer", "Herfst", "Winter"][i];
-    })
-  }, sI, " ", season)], ["Tijd", /*#__PURE__*/React.createElement("button", {
-    key: "t",
-    className: "tb",
-    onClick: () => setTod(p => {
-      const i = (["Ochtend", "Middag", "Avond", "Nacht"].indexOf(p) + 1) % 4;
-      return ["Ochtend", "Middag", "Avond", "Nacht"][i];
-    })
-  }, tI, " ", tod)], ["Status", /*#__PURE__*/React.createElement("span", {
-    key: "p",
-    style: {
-      fontSize: 12,
-      color: isPremium ? "#4CAF7A" : g5
-    }
-  }, isPremium ? "⭐ Premium" : "Gratis")], ["Account", /*#__PURE__*/React.createElement("button", {
+  }, soundOn ? "\uD83D\uDD0A Aan" : "\uD83D\uDD07 Uit")],
+  ["Account", /*#__PURE__*/React.createElement("button", {
     key: "a",
     className: "tb",
-    onClick: switchAcc
-  }, "\uD83D\uDD04 Wissel")]].map(([l, ctrl], i) => /*#__PURE__*/React.createElement("div", {
+    onClick: () => { setPhase("login"); setAccType(null); setCheckinDone(false); setUserKey(""); setLoginName(""); setLoginPin(""); }
+  }, "Uitloggen")],
+  ["Nieuw begin", /*#__PURE__*/React.createElement("button", {
+    key: "del",
+    className: "tb",
+    style: { color: "#E07850" },
+    onClick: () => setShowDeleteConfirm(true)
+  }, "\uD83D\uDDD1\uFE0F Verwijderen")]].map(([l, ctrl], i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       display: "flex",
