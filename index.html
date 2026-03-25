@@ -1175,6 +1175,9 @@ function HuxiApp() {
   const [showLetters, setShowLetters] = useState(false);
   const [showDiary, setShowDiary] = useState(false);
   const [showDiaryRead, setShowDiaryRead] = useState(false);
+  const [showStreak, setShowStreak] = useState(false);
+  const [lastCheckinDate, setLastCheckinDate] = useState("");
+  const [streakShields, setStreakShields] = useState(0);
   const [diaryDraft, setDiaryDraft] = useState("");
   const [diary, setDiary] = useState([]);
   const [wMsg, setWMsg] = useState("");
@@ -1479,7 +1482,9 @@ function HuxiApp() {
         wi,
         lastDay,
         dailyActions,
-        lastTaskTexts
+        lastTaskTexts,
+        lastCheckinDate,
+        streakShields
       }));
     } catch (e) {}
   };
@@ -1524,6 +1529,8 @@ function HuxiApp() {
           setSeenEx(d.seenEx || []);
           setLastExId(d.lastExId || null);
           if (d.lastTaskTexts) setLastTaskTexts(d.lastTaskTexts);
+          if (d.lastCheckinDate) setLastCheckinDate(d.lastCheckinDate);
+          if (d.streakShields !== undefined) setStreakShields(d.streakShields);
           setPhase("world");
         }
       }
@@ -1595,10 +1602,31 @@ function HuxiApp() {
     setDailyMood(id);
     setCheckinDone(true);
     setGrowth(g => Math.min(1, g + 0.003));
-    setWi(w => ({
-      ...w,
-      checkins: w.checkins + 1
-    }));
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toDateString();
+    setWi(w => {
+      let newStreak = w.streakDays;
+      let newShields = streakShields;
+      if (lastCheckinDate === today) {
+        // already checked in today, no change
+      } else if (lastCheckinDate === yesterday) {
+        // perfect streak
+        newStreak = w.streakDays + 1;
+        // earn a shield every 7 days
+        if (newStreak % 7 === 0) newShields = Math.min(2, newShields + 1);
+      } else if (lastCheckinDate === twoDaysAgo && streakShields > 0) {
+        // missed 1 day - use a shield
+        newStreak = w.streakDays + 1;
+        newShields = newShields - 1;
+      } else {
+        // streak broken
+        newStreak = 1;
+      }
+      setStreakShields(newShields);
+      return { ...w, checkins: w.checkins + 1, streakDays: newStreak };
+    });
+    setLastCheckinDate(today);
     if (accType === "child" || accType === "junior") setCoins(c => c + 2);
     setTimeout(saveData, 500);
   };
@@ -3159,7 +3187,47 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       cursor: "pointer"
     },
     onClick: () => tapA("De vos kijkt je nieuwsgierig aan")
-  }, "\uD83E\uDD8A"), /*#__PURE__*/React.createElement("text", {
+  }, "\uD83E\uDD8A"),
+  accType === "junior" && wi.streakDays >= 7 && /*#__PURE__*/React.createElement("text", {
+    x: 60,
+    y: 15,
+    fontSize: 20,
+    style: { cursor: "pointer" },
+    onClick: () => tapA("Het hert kijkt je rustig aan — " + wi.streakDays + " dagen streak!")
+  }, "\uD83E\uDD8C"),
+  accType === "junior" && wi.streakDays >= 30 && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("path", {
+      d: "M-80,-120 Q0,-160 80,-120",
+      fill: "none",
+      stroke: "url(#rainbow)",
+      strokeWidth: 4,
+      opacity: 0.6
+    }),
+    /*#__PURE__*/React.createElement("defs", null,
+      /*#__PURE__*/React.createElement("linearGradient", { id: "rainbow", x1: "0%", y1: "0%", x2: "100%", y2: "0%" },
+        /*#__PURE__*/React.createElement("stop", { offset: "0%", stopColor: "#FF6B6B" }),
+        /*#__PURE__*/React.createElement("stop", { offset: "25%", stopColor: "#FFE66D" }),
+        /*#__PURE__*/React.createElement("stop", { offset: "50%", stopColor: "#4CAF7A" }),
+        /*#__PURE__*/React.createElement("stop", { offset: "75%", stopColor: "#4ECDC4" }),
+        /*#__PURE__*/React.createElement("stop", { offset: "100%", stopColor: "#A29BFE" })
+      )
+    )
+  ),
+  accType === "junior" && wi.streakDays >= 3 && /*#__PURE__*/React.createElement(React.Fragment, null,
+    [0,1,2,3].map(i => /*#__PURE__*/React.createElement("circle", {
+      key: "sparkle"+i,
+      cx: Math.cos(i * 1.57) * 30,
+      cy: Math.sin(i * 1.57) * 30 - 80,
+      r: 2,
+      fill: "#FFD700",
+      opacity: 0.8
+    }, /*#__PURE__*/React.createElement("animate", {
+      attributeName: "opacity",
+      values: "0.2;1;0.2",
+      dur: (1.5 + i * 0.3) + "s",
+      repeatCount: "indefinite"
+    })))
+  ), /*#__PURE__*/React.createElement("text", {
     x: -80,
     y: 34,
     fontSize: 18,
@@ -3548,7 +3616,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       left: 0,
       right: 0,
       zIndex: 20,
-      padding: "8px 12px 34px",
+      padding: "8px 12px 16px",
       background: "linear-gradient(0deg,rgba(245,247,250,0.98) 60%,rgba(245,247,250,0))"
     }
   }, /*#__PURE__*/React.createElement("p", {
@@ -3605,10 +3673,13 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }, "\uD83C\uDF43"), /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowDiary(true)
-  }, "\uD83D\uDCD4 Dagboek"), (accType === "child" || accType === "junior") && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCD4 Dagboek"), accType === "child" && /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowAvatar(true)
-  }, "\uD83D\uDC64 Avatar"))), curTask && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDC64 Avatar"), accType === "junior" && /*#__PURE__*/React.createElement("button", {
+    className: "ab",
+    onClick: () => setShowStreak(true)
+  }, "\uD83D\uDD25 " + (wi.streakDays || 0) + " dagen"))), curTask && /*#__PURE__*/React.createElement("div", {
     style: {
       ...F,
       zIndex: 30,
@@ -4009,6 +4080,83 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       style: { width: "100%", marginTop: 10, background: "none", border: "1px solid rgba(61,74,88,0.2)",
         borderRadius: 14, padding: "8px 0", color: "rgba(61,74,88,0.5)", fontSize: 12, cursor: "pointer", flexShrink: 0 },
       onClick: () => { setShowDiary(false); setShowDiaryRead(false); }
+    }, "Sluiten")
+  )), showStreak && /*#__PURE__*/React.createElement("div", {
+    style: overlay(),
+    onClick: () => setShowStreak(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fadeIn",
+    style: {
+      background: "rgba(255,255,255,0.97)",
+      borderRadius: 24,
+      padding: "24px 20px",
+      width: 300,
+      maxHeight: "85vh",
+      overflow: "auto"
+    },
+    onClick: e => e.stopPropagation()
+  },
+    /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", marginBottom: 16 } },
+      /*#__PURE__*/React.createElement("div", { style: { fontSize: 48, marginBottom: 8 } }, wi.streakDays >= 365 ? "\uD83C\uDFC6" : wi.streakDays >= 100 ? "\uD83D\uDC8E" : wi.streakDays >= 30 ? "\u2B50" : wi.streakDays >= 7 ? "\uD83D\uDD25\uD83D\uDD25" : "\uD83D\uDD25"),
+      /*#__PURE__*/React.createElement("h3", { style: { color: "#3D4A58", fontSize: 22, fontWeight: 700, margin: "0 0 4px" } }, wi.streakDays || 0, " dagen"),
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 13, margin: "0 0 8px" } },
+        wi.streakDays >= 365 ? "HUXI Legende \uD83C\uDFC6" :
+        wi.streakDays >= 100 ? "Zen Master \uD83D\uDC8E" :
+        wi.streakDays >= 60 ? "Inner Balance \uD83D\uDD25" :
+        wi.streakDays >= 30 ? "Mindful Pro \u2B50" :
+        wi.streakDays >= 14 ? "Rustige Kracht \uD83C\uDF33" :
+        wi.streakDays >= 7 ? "Doorzetter \uD83C\uDF3F" :
+        wi.streakDays >= 3 ? "Starter \uD83C\uDF31" : "Begin je streak vandaag!"
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "center", gap: 6, marginTop: 4 } },
+        Array.from({ length: 2 }, (_, i) => /*#__PURE__*/React.createElement("span", {
+          key: i,
+          style: { fontSize: 20, opacity: i < streakShields ? 1 : 0.2 }
+        }, "\uD83D\uDEE1\uFE0F")),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "rgba(61,74,88,0.4)", alignSelf: "center" } },
+          streakShields > 0 ? streakShields + " shield" + (streakShields > 1 ? "s" : "") + " beschikbaar" : "Verdien een shield na 7 dagen"
+        )
+      )
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "14px 16px", marginBottom: 16 } },
+      /*#__PURE__*/React.createElement("p", { style: { color: "#3D4A58", fontSize: 12, fontWeight: 700, margin: "0 0 10px" } }, "Jouw beloningen"),
+      [
+        [3, "\uD83C\uDF31", "Starter — je boom glinster"],
+        [7, "\uD83E\uDD8C", "Zeldzaam dier in je wereld"],
+        [14, "\uD83C\uDF38", "Bloemen op je boom"],
+        [30, "\uD83C\uDF08", "Regenboog boven je wereld"],
+        [60, "\u2728", "Vuurvliegjes elke avond"],
+        [100, "\uD83C\uDF41", "Gouden bladeren"],
+        [365, "\uD83C\uDFC6", "Volledige gouden boom"]
+      ].map(([days, icon, label]) => /*#__PURE__*/React.createElement("div", {
+        key: days,
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "6px 0",
+          borderBottom: "1px solid rgba(61,74,88,0.06)",
+          opacity: wi.streakDays >= days ? 1 : 0.4
+        }
+      },
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 18, minWidth: 24 } }, wi.streakDays >= days ? icon : "\uD83D\uDD12"),
+        /*#__PURE__*/React.createElement("div", { style: { flex: 1 } },
+          /*#__PURE__*/React.createElement("p", { style: { color: "#3D4A58", fontSize: 12, fontWeight: wi.streakDays >= days ? 700 : 400, margin: 0 } }, days + " dagen — " + label),
+          wi.streakDays >= days && /*#__PURE__*/React.createElement("p", { style: { color: "#4CAF7A", fontSize: 10, margin: 0 } }, "Unlocked! \u2713")
+        )
+      ))
+    ),
+    wi.streakDays > 0 && /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 11, textAlign: "center", marginBottom: 12 } },
+      wi.streakDays < 3 ? "Nog " + (3 - wi.streakDays) + " dagen tot je eerste beloning!" :
+      wi.streakDays < 7 ? "Nog " + (7 - wi.streakDays) + " dagen tot een zeldzaam dier!" :
+      wi.streakDays < 14 ? "Nog " + (14 - wi.streakDays) + " dagen tot bloemen op je boom!" :
+      wi.streakDays < 30 ? "Nog " + (30 - wi.streakDays) + " dagen tot de regenboog!" :
+      "Je bent geweldig bezig! \uD83C\uDF1F"
+    ),
+    /*#__PURE__*/React.createElement("button", {
+      className: "mb",
+      style: { width: "100%", padding: "10px 0" },
+      onClick: () => setShowStreak(false)
     }, "Sluiten")
   )), showAvatar && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
