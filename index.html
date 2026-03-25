@@ -753,6 +753,29 @@ const EX = [{
 const GRND = ["Noem 5 dingen die je ZIET 👀", "Noem 4 dingen die je HOORT 👂", "Noem 3 dingen die je VOELT ✋", "Noem 2 dingen die je RUIKT 👃", "Noem 1 ding dat je PROEFT 👅"];
 const BSCAN = ["Voel je voeten op de grond 🦶", "Merk je benen op", "Voel je buik — adem hier naartoe", "Let op je schouders — laat ze zakken", "Ontspan je gezicht en kaak"];
 const VIS = ["Sluit je ogen 👁️", "Stel je een veilige plek voor", "Voel de warmte, hoor de geluiden", "Blijf hier rustig ademen", "Open langzaam je ogen"];
+const FIREBASE_URL = "https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app";
+
+const firebaseSave = async (key, data) => {
+  try {
+    await fetch(FIREBASE_URL + "/users/" + key + ".json", {
+      method: "PUT",
+      body: JSON.stringify(data)
+    });
+  } catch(e) {}
+};
+
+const firebaseLoad = async (key) => {
+  try {
+    const res = await fetch(FIREBASE_URL + "/users/" + key + ".json");
+    const data = await res.json();
+    return data && data !== "null" ? data : null;
+  } catch(e) { return null; }
+};
+
+const makeKey = (name, pin) => {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_") + "_" + pin;
+};
+
 function getRealTod() {
   const h = new Date().getHours();
   return h >= 6 && h < 12 ? "Ochtend" : h >= 12 && h < 17 ? "Middag" : h >= 17 && h < 21 ? "Avond" : "Nacht";
@@ -1125,7 +1148,12 @@ const OBC = {
 };
 function HuxiApp() {
   // ═══ ALL HOOKS FIRST ═══
-  const [phase, setPhase] = useState("welcome");
+  const [phase, setPhase] = useState("login");
+  const [loginName, setLoginName] = useState("");
+  const [loginPin, setLoginPin] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [userKey, setUserKey] = useState("");
   const [accType, setAccType] = useState(null);
   const [reason, setReason] = useState(null);
   const [experience, setExperience] = useState(null);
@@ -1462,31 +1490,15 @@ function HuxiApp() {
 
   // Persistent storage
   const saveData = () => {
-    try {
-      localStorage.setItem("huxi-profile", JSON.stringify({
-        accType,
-        reason,
-        experience,
-        treeName,
-        userName,
-        growth,
-        coins,
-        ownedItems,
-        avatar,
-        letters,
-        diary,
-        seenEx,
-        lastExId,
-        dailyMood,
-        totalSessions,
-        wi,
-        lastDay,
-        dailyActions,
-        lastTaskTexts,
-        lastCheckinDate,
-        streakShields
-      }));
-    } catch (e) {}
+    const data = {
+      accType, reason, experience, treeName, userName, growth, coins,
+      ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
+      totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
+      lastCheckinDate, streakShields,
+      dailyBreaths, dailyTasks, tasksGenerated, checkinDone
+    };
+    try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
+    if (userKey) firebaseSave(userKey, data);
   };
   const loadData = () => {
     try {
@@ -1859,6 +1871,138 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   const g3 = "rgba(61,74,88,0.3)";
 
   // WELCOME
+  const doLogin = async () => {
+    if (!loginName.trim() || loginPin.length !== 4) {
+      setLoginError("Vul je naam en een pincode van 4 cijfers in");
+      return;
+    }
+    setLoginLoading(true);
+    setLoginError("");
+    const key = makeKey(loginName, loginPin);
+    const data = await firebaseLoad(key);
+    if (data && data.accType) {
+      // existing user - load their data
+      setUserKey(key);
+      setAccType(data.accType);
+      if (data.reason) setReason(data.reason);
+      if (data.experience) setExperience(data.experience);
+      if (data.treeName) setTreeName(data.treeName);
+      if (data.userName) setUserName(data.userName);
+      if (data.growth) setGrowth(data.growth);
+      if (data.coins) setCoins(data.coins);
+      if (data.ownedItems) setOwnedItems(data.ownedItems);
+      if (data.avatar) setAvatar(data.avatar);
+      if (data.letters) setLetters(data.letters);
+      if (data.diary) setDiary(data.diary);
+      if (data.seenEx) setSeenEx(data.seenEx);
+      if (data.lastExId) setLastExId(data.lastExId);
+      if (data.totalSessions) setTotalSessions(data.totalSessions);
+      if (data.wi) setWi(data.wi);
+      if (data.dailyMood) setDailyMood(data.dailyMood);
+      const today = new Date().toDateString();
+      if (data.lastDay === today) {
+        setLastDay(today);
+        setDailyActions(data.dailyActions || 0);
+        setDailyBreaths(data.dailyBreaths || 0);
+        setDailyTasks(data.dailyTasks || []);
+        setTasksGenerated(data.tasksGenerated || false);
+        setCheckinDone(data.checkinDone || false);
+      } else {
+        setLastDay(today);
+        setDailyActions(0);
+        setDailyBreaths(0);
+        setDailyTasks([]);
+        setTasksGenerated(false);
+        setCheckinDone(false);
+      }
+      if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
+      if (data.lastCheckinDate) setLastCheckinDate(data.lastCheckinDate);
+      if (data.streakShields !== undefined) setStreakShields(data.streakShields);
+      setPhase("world");
+    } else {
+      // new user - start setup
+      setUserKey(key);
+      setPhase("welcome");
+    }
+    setLoginLoading(false);
+  };
+
+  if (phase === "login") return /*#__PURE__*/React.createElement("div", {
+    style: W
+  }, /*#__PURE__*/React.createElement("style", null, css),
+  /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: "flex", flexDirection: "column", alignItems: "center",
+      justifyContent: "center", height: "100%", padding: "32px 24px",
+      background: "linear-gradient(160deg,#f0f7f4 0%,#e8f4f0 100%)"
+    }
+  },
+    /*#__PURE__*/React.createElement("div", { style: { fontSize: 64, marginBottom: 8 } }, "🌱"),
+    /*#__PURE__*/React.createElement("h1", {
+      style: { color: "#3D4A58", fontSize: 28, fontWeight: 700, margin: "0 0 4px", textAlign: "center" }
+    }, "HUXI"),
+    /*#__PURE__*/React.createElement("p", {
+      style: { color: "#5BB8A0", fontSize: 14, margin: "0 0 32px", fontStyle: "italic" }
+    }, "Jouw rustige natuurwereld"),
+    /*#__PURE__*/React.createElement("div", {
+      style: {
+        background: "white", borderRadius: 20, padding: "28px 24px",
+        width: "100%", maxWidth: 340,
+        boxShadow: "0 4px 20px rgba(61,74,88,0.08)"
+      }
+    },
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: "#3D4A58", fontSize: 13, fontWeight: 600, marginBottom: 8 }
+      }, "Jouw naam"),
+      /*#__PURE__*/React.createElement("input", {
+        type: "text",
+        placeholder: "Bijv. Emma",
+        value: loginName,
+        onChange: e => setLoginName(e.target.value),
+        style: {
+          width: "100%", padding: "12px 14px", borderRadius: 12,
+          border: "1.5px solid rgba(76,175,122,0.3)",
+          fontSize: 15, outline: "none", marginBottom: 16,
+          boxSizing: "border-box", color: "#3D4A58"
+        }
+      }),
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: "#3D4A58", fontSize: 13, fontWeight: 600, marginBottom: 8 }
+      }, "Jouw pincode (4 cijfers)"),
+      /*#__PURE__*/React.createElement("input", {
+        type: "number",
+        placeholder: "1234",
+        value: loginPin,
+        onChange: e => setLoginPin(e.target.value.slice(0,4)),
+        style: {
+          width: "100%", padding: "12px 14px", borderRadius: 12,
+          border: "1.5px solid rgba(76,175,122,0.3)",
+          fontSize: 15, outline: "none", marginBottom: 8,
+          boxSizing: "border-box", color: "#3D4A58"
+        }
+      }),
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: "rgba(61,74,88,0.4)", fontSize: 11, marginBottom: 20, textAlign: "center" }
+      }, "Kies zelf een pincode — onthoud hem goed! 🔑"),
+      loginError && /*#__PURE__*/React.createElement("p", {
+        style: { color: "#E07850", fontSize: 12, textAlign: "center", marginBottom: 12 }
+      }, loginError),
+      /*#__PURE__*/React.createElement("button", {
+        onClick: doLogin,
+        disabled: loginLoading,
+        style: {
+          width: "100%", padding: "14px", borderRadius: 14,
+          background: loginLoading ? "#ccc" : "linear-gradient(135deg,#4CAF7A,#5BB8A0)",
+          color: "white", fontSize: 15, fontWeight: 700,
+          border: "none", cursor: loginLoading ? "default" : "pointer"
+        }
+      }, loginLoading ? "Even laden... 🌿" : "Ga naar mijn wereld 🌱")
+    ),
+    /*#__PURE__*/React.createElement("p", {
+      style: { color: "rgba(61,74,88,0.4)", fontSize: 11, marginTop: 20, textAlign: "center" }
+    }, "Nieuw? Kies gewoon een naam en pincode om te starten")
+  ));
+
   if (phase === "welcome") return /*#__PURE__*/React.createElement("div", {
     style: W
   }, /*#__PURE__*/React.createElement("style", null, css), /*#__PURE__*/React.createElement("div", {
