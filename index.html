@@ -2,7 +2,6 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app data: blob:;">
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
   <title>HUXI</title>
   <style>*{margin:0;padding:0;box-sizing:border-box}html,body{background:#F5F7FA;height:100vh;height:100dvh;overflow:hidden}</style>
@@ -1165,6 +1164,8 @@ function HuxiApp() {
   const [letterAnswers, setLetterAnswers] = useState(["","","",""]);
   const [showStreak, setShowStreak] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [plantSecQ, setPlantSecQ] = useState(0);
+  const [plantSecA, setPlantSecA] = useState("");
   const [lastCheckinDate, setLastCheckinDate] = useState("");
   const [streakShields, setStreakShields] = useState(0);
   const [experience, setExperience] = useState(null);
@@ -2229,10 +2230,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   // PLANTING
   if (phase === "planting") {
     const isT = accType === "therapist";
-    const [plantStep, setPlantStep] = React.useState(0);
     const SECQS = ["Wat is de naam van je huisdier?","Wat is je favoriete kleur?","Wat is de naam van je beste vriend?","Wat is je favoriete dier?"];
-    const [plantSecQ, setPlantSecQ] = React.useState(0);
-    const [plantSecA, setPlantSecA] = React.useState("");
     const go = () => {
       setUserName(userNameIn.trim() || "");
       setTreeName(nameIn.trim() || "Mijn Boom");
