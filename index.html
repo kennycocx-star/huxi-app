@@ -1164,7 +1164,11 @@ function HuxiApp() {
   const [letterAnswers, setLetterAnswers] = useState(["","","",""]);
   const [showStreak, setShowStreak] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showGoals, setShowGoals] = useState(false);
+  const [goals, setGoals] = useState([]);
+  const [goalDraft, setGoalDraft] = useState("");
   const [plantSecQ, setPlantSecQ] = useState(0);
+  const [buddy, setBuddy] = useState("pet_none");
   const [plantSecA, setPlantSecA] = useState("");
   const [lastCheckinDate, setLastCheckinDate] = useState("");
   const [streakShields, setStreakShields] = useState(0);
@@ -1503,7 +1507,7 @@ function HuxiApp() {
       ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
       dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
-      lastCheckinDate, streakShields, secretQ, secretA
+      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy
     };
     try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
     if (userKey) firebaseSave(userKey, data);
@@ -1561,6 +1565,8 @@ function HuxiApp() {
           if (d.streakShields !== undefined) setStreakShields(d.streakShields);
           if (d.secretQ !== undefined) setSecretQ(d.secretQ);
           if (d.secretA) setSecretA(d.secretA);
+          if (d.goals) setGoals(d.goals);
+          if (d.buddy) setBuddy(d.buddy);
           setPhase("world");
         }
       }
@@ -3045,10 +3051,10 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }))), /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
-      bottom: "8%",
+      bottom: "18%",
       left: 0,
       right: 0,
-      height: "72%",
+      height: "68%",
       zIndex: 10,
       display: "flex",
       alignItems: "flex-end",
@@ -3364,11 +3370,23 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     x: -120,
     y: 30,
     fontSize: 22,
-    style: {
-      cursor: "pointer"
-    },
+    style: { cursor: "pointer" },
     onClick: () => tapA("De vos kijkt je nieuwsgierig aan")
-  }, "\uD83E\uDD8A"), /*#__PURE__*/React.createElement("text", {
+  }, "\uD83E\uDD8A"), accType === "child" && /*#__PURE__*/React.createElement(React.Fragment, null,
+    ...(() => {
+      const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95" };
+      const hidden = avatar.hiddenPets || [];
+      const visiblePets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none" && !hidden.includes(i));
+      return visiblePets.map((petId, idx) => /*#__PURE__*/React.createElement("text", {
+        key: petId,
+        x: 75 + idx * 30,
+        y: buddy === petId ? 22 : 26,
+        fontSize: buddy === petId ? 26 : 20,
+        style: { cursor: "pointer" },
+        onClick: () => tapA(buddy === petId ? "Jouw beste vriend is altijd bij je!" : "Dit diertje woont in jouw wereld!")
+      }, (PET_EM[petId] || "\uD83D\uDC3E") + (buddy === petId ? "\u2B50" : "")));
+    })()
+  ), /*#__PURE__*/React.createElement("text", {
     x: -80,
     y: 34,
     fontSize: 18,
@@ -3750,7 +3768,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       fontWeight: 600,
       lineHeight: 1.5
     }
-  }, memTxt))), checkinDone && !showEx && !showMem && !showSett && !showGuide && !showLetter && !showLetters && !showDiary && !showPicker && !showTools && !activeTool && !showAvatar && !showShop && !curTask && /*#__PURE__*/React.createElement("div", {
+  }, memTxt))), checkinDone && !showEx && !showMem && !showSett && !showGuide && !showLetter && !showLetters && !showDiary && !showPicker && !showTools && !activeTool && !showAvatar && !showShop && !showGoals && !curTask && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       bottom: 0,
@@ -3807,8 +3825,23 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     }
   }, "\uD83C\uDF3F Opdracht"), /*#__PURE__*/React.createElement("button", {
     className: "ab",
-    onClick: () => setShowLetter(true)
-  }, "\u2709\uFE0F Brief"), letters.length > 0 && /*#__PURE__*/React.createElement("button", {
+    onClick: () => {
+      const lastLetter = letters[0];
+      if (lastLetter && lastLetter.unlockDate) {
+        const unlockTime = new Date(lastLetter.unlockDate).getTime();
+        if (Date.now() < unlockTime) {
+          const dl = Math.ceil((unlockTime - Date.now()) / 86400000);
+          setWMsg("Je volgende brief kan pas geschreven worden als je huidige brief opengaat — nog " + dl + " dagen \uD83D\uDCCD");
+          setTimeout(() => setWMsg(""), 4000);
+          return;
+        }
+      }
+      setShowLetter(true);
+    }
+  }, "\u2709\uFE0F Brief"), /*#__PURE__*/React.createElement("button", {
+    className: "ab",
+    onClick: () => setShowGoals(true)
+  }, "\uD83C\uDFAF Doelen"), letters.length > 0 && /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowLetters(true)
   }, "\uD83C\uDF43"), /*#__PURE__*/React.createElement("button", {
@@ -4044,79 +4077,67 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     }, "Brief aan jezelf")), /*#__PURE__*/React.createElement("textarea", {
       className: "ta",
       placeholder: "Lieve ik...",
-      value: letterDraft, onChange: e => setLetterDraft(e.target.value), rows: 6
-    }), letterStep === 0 && /*#__PURE__*/React.createElement(React.Fragment, null,
-        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 12, marginBottom: 14, textAlign: "center" } },
-          "Schrijf een brief aan jezelf \u2014 je opent hem pas na de gekozen periode."
-        ),
-        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 600, marginBottom: 8 } }, "Wanneer wil je de brief openen?"),
-        /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 } },
-          [30,60,90,120].map(d => /*#__PURE__*/React.createElement("button", {
-            key: d,
-            onClick: () => setLetterPeriod(d),
-            style: { padding: "12px 6px", borderRadius: 12, fontSize: 12, fontWeight: 600, cursor: "pointer",
-              border: letterPeriod === d ? "2px solid #4CAF7A" : "2px solid rgba(76,175,122,0.2)",
-              background: letterPeriod === d ? "rgba(76,175,122,0.1)" : "white", color: g }
-          }, "Na ", d, " dagen"))
-        ),
-        /*#__PURE__*/React.createElement("button", {
-          className: "mb", style: { width: "100%", padding: "12px 0" },
-          onClick: () => { setLetterStep(1); setLetterAnswers(["","","",""]); }
-        }, "Begin met schrijven \u2192")
-      ),
-      letterStep >= 1 && letterStep <= 4 && /*#__PURE__*/React.createElement(React.Fragment, null,
-        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6, marginBottom: 14 } },
-          [1,2,3,4].map(i => /*#__PURE__*/React.createElement("div", { key: i,
-            style: { flex: 1, height: 4, borderRadius: 2,
-              background: i <= letterStep ? "#4CAF7A" : "rgba(76,175,122,0.2)" }
-          }))
-        ),
-        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 14, fontWeight: 600, marginBottom: 8 } },
-          ["Hoe gaat het nu met jou? \uD83D\uDCAD",
-           "Waar loop je tegen aan? \uD83C\uDF0A",
-           "Wat wil je veranderen tegen de volgende brief? \uD83C\uDF31",
-           "Wat zijn je doelen voor de langere termijn? \u2B50"][letterStep-1]
-        ),
-        /*#__PURE__*/React.createElement("textarea", {
-          className: "ta",
-          placeholder: "Schrijf hier...",
-          value: letterAnswers[letterStep-1] || "",
-          onChange: e => { const a = [...letterAnswers]; a[letterStep-1] = e.target.value; setLetterAnswers(a); },
-          rows: 5, style: { marginBottom: 10 }
-        }),
-        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8 } },
-          letterStep > 1 && /*#__PURE__*/React.createElement("button", {
-            style: { flex: 1, background: "none", border: "1px solid rgba(61,74,88,0.2)", borderRadius: 12, padding: "10px 0", color: g, fontSize: 13, cursor: "pointer" },
-            onClick: () => setLetterStep(s => s-1)
-          }, "\u2190 Terug"),
-          /*#__PURE__*/React.createElement("button", {
-            className: "mb", style: { flex: 2, padding: "10px 0" },
-            onClick: () => {
-              if (letterStep < 4) {
-                setLetterStep(s => s+1);
-              } else {
-                const unlockDate = new Date();
-                unlockDate.setDate(unlockDate.getDate() + letterPeriod);
-                const fullText = ["Hoe gaat het nu?","Waar loop ik tegen aan?","Wat wil ik veranderen?","Mijn doelen:"]
-                  .map((q,i) => q+"\n"+(letterAnswers[i]||"-")).join("\n\n");
-                setLetters(p => [{
-                  text: fullText,
-                  date: new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),
-                  unlockDate: unlockDate.toISOString(),
-                  unlockDays: letterPeriod,
-                  id: Date.now()
-                }, ...p]);
-                setLetterStep(0); setLetterAnswers(["","","",""]);
-                setShowLetter(false);
-                setWi(w => ({...w, flowers: w.flowers+1, brieven: w.brieven+1}));
-                setGrowth(g2 => Math.min(1, g2+0.003));
-                showWorldReward("letter");
-                setTimeout(saveData, 500);
-              }
-            }
-          }, letterStep < 4 ? "Volgende \u2192" : "Bewaar brief \uD83C\uDF3F")
-        )
-      ));
+      value: letterDraft, onChange: e => setLetterDraft(e.target.value), rows: 6,
+      placeholder: "Lieve ik... \n\nGebruik de vragen hieronder als inspiratie of schrijf gewoon wat in je opkomt."
+    }),
+    /*#__PURE__*/React.createElement("div", {
+      style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "10px 12px", marginBottom: 14 }
+    },
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 11, fontWeight: 600, margin: "0 0 6px" } }, "Voorbeeldvragen als inspiratie:"),
+      ["Hoe gaat het nu met jou? \uD83D\uDCAD",
+       "Waar loop je tegen aan? \uD83C\uDF0A",
+       "Wat wil je veranderen tegen de volgende brief? \uD83C\uDF31",
+       "Wat zijn je doelen voor de langere termijn? \u2B50"
+      ].map((q,i) => /*#__PURE__*/React.createElement("p", {
+        key: i,
+        style: { color: "rgba(61,74,88,0.45)", fontSize: 11, margin: "2px 0", cursor: "pointer" },
+        onClick: () => setLetterDraft(d => d + (d ? "\n\n" : "") + q.replace(/ [\uD83D\uDCAD\uD83C\uDF0A\uD83C\uDF31\u2B50]/g,"").trim() + "\n")
+      }, "\u2022 " + q)
+    ),
+    /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 600, marginBottom: 8 } }, "Wanneer wil je de brief openen?"),
+    /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 14 } },
+      (() => {
+      const nextPeriods = letters.length === 0 ? [30] :
+        letters.length === 1 ? [90] :
+        letters.length === 2 ? [180] :
+        letters.length === 3 ? [365] :
+        [180, 365];
+      if (nextPeriods.length === 1 && letterPeriod !== nextPeriods[0]) {
+        setTimeout(() => setLetterPeriod(nextPeriods[0]), 0);
+      }
+      const labels = {30:"1 maand",90:"3 maanden",180:"6 maanden",365:"1 jaar"};
+      return nextPeriods.map(d => /*#__PURE__*/React.createElement("button", {
+        key: d,
+        onClick: () => setLetterPeriod(d),
+        style: { flex: 1, padding: "12px 8px", borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: "pointer",
+          border: letterPeriod === d ? "2px solid #4CAF7A" : "2px solid rgba(76,175,122,0.2)",
+          background: letterPeriod === d ? "rgba(76,175,122,0.1)" : "white", color: g }
+      }, labels[d] || d + " dagen"));
+    })()
+    ),
+    /*#__PURE__*/React.createElement("button", {
+      className: "mb", style: { width: "100%", padding: "12px 0" },
+      disabled: !letterDraft.trim(),
+      onClick: () => {
+        if (!letterDraft.trim()) return;
+        const unlockDate = new Date();
+        unlockDate.setDate(unlockDate.getDate() + letterPeriod);
+        // letterPeriod is in days: 30=1mo, 90=3mo, 180=6mo, 365=1yr
+        setLetters(p => [{
+          text: letterDraft.trim(),
+          date: new Date().toLocaleDateString("nl-NL",{day:"numeric",month:"long",year:"numeric"}),
+          unlockDate: unlockDate.toISOString(),
+          unlockDays: letterPeriod,
+          id: Date.now()
+        }, ...p]);
+        setLetterDraft("");
+        setShowLetter(false);
+        setWi(w => ({...w, flowers: w.flowers+1, brieven: w.brieven+1}));
+        setGrowth(g2 => Math.min(1, g2+0.003));
+        showWorldReward("letter");
+        setTimeout(saveData, 500);
+      }
+    }, !letterDraft.trim() ? "Schrijf eerst je brief..." : "Bewaar brief \uD83C\uDF3F")));
   })())), showLetters && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => setShowLetters(false)
@@ -4134,10 +4155,9 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     }
   }, "\uD83C\uDF43 Jouw brieven"), letters.map(l => {
     const now = Date.now(),
-      age = now - l.id,
-      nd = [30, 90, 180, 365].find(d => age < d * 86400000),
-      isL = !!nd,
-      dl = nd ? Math.ceil((nd * 86400000 - age) / 86400000) : 0;
+      unlockTime = l.unlockDate ? new Date(l.unlockDate).getTime() : (l.id + (l.unlockDays || 30) * 86400000),
+      isL = now < unlockTime,
+      dl = isL ? Math.ceil((unlockTime - now) / 86400000) : 0;
     return /*#__PURE__*/React.createElement("div", {
       key: l.id,
       style: {
@@ -4780,19 +4800,48 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     stroke: "#E85D3A",
     strokeWidth: 5,
     strokeLinecap: "round"
-  })), avatar.pet !== "pet_none" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      fontSize: 36,
-      marginBottom: 10
-    }
-  }, {
-    pet_cat: "🐱",
-    pet_dog: "🐶",
-    pet_rabbit: "🐰",
-    pet_dragon: "🐉",
-    pet_unicorn: "🦄",
-    pet_phoenix: "🔥"
-  }[avatar.pet])), /*#__PURE__*/React.createElement("div", {
+  })), (() => {
+    const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95" };
+    const PET_NM = { pet_cat: "Kat", pet_dog: "Hond", pet_rabbit: "Konijn", pet_dragon: "Draak", pet_unicorn: "Eenhoorn", pet_phoenix: "Feniks", pet_dino: "Dino" };
+    const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
+    if (ownedPets.length === 0) return null;
+    return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 10 } },
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 11, fontWeight: 700, margin: "0 0 6px" } }, "\uD83D\uDC3E Mijn huisdieren"),
+      ownedPets.map(petId => /*#__PURE__*/React.createElement("div", {
+        key: petId,
+        style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", marginBottom: 6, background: "rgba(76,175,122,0.05)", borderRadius: 10 }
+      },
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 22 } }, PET_EM[petId] || "\uD83D\uDC3E"),
+        /*#__PURE__*/React.createElement("span", { style: { flex: 1, marginLeft: 8, fontSize: 13, color: g } }, PET_NM[petId] || petId),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6 } },
+          /*#__PURE__*/React.createElement("button", {
+            style: {
+              fontSize: 10, padding: "4px 8px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+              background: buddy === petId ? "rgba(255,215,0,0.2)" : "rgba(76,175,122,0.08)",
+              border: buddy === petId ? "1.5px solid #FFD700" : "1px solid rgba(76,175,122,0.2)",
+              color: buddy === petId ? "#B8860B" : g
+            },
+            onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); }
+          }, buddy === petId ? "\u2B50 Vriend" : "\u2B50 Kies"),
+          /*#__PURE__*/React.createElement("button", {
+            style: {
+              fontSize: 10, padding: "4px 8px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+              background: (avatar.hiddenPets || []).includes(petId) ? "rgba(224,120,80,0.1)" : "rgba(76,175,122,0.08)",
+              border: (avatar.hiddenPets || []).includes(petId) ? "1.5px solid #E07850" : "1px solid rgba(76,175,122,0.2)",
+              color: (avatar.hiddenPets || []).includes(petId) ? "#E07850" : g
+            },
+            onClick: () => {
+              setAvatar(a => {
+                const hidden = a.hiddenPets || [];
+                return { ...a, hiddenPets: hidden.includes(petId) ? hidden.filter(x => x !== petId) : [...hidden, petId] };
+              });
+              setTimeout(saveData, 300);
+            }
+          }, (avatar.hiddenPets || []).includes(petId) ? "\uD83C\uDF0D Toon" : "\uD83D\uDCF4 Verberg")
+        )
+      ))
+    );
+  })(), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       gap: 8,
@@ -5267,8 +5316,21 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       style: {
         color: canBuy ? "#E6A832" : "#999"
       }
-    }, "\uD83E\uDE99", item.p), owned && "✓");
-  }))))), /*#__PURE__*/React.createElement("button", {
+    }, "\uD83E\uDE99", item.p), owned && "\u2713");
+  })),
+  /*#__PURE__*/React.createElement("button", {
+    key: "none_" + grp.k,
+    style: {
+      fontSize: 9, padding: "5px 8px", borderRadius: 8,
+      border: avatar[grp.k] === grp.k + "_none" ? "2px solid #E07850" : "1px solid rgba(224,120,80,0.3)",
+      background: avatar[grp.k] === grp.k + "_none" ? "rgba(224,120,80,0.1)" : "white",
+      cursor: "pointer", fontFamily: "inherit", color: "#E07850"
+    },
+    onClick: () => {
+      setAvatar(a => ({ ...a, [grp.k]: grp.k + "_none" }));
+      setTimeout(saveData, 300);
+    }
+  }, "Geen \u2715"))))), /*#__PURE__*/React.createElement("button", {
     className: "mb",
     style: {
       width: "100%",
@@ -5366,7 +5428,61 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }, /*#__PURE__*/React.createElement("button", {
     className: "sb",
     onClick: () => setShowSett(true)
-  }, "\u2699\uFE0F")), showDeleteConfirm && /*#__PURE__*/React.createElement("div", {
+  }, "\u2699\uFE0F")), showGoals && /*#__PURE__*/React.createElement("div", {
+    style: overlay(),
+    onClick: () => setShowGoals(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fadeIn",
+    style: { ...modal, maxHeight: "85vh", overflowY: "auto" },
+    onClick: e => e.stopPropagation()
+  },
+    /*#__PURE__*/React.createElement("h3", { style: { color: g, fontSize: 17, fontWeight: 700, textAlign: "center", marginBottom: 4 } }, "\uD83C\uDFAF Mijn Doelen"),
+    /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 12, textAlign: "center", marginBottom: 16 } },
+      "Schrijf je grote doelen op voor de toekomst. Je kan ze altijd teruglezen."
+    ),
+    /*#__PURE__*/React.createElement("textarea", {
+      className: "ta",
+      placeholder: "Bijv. Ik wil binnen 6 maanden meer rust voelen...",
+      value: goalDraft,
+      onChange: e => setGoalDraft(e.target.value),
+      rows: 4,
+      style: { marginBottom: 10 }
+    }),
+    /*#__PURE__*/React.createElement("button", {
+      className: "mb",
+      style: { width: "100%", padding: "11px 0", marginBottom: 14, opacity: goalDraft.trim() ? 1 : 0.4 },
+      onClick: () => {
+        if (!goalDraft.trim()) return;
+        const newGoal = {
+          text: goalDraft.trim(),
+          date: new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
+          id: Date.now()
+        };
+        setGoals(g2 => [newGoal, ...g2]);
+        setGoalDraft("");
+        setTimeout(saveData, 500);
+      }
+    }, "Doel bewaren \uD83C\uDFAF"),
+    goals.length > 0 && /*#__PURE__*/React.createElement(React.Fragment, null,
+      /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 700, marginBottom: 8 } }, "Mijn doelen:"),
+      goals.map(goal => /*#__PURE__*/React.createElement("div", {
+        key: goal.id,
+        style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "10px 12px", marginBottom: 8 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 10, margin: "0 0 4px" } }, goal.date),
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, margin: 0, lineHeight: 1.5 } }, goal.text),
+        /*#__PURE__*/React.createElement("button", {
+          style: { background: "none", border: "none", color: "rgba(61,74,88,0.3)", fontSize: 10, cursor: "pointer", marginTop: 4 },
+          onClick: () => { setGoals(g2 => g2.filter(x => x.id !== goal.id)); setTimeout(saveData, 500); }
+        }, "Verwijderen")
+      ))
+    ),
+    /*#__PURE__*/React.createElement("button", {
+      className: "mb",
+      style: { width: "100%", padding: "10px 0", marginTop: 8 },
+      onClick: () => setShowGoals(false)
+    }, "Sluiten")
+  )), showDeleteConfirm && /*#__PURE__*/React.createElement("div", {
     style: { ...overlay(), background: "rgba(0,0,0,0.6)" },
     onClick: () => setShowDeleteConfirm(false)
   }, /*#__PURE__*/React.createElement("div", {
