@@ -3548,25 +3548,18 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       left: 0,
       right: 0,
       zIndex: 20,
-      padding: "8px 12px 14px",
-      background: "linear-gradient(0deg,rgba(245,247,250,0.97) 70%,rgba(245,247,250,0))"
+      padding: "8px 12px 20px",
+      background: "linear-gradient(0deg,rgba(245,247,250,0.98) 60%,rgba(245,247,250,0))"
     }
-  }, allDone ? /*#__PURE__*/React.createElement("p", {
+  }, /*#__PURE__*/React.createElement("p", {
     style: {
       textAlign: "center",
-      color: "#4CAF7A",
-      fontSize: 11,
-      fontWeight: 600,
-      marginBottom: 6
-    }
-  }, "Goed gedaan vandaag! Tot morgen \uD83C\uDF31") : /*#__PURE__*/React.createElement("p", {
-    style: {
-      textAlign: "center",
-      color: g5,
+      color: allDone ? "#4CAF7A" : g5,
       fontSize: 10,
+      fontWeight: allDone ? 600 : 400,
       marginBottom: 6
     }
-  }, "Jouw moment van de dag"), /*#__PURE__*/React.createElement("div", {
+  }, allDone ? "Goed gedaan vandaag! Tot morgen \uD83C\uDF31" : "Jouw moment van de dag"), /*#__PURE__*/React.createElement("div", {
     style: {
       display: "flex",
       justifyContent: "center",
