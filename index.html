@@ -1508,7 +1508,7 @@ function HuxiApp() {
       ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
       dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
-      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, soundOn
+      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy
     };
     try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
     if (userKey) firebaseSave(userKey, data);
@@ -1568,7 +1568,6 @@ function HuxiApp() {
           if (d.secretA) setSecretA(d.secretA);
           if (d.goals) setGoals(d.goals);
           if (d.buddy) setBuddy(d.buddy);
-          if (d.soundOn !== undefined) setSoundOn(d.soundOn);
           setPhase("world");
         }
       }
@@ -1964,11 +1963,11 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
               if (data.userName) setUserName(data.userName);
               if (data.growth) setGrowth(data.growth);
               if (data.coins) setCoins(data.coins);
-              if (data.ownedItems) setOwnedItems(data.ownedItems);
+              setOwnedItems(Array.isArray(data.ownedItems) && data.ownedItems.length > 0 ? data.ownedItems : ["hat_none","shirt_none","pants_none","shoes_none","skin_light","hair_short","hairc_brown","acc_none","pet_none"]);
               if (data.avatar) setAvatar(data.avatar);
-              if (data.letters) setLetters(data.letters);
-              if (data.diary) setDiary(data.diary);
-              if (data.seenEx) setSeenEx(data.seenEx);
+              setLetters(Array.isArray(data.letters) ? data.letters : []);
+              setDiary(Array.isArray(data.diary) ? data.diary : []);
+              setSeenEx(Array.isArray(data.seenEx) ? data.seenEx : []);
               if (data.lastExId) setLastExId(data.lastExId);
               if (data.totalSessions !== undefined) setTotalSessions(data.totalSessions || 0);
               if (data.wi) setWi(data.wi);
@@ -1977,10 +1976,9 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
               if (data.streakShields !== undefined) setStreakShields(data.streakShields);
               if (data.secretQ !== undefined) setSecretQ(data.secretQ);
               if (data.secretA) setSecretA(data.secretA);
-              if (data.goals) setGoals(data.goals);
-              if (data.buddy) setBuddy(data.buddy);
-              if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
-              if (data.soundOn !== undefined) setSoundOn(data.soundOn);
+              setGoals(Array.isArray(data.goals) ? data.goals : []);
+              setBuddy(data.buddy && typeof data.buddy === "string" ? data.buddy : "pet_none");
+              setLastTaskTexts(Array.isArray(data.lastTaskTexts) ? data.lastTaskTexts : []);
               const today = new Date().toDateString();
               if (data.lastDay === today) {
                 setLastDay(today); setDailyActions(data.dailyActions || 0);
