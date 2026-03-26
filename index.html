@@ -3372,21 +3372,21 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     fontSize: 22,
     style: { cursor: "pointer" },
     onClick: () => tapA("De vos kijkt je nieuwsgierig aan")
-  }, "\uD83E\uDD8A"), accType === "child" && /*#__PURE__*/React.createElement(React.Fragment, null,
-    ...(() => {
-      const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95" };
-      const hidden = avatar.hiddenPets || [];
-      const visiblePets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none" && !hidden.includes(i));
-      return visiblePets.map((petId, idx) => /*#__PURE__*/React.createElement("text", {
-        key: petId,
-        x: 75 + idx * 30,
-        y: buddy === petId ? 22 : 26,
-        fontSize: buddy === petId ? 26 : 20,
-        style: { cursor: "pointer" },
-        onClick: () => tapA(buddy === petId ? "Jouw beste vriend is altijd bij je!" : "Dit diertje woont in jouw wereld!")
-      }, (PET_EM[petId] || "\uD83D\uDC3E") + (buddy === petId ? "\u2B50" : "")));
-    })()
-  ), /*#__PURE__*/React.createElement("text", {
+  }, "\uD83E\uDD8A"), accType === "child" && (() => {
+    const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
+    const hidden = avatar.hiddenPets || [];
+    const visiblePets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none" && !hidden.includes(i));
+    const elems = visiblePets.map((petId, idx) => /*#__PURE__*/React.createElement("text", {
+      key: petId,
+      x: 70 + idx * 28,
+      y: buddy === petId ? 20 : 26,
+      fontSize: buddy === petId ? 24 : 18,
+      style: { cursor: "pointer" },
+      onClick: () => tapA(buddy === petId ? "\u2B50 Jouw beste vriend is altijd bij je!" : "Dit diertje woont in jouw wereld!")
+    }, (PET_EM[petId] || "\uD83D\uDC3E") + (buddy === petId ? "\u2B50" : "")));
+    if (elems.length === 0) return null;
+    return /*#__PURE__*/React.createElement(React.Fragment, null, ...elems);
+  })(), /*#__PURE__*/React.createElement("text", {
     x: -80,
     y: 34,
     fontSize: 18,
@@ -4801,45 +4801,52 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     strokeWidth: 5,
     strokeLinecap: "round"
   })), (() => {
-    const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95" };
-    const PET_NM = { pet_cat: "Kat", pet_dog: "Hond", pet_rabbit: "Konijn", pet_dragon: "Draak", pet_unicorn: "Eenhoorn", pet_phoenix: "Feniks", pet_dino: "Dino" };
+    const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
     const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
     if (ownedPets.length === 0) return null;
-    return /*#__PURE__*/React.createElement("div", { style: { marginBottom: 10 } },
-      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 11, fontWeight: 700, margin: "0 0 6px" } }, "\uD83D\uDC3E Mijn huisdieren"),
-      ownedPets.map(petId => /*#__PURE__*/React.createElement("div", {
-        key: petId,
-        style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", marginBottom: 6, background: "rgba(76,175,122,0.05)", borderRadius: 10 }
-      },
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 22 } }, PET_EM[petId] || "\uD83D\uDC3E"),
-        /*#__PURE__*/React.createElement("span", { style: { flex: 1, marginLeft: 8, fontSize: 13, color: g } }, PET_NM[petId] || petId),
-        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 6 } },
-          /*#__PURE__*/React.createElement("button", {
-            style: {
-              fontSize: 10, padding: "4px 8px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-              background: buddy === petId ? "rgba(255,215,0,0.2)" : "rgba(76,175,122,0.08)",
-              border: buddy === petId ? "1.5px solid #FFD700" : "1px solid rgba(76,175,122,0.2)",
-              color: buddy === petId ? "#B8860B" : g
-            },
-            onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); }
-          }, buddy === petId ? "\u2B50 Vriend" : "\u2B50 Kies"),
-          /*#__PURE__*/React.createElement("button", {
-            style: {
-              fontSize: 10, padding: "4px 8px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-              background: (avatar.hiddenPets || []).includes(petId) ? "rgba(224,120,80,0.1)" : "rgba(76,175,122,0.08)",
-              border: (avatar.hiddenPets || []).includes(petId) ? "1.5px solid #E07850" : "1px solid rgba(76,175,122,0.2)",
-              color: (avatar.hiddenPets || []).includes(petId) ? "#E07850" : g
-            },
-            onClick: () => {
-              setAvatar(a => {
-                const hidden = a.hiddenPets || [];
-                return { ...a, hiddenPets: hidden.includes(petId) ? hidden.filter(x => x !== petId) : [...hidden, petId] };
-              });
-              setTimeout(saveData, 300);
-            }
-          }, (avatar.hiddenPets || []).includes(petId) ? "\uD83C\uDF0D Toon" : "\uD83D\uDCF4 Verberg")
-        )
-      ))
+    return /*#__PURE__*/React.createElement("div", {
+      style: { marginBottom: 8, background: "rgba(76,175,122,0.05)", borderRadius: 12, padding: "8px 10px" }
+    },
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 6px" }
+      }, "\uD83D\uDC3E Mijn huisdieren"),
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+        ownedPets.map(petId => {
+          const isHidden = (avatar.hiddenPets || []).includes(petId);
+          const isBuddy = buddy === petId;
+          return /*#__PURE__*/React.createElement("div", {
+            key: petId,
+            style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }
+          },
+            /*#__PURE__*/React.createElement("span", {
+              style: {
+                fontSize: 26, cursor: "pointer", opacity: isHidden ? 0.3 : 1,
+                filter: isBuddy ? "drop-shadow(0 0 4px gold)" : "none"
+              },
+              onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); },
+              title: isBuddy ? "Beste vriend! Tik om te wisselen" : "Tik om beste vriend te maken"
+            }, (PET_EM[petId] || "\uD83D\uDC3E") + (isBuddy ? "\u2B50" : "")),
+            /*#__PURE__*/React.createElement("button", {
+              style: {
+                fontSize: 8, padding: "2px 5px", borderRadius: 5, cursor: "pointer",
+                fontFamily: "inherit", border: "1px solid rgba(76,175,122,0.2)",
+                background: isHidden ? "rgba(224,120,80,0.1)" : "white",
+                color: isHidden ? "#E07850" : "rgba(61,74,88,0.4)"
+              },
+              onClick: () => {
+                setAvatar(a => {
+                  const h = a.hiddenPets || [];
+                  return { ...a, hiddenPets: h.includes(petId) ? h.filter(x => x !== petId) : [...h, petId] };
+                });
+                setTimeout(saveData, 300);
+              }
+            }, isHidden ? "Toon" : "Verberg")
+          );
+        })
+      ),
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: "rgba(61,74,88,0.35)", fontSize: 9, margin: "6px 0 0", textAlign: "center" }
+      }, "Tik op een dier om je beste vriend te kiezen \u2B50")
     );
   })(), /*#__PURE__*/React.createElement("div", {
     style: {
