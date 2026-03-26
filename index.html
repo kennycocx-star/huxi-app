@@ -1735,6 +1735,7 @@ function HuxiApp() {
     setShowEx(true);
     setExRound(0);
     setExPhase("idle");
+    setWarnAcknowledged(false);
     if (!seenEx.includes(ex.id)) {
       setShowSci(true);
       setSeenEx(p => [...p, ex.id]);
@@ -1966,6 +1967,7 @@ function HuxiApp() {
     setDailyActions(a => a + 1);
     setTotalSessions(s => s + 1);
     if (accType === "child" || accType === "junior") setCoins(c => c + 5);
+    showWorldReward("task");
     setTimeout(saveData, 500);
   };
   const finishTask = () => {
@@ -5658,6 +5660,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
           };
           try { localStorage.setItem("huxi-profile", JSON.stringify(saveNow)); } catch(e) {}
           if (userKey) firebaseSave(userKey, saveNow);
+          showWorldReward("shop");
         }
       }
     }, item.n, " ", !owned && item.p > 0 && /*#__PURE__*/React.createElement("span", {
