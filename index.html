@@ -1247,8 +1247,8 @@ function HuxiApp() {
   // Daily limits: worse mood = more short tasks, better = fewer but free
   // Burnout: always less pressure
   const isBurnout = reason === "burnout";
-  const maxTasks = isBurnout ? 3 : lvl <= 2 ? 5 : lvl <= 3 ? 4 : 3;
-  const maxBreath = isBurnout ? 1 : lvl <= 2 ? 1 : lvl <= 3 ? 2 : 3;
+  const maxTasks = accType === "child" ? 3 : accType === "junior" ? 4 : isBurnout ? 3 : lvl <= 2 ? 5 : lvl <= 3 ? 4 : 3;
+  const maxBreath = accType === "child" ? 3 : accType === "junior" ? 2 : isBurnout ? 1 : lvl <= 2 ? 1 : lvl <= 3 ? 2 : 3;
   const canDoBreath = dailyBreaths < maxBreath;
   const canDoTask = dailyTasks.length > 0;
   const allDone = !canDoTask && !canDoBreath && tasksGenerated;
@@ -1452,6 +1452,7 @@ function HuxiApp() {
         setDailyActions(a => a + 1);
         setDailyBreaths(b => b + 1);
         setTotalSessions(s => s + 1);
+        showWorldReward("breath");
         saveData();
       }, 2500);
     };
@@ -1717,7 +1718,14 @@ function HuxiApp() {
       localStorage.removeItem("huxi-profile");
     } catch (e) {}
     setShowSett(false);
-    setPhase("welcome");
+    setUserKey("");
+    setLoginName("");
+    setLoginPin("");
+    setBuddy("pet_none");
+    setGoals([]);
+    setStreakShields(0);
+    setLastCheckinDate("");
+    setPhase("login");
     setAccType(null);
     setReason(null);
     setExperience(null);
@@ -1948,7 +1956,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
               if (data.diary) setDiary(data.diary);
               if (data.seenEx) setSeenEx(data.seenEx);
               if (data.lastExId) setLastExId(data.lastExId);
-              if (data.totalSessions) setTotalSessions(data.totalSessions);
+              if (data.totalSessions !== undefined) setTotalSessions(data.totalSessions || 0);
               if (data.wi) setWi(data.wi);
               if (data.dailyMood) setDailyMood(data.dailyMood);
               if (data.lastCheckinDate) setLastCheckinDate(data.lastCheckinDate);
@@ -1957,6 +1965,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
               if (data.secretA) setSecretA(data.secretA);
               if (data.goals) setGoals(data.goals);
               if (data.buddy) setBuddy(data.buddy);
+              if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
               const today = new Date().toDateString();
               if (data.lastDay === today) {
                 setLastDay(today); setDailyActions(data.dailyActions || 0);
@@ -3385,7 +3394,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       fontSize: buddy === petId ? 22 : 18,
       style: { cursor: "pointer" },
       onClick: () => tapA(buddy === petId ? "\u2B50 Je beste vriend is altijd bij je!" : "Dit diertje woont in jouw wereld!")
-    }, (PET_EM[petId] || "\uD83D\uDC3E") + (buddy === petId ? "\u2B50" : "")));
+    }, PET_EM[petId] || "\uD83D\uDC3E"));
     if (elems.length === 0) return null;
     return /*#__PURE__*/React.createElement.apply(React, ["g", {key:"pets"}].concat(elems));
   })(), /*#__PURE__*/React.createElement("text", {
@@ -4786,58 +4795,25 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
           const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
           const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
           if (ownedPets.length === 0) return /*#__PURE__*/React.createElement("p", {
-            style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "4px 0", lineHeight: 1.4 }
+            style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "4px 0" }
           }, "Koop een huisdier \uD83D\uDC3E");
           return /*#__PURE__*/React.createElement("div", null,
-            /*#__PURE__*/React.createElement("p", {
-              style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 4px" }
-            }, "\uD83D\uDC3E Huisdieren \u2014 tik \u2B50 voor beste vriend"),
-            /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
-              ownedPets.map(petId => {
-                const isHidden = ((avatar && avatar.hiddenPets) || []).includes(petId);
-                const isBuddy = buddy === petId;
-                return /*#__PURE__*/React.createElement("div", {
-                  key: petId,
-                  style: { textAlign: "center" }
+            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.45)", fontSize: 10, fontWeight: 700, margin: "0 0 5px" } },
+              "\uD83D\uDC3E Huisdieren (tik = beste vriend)"
+            ),
+            /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
+              ownedPets.map(petId => /*#__PURE__*/React.createElement("span", {
+                key: petId,
+                title: buddy === petId ? "Beste vriend - tik om te wisselen" : "Tik om beste vriend te maken",
+                style: {
+                  fontSize: 26, cursor: "pointer", lineHeight: 1,
+                  opacity: ((avatar && avatar.hiddenPets) || []).includes(petId) ? 0.2 : 1
                 },
-                  /*#__PURE__*/React.createElement("div", {
-                    style: {
-                      fontSize: 28, lineHeight: 1.1, opacity: isHidden ? 0.2 : 1,
-                      background: isBuddy ? "rgba(255,215,0,0.2)" : "rgba(61,74,88,0.04)",
-                      border: isBuddy ? "2px solid #FFD700" : "1.5px solid rgba(61,74,88,0.1)",
-                      borderRadius: 10, padding: "3px 5px", marginBottom: 3
-                    }
-                  }, (PET_EM[petId] || "\uD83D\uDC3E") + (isBuddy ? "\u2B50" : "")),
-                  /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 2, justifyContent: "center" } },
-                    /*#__PURE__*/React.createElement("button", {
-                      title: isBuddy ? "Klik om te wisselen" : "Maak beste vriend",
-                      style: {
-                        fontSize: 9, padding: "1px 4px", borderRadius: 4, border: "none",
-                        cursor: "pointer", fontFamily: "inherit",
-                        background: isBuddy ? "rgba(255,215,0,0.3)" : "rgba(61,74,88,0.07)",
-                        color: isBuddy ? "#8B6914" : "rgba(61,74,88,0.5)"
-                      },
-                      onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); }
-                    }, "\u2B50"),
-                    /*#__PURE__*/React.createElement("button", {
-                      title: isHidden ? "Toon in wereld" : "Verberg in wereld",
-                      style: {
-                        fontSize: 9, padding: "1px 4px", borderRadius: 4, border: "none",
-                        cursor: "pointer", fontFamily: "inherit",
-                        background: isHidden ? "rgba(224,120,80,0.15)" : "rgba(61,74,88,0.07)",
-                        color: isHidden ? "#E07850" : "rgba(61,74,88,0.5)"
-                      },
-                      onClick: () => {
-                        setAvatar(a => {
-                          const h = (a && a.hiddenPets) || [];
-                          return { ...a, hiddenPets: h.includes(petId) ? h.filter(x => x !== petId) : [...h, petId] };
-                        });
-                        setTimeout(saveData, 300);
-                      }
-                    }, isHidden ? "\uD83D\uDC41" : "\uD83D\uDCF4")
-                  )
-                );
-              })
+                onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); }
+              }, (PET_EM[petId] || "\uD83D\uDC3E") + (buddy === petId ? "\u2B50" : "")))
+            ),
+            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.25)", fontSize: 8, margin: "3px 0 0" } },
+              "Tik opnieuw om ster te verwijderen \u2022 Verberg via categorie"
             )
           );
         })()
@@ -5427,7 +5403,28 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   ["Account", /*#__PURE__*/React.createElement("button", {
     key: "a",
     className: "tb",
-    onClick: () => { setPhase("login"); setAccType(null); setCheckinDone(false); setUserKey(""); setLoginName(""); setLoginPin(""); }
+    onClick: () => {
+          setPhase("login");
+          setAccType(null);
+          setCheckinDone(false);
+          setUserKey("");
+          setLoginName("");
+          setLoginPin("");
+          setBuddy("pet_none");
+          setGoals([]);
+          setStreakShields(0);
+          setLastCheckinDate("");
+          setOwnedItems(["hat_none","shirt_none","pants_none","shoes_none","skin_light","hair_short","hairc_brown","acc_none","pet_none"]);
+          setAvatar({ hat:"hat_none", shirt:"shirt_none", pants:"pants_none", shoes:"shoes_none", skin:"skin_light", hair:"hair_short", hairc:"hairc_brown", acc:"acc_none", pet:"pet_none" });
+          setLetters([]);
+          setDiary([]);
+          setGrowth(0.08);
+          setCoins(0);
+          setWi({ leaves:0, flowers:0, grass:0, stones:0, shrooms:0, bushes:0, streakDays:0, brieven:0, dagboeken:0, tools:0, checkins:0, tasks:0 });
+          setTotalSessions(0);
+          setSeenEx([]);
+          setLastTaskTexts([]);
+        }
   }, "Uitloggen")],
   ["Nieuw begin", /*#__PURE__*/React.createElement("button", {
     key: "del",
