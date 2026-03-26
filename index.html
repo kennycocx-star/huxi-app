@@ -1165,12 +1165,14 @@ function HuxiApp() {
   const [showStreak, setShowStreak] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showGoals, setShowGoals] = useState(false);
+  const [showJourney, setShowJourney] = useState(false);
   const [goals, setGoals] = useState([]);
   const [goalDraft, setGoalDraft] = useState("");
   const [plantSecQ, setPlantSecQ] = useState(0);
   const [buddy, setBuddy] = useState("pet_none");
   const [plantSecA, setPlantSecA] = useState("");
   const [lastCheckinDate, setLastCheckinDate] = useState("");
+  const [moodHistory, setMoodHistory] = useState([]); // [{date, mood, ts}]
   const [streakShields, setStreakShields] = useState(0);
   const [experience, setExperience] = useState(null);
   const [treeName, setTreeName] = useState("");
@@ -1508,7 +1510,7 @@ function HuxiApp() {
       ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
       dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
-      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy
+      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory
     };
     try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
     if (userKey) firebaseSave(userKey, data);
@@ -1568,6 +1570,7 @@ function HuxiApp() {
           if (d.secretA) setSecretA(d.secretA);
           if (d.goals) setGoals(d.goals);
           if (d.buddy) setBuddy(d.buddy);
+          if (Array.isArray(d.moodHistory)) setMoodHistory(d.moodHistory);
           setPhase("world");
         }
       }
@@ -1665,6 +1668,11 @@ function HuxiApp() {
       return { ...w, checkins: w.checkins + 1, streakDays: newStreak };
     });
     setLastCheckinDate(today);
+    setMoodHistory(h => {
+      const entry = { date: today, mood: id, ts: Date.now() };
+      const updated = [entry, ...h.filter(e => e.date !== today)].slice(0, 90);
+      return updated;
+    });
     if (accType === "child" || accType === "junior") setCoins(c => c + 2);
     setTimeout(saveData, 500);
   };
@@ -1978,6 +1986,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
               if (data.secretA) setSecretA(data.secretA);
               setGoals(Array.isArray(data.goals) ? data.goals : []);
               setBuddy(data.buddy && typeof data.buddy === "string" ? data.buddy : "pet_none");
+              if (Array.isArray(data.moodHistory)) setMoodHistory(data.moodHistory);
               setLastTaskTexts(Array.isArray(data.lastTaskTexts) ? data.lastTaskTexts : []);
               const today = new Date().toDateString();
               if (data.lastDay === today) {
@@ -3793,7 +3802,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       fontWeight: 600,
       lineHeight: 1.5
     }
-  }, memTxt))), checkinDone && !showEx && !showMem && !showSett && !showGuide && !showLetter && !showLetters && !showDiary && !showPicker && !showTools && !activeTool && !showAvatar && !showShop && !showGoals && !curTask && /*#__PURE__*/React.createElement("div", {
+  }, memTxt))), checkinDone && !showEx && !showMem && !showSett && !showGuide && !showLetter && !showLetters && !showDiary && !showPicker && !showTools && !activeTool && !showAvatar && !showShop && !showGoals && !showJourney && !curTask && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       bottom: 0,
@@ -3866,7 +3875,10 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }, "\u2709\uFE0F Brief"), /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowGoals(true)
-  }, "\uD83C\uDFAF Doelen"), letters.length > 0 && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83C\uDFAF Doelen"), /*#__PURE__*/React.createElement("button", {
+    className: "ab",
+    onClick: () => setShowJourney(true)
+  }, "\uD83C\uDF31 Mijn Reis"), letters.length > 0 && /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowLetters(true)
   }, "\uD83C\uDF43"), /*#__PURE__*/React.createElement("button", {
@@ -5325,7 +5337,227 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }, /*#__PURE__*/React.createElement("button", {
     className: "sb",
     onClick: () => setShowSett(true)
-  }, "\u2699\uFE0F")), showGoals && /*#__PURE__*/React.createElement("div", {
+  }, "\u2699\uFE0F")), showJourney && /*#__PURE__*/React.createElement("div", {
+    style: overlay(),
+    onClick: () => setShowJourney(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fadeIn",
+    style: { ...modal, maxHeight: "90vh", overflowY: "auto" },
+    onClick: e => e.stopPropagation()
+  },
+    /*#__PURE__*/React.createElement("h3", {
+      style: { color: g, fontSize: 17, fontWeight: 700, textAlign: "center", marginBottom: 4 }
+    }, accType === "child" ? "\uD83C\uDF31 Jouw Wereld Groeit!" : accType === "junior" ? "\uD83C\uDF3F Jouw Reis" : "\uD83C\uDF43 Mijn Weg"),
+
+    accType === "child" && /*#__PURE__*/React.createElement(React.Fragment, null,
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 12, textAlign: "center", marginBottom: 16 } },
+        "Kijk hoe ver je al gekomen bent!"
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 } },
+        [
+          ["\uD83C\uDF2C\uFE0F", "Ademhalingen", wi.leaves || 0, "keer"],
+          ["\u2705", "Opdrachten", wi.tasks || 0, "gedaan"],
+          ["\uD83D\uDCD3", "Dagboeken", wi.dagboeken || 0, "geschreven"],
+          ["\uD83D\uDE0A", "Ingecheckt", wi.checkins || 0, "keer"]
+        ].map(([ico, lbl, val, unit]) => /*#__PURE__*/React.createElement("div", {
+          key: lbl,
+          style: { background: "rgba(76,175,122,0.08)", borderRadius: 14, padding: "14px 10px", textAlign: "center" }
+        },
+          /*#__PURE__*/React.createElement("div", { style: { fontSize: 28, marginBottom: 4 } }, ico),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#4CAF7A", fontSize: 22, fontWeight: 700 } }, val),
+          /*#__PURE__*/React.createElement("div", { style: { color: "rgba(61,74,88,0.5)", fontSize: 10 } }, lbl)
+        ))
+      ),
+      moodHistory.length > 0 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "12px", marginBottom: 12 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 12, fontWeight: 700, margin: "0 0 8px" } }, "\uD83D\uDFE1 Hoe voelde je je de laatste tijd?"),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" } },
+          moodHistory.slice(0, 14).map((entry, i) => {
+            const MC = { calm: "#4CAF7A", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
+            const emoji = entry.mood === "calm" ? "\uD83D\uDE0A" : entry.mood === "ok" ? "\uD83D\uDE42" : entry.mood === "restless" ? "\uD83D\uDE10" : entry.mood === "tense" ? "\uD83D\uDE1F" : "\uD83D\uDE22";
+            return /*#__PURE__*/React.createElement("div", {
+              key: i,
+              title: entry.date,
+              style: { fontSize: 18, opacity: 0.6 + (i / moodHistory.length) * 0.4 }
+            }, emoji);
+          })
+        ),
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "6px 0 0" } },
+          "Elke emoji is 1 dag \u2014 links is vandaag"
+        )
+      ),
+      /*#__PURE__*/React.createElement("div", {
+        style: { background: "linear-gradient(135deg,rgba(91,184,160,0.1),rgba(76,175,122,0.1))", borderRadius: 14, padding: "14px", textAlign: "center" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { fontSize: 36, marginBottom: 6 } }, growth > 0.8 ? "\uD83C\uDF33" : growth > 0.5 ? "\uD83C\uDF32" : growth > 0.3 ? "\uD83C\uDF31" : "\uD83C\uDF30"),
+        /*#__PURE__*/React.createElement("p", { style: { color: "#4CAF7A", fontSize: 14, fontWeight: 700, margin: "0 0 2px" } },
+          growth > 0.8 ? "Jouw boom is een grote boom!" : growth > 0.5 ? "Jouw boom groeit goed!" : growth > 0.3 ? "Jouw boom groeit!" : "Jouw zaadje groeit!"
+        ),
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 11, margin: 0 } },
+          "Blijf oefenen en je wereld wordt mooier \uD83C\uDF1F"
+        )
+      )
+    ),
+
+    accType === "junior" && /*#__PURE__*/React.createElement(React.Fragment, null,
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 12, textAlign: "center", marginBottom: 14 } },
+        "Jouw persoonlijke overzicht \u2014 voor jou alleen"
+      ),
+      moodHistory.length >= 3 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(255,255,255,0.8)", borderRadius: 14, padding: "14px", marginBottom: 12 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 12, fontWeight: 700, margin: "0 0 10px" } },
+          "\uD83D\uDCC8 Hoe voelde je je de laatste " + Math.min(moodHistory.length, 30) + " dagen"
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "flex-end", gap: 3, height: 50, marginBottom: 6 } },
+          moodHistory.slice(0, 30).reverse().map((entry, i) => {
+            const MC = { calm: "#4CAF7A", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
+            const h = entry.mood === "calm" ? 50 : entry.mood === "ok" ? 40 : entry.mood === "restless" ? 28 : entry.mood === "tense" ? 18 : 10;
+            const c = MC[entry.mood] || "#ccc";
+            return /*#__PURE__*/React.createElement("div", {
+              key: i,
+              title: entry.date + ": " + entry.mood,
+              style: { flex: 1, height: h, borderRadius: 3, background: c, opacity: 0.75, minWidth: 4 }
+            });
+          })
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } },
+          /*#__PURE__*/React.createElement("span", { style: { color: "rgba(61,74,88,0.35)", fontSize: 9 } }, moodHistory.length >= 30 ? "30 dagen geleden" : moodHistory.length + " dagen geleden"),
+          /*#__PURE__*/React.createElement("span", { style: { color: "rgba(61,74,88,0.35)", fontSize: 9 } }, "vandaag")
+        )
+      ),
+      moodHistory.length < 3 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "16px", textAlign: "center", marginBottom: 12 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 13 } },
+          "Check elke dag in om je stemming bij te houden \uD83D\uDCC8"
+        )
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 } },
+        [
+          ["\uD83D\uDD25", wi.streakDays || 0, "dagen actief"],
+          ["\uD83C\uDF2C\uFE0F", wi.leaves || 0, "oefeningen"],
+          ["\uD83D\uDCDD", wi.dagboeken || 0, "dagboeken"]
+        ].map(([ico, val, lbl]) => /*#__PURE__*/React.createElement("div", {
+          key: lbl,
+          style: { background: "rgba(76,175,122,0.08)", borderRadius: 12, padding: "12px 6px", textAlign: "center" }
+        },
+          /*#__PURE__*/React.createElement("div", { style: { fontSize: 22 } }, ico),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#4CAF7A", fontSize: 20, fontWeight: 700 } }, val),
+          /*#__PURE__*/React.createElement("div", { style: { color: "rgba(61,74,88,0.4)", fontSize: 9 } }, lbl)
+        ))
+      ),
+      moodHistory.length >= 5 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px", marginBottom: 8 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 12, fontWeight: 600, margin: "0 0 4px" } }, "\uD83D\uDCA1 Inzicht"),
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.6)", fontSize: 12, margin: 0, lineHeight: 1.5 } }, (() => {
+          const calmCount = moodHistory.filter(e => e.mood === "calm" || e.mood === "ok").length;
+          const pct = Math.round(calmCount / moodHistory.length * 100);
+          return pct >= 60 ? "Je voelt je de meeste dagen rustig of oké. Dat is knap." : pct >= 40 ? "Je hebt goede en zwaardere dagen. Dat hoort erbij." : "Je hebt het momenteel niet makkelijk. Blijf kleine stappen zetten.";
+        })())
+      )
+    ),
+
+    (accType === "adult" || accType === "therapist") && /*#__PURE__*/React.createElement(React.Fragment, null,
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 12, textAlign: "center", marginBottom: 14 } },
+        "Een eerlijk beeld van jouw weg \u2014 zonder oordeel"
+      ),
+      moodHistory.length >= 3 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(255,255,255,0.8)", borderRadius: 14, padding: "16px", marginBottom: 12 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 700, margin: "0 0 12px" } },
+          "Stemming \u2014 laatste " + Math.min(moodHistory.length, 30) + " dagen"
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { position: "relative", height: 60, marginBottom: 8 } },
+          /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "flex-end", gap: 2, height: "100%", position: "absolute", inset: 0 } },
+            moodHistory.slice(0, 30).reverse().map((entry, i) => {
+              const MC = { calm: "#4CAF7A", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
+              const h = entry.mood === "calm" ? 100 : entry.mood === "ok" ? 78 : entry.mood === "restless" ? 52 : entry.mood === "tense" ? 32 : 15;
+              return /*#__PURE__*/React.createElement("div", {
+                key: i,
+                title: entry.date,
+                style: { flex: 1, height: h + "%", borderRadius: "3px 3px 0 0", background: MC[entry.mood] || "#ccc", opacity: 0.7, minWidth: 5 }
+              });
+            })
+          )
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between" } },
+          /*#__PURE__*/React.createElement("span", { style: { color: "rgba(61,74,88,0.35)", fontSize: 10 } }, moodHistory.length >= 30 ? "30 dagen geleden" : moodHistory.length + "d geleden"),
+          /*#__PURE__*/React.createElement("span", { style: { color: "rgba(61,74,88,0.35)", fontSize: 10 } }, "vandaag")
+        ),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" } },
+          [["#4CAF7A","Rustig"],["#6BC5A0","Oké"],["#E6A832","Onrustig"],["#D4842A","Gespannen"],["#C4553A","Overweldigd"]].map(([c,l]) =>
+            /*#__PURE__*/React.createElement("div", { key: l, style: { display: "flex", alignItems: "center", gap: 3 } },
+              /*#__PURE__*/React.createElement("div", { style: { width: 8, height: 8, borderRadius: 2, background: c } }),
+              /*#__PURE__*/React.createElement("span", { style: { color: "rgba(61,74,88,0.4)", fontSize: 9 } }, l)
+            )
+          )
+        )
+      ),
+      moodHistory.length < 3 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "20px", textAlign: "center", marginBottom: 12 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 13, lineHeight: 1.5 } },
+          "Check elke dag even in om na een paar dagen je stemming als grafiek te zien."
+        )
+      ),
+      moodHistory.length >= 7 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "14px", marginBottom: 12 }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 600, margin: "0 0 6px" } }, "\uD83D\uDCA1 Patroon"),
+        /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.6)", fontSize: 13, margin: 0, lineHeight: 1.6 } }, (() => {
+          const recent7 = moodHistory.slice(0, 7);
+          const calmCount = recent7.filter(e => e.mood === "calm" || e.mood === "ok").length;
+          const allTime = moodHistory.filter(e => e.mood === "calm" || e.mood === "ok").length;
+          const trend = calmCount > allTime / moodHistory.length * 7;
+          return trend
+            ? "De laatste week voelde je je vaker rustig dan gemiddeld. Dat is een mooie beweging."
+            : "Elke zwaardere periode hoort bij het proces. Kleine stappen tellen.";
+        })())
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 } },
+        [
+          ["\uD83C\uDF2C\uFE0F", wi.leaves || 0, "oefeningen"],
+          ["\u2705", wi.tasks || 0, "opdrachten"],
+          ["\uD83D\uDCD3", wi.dagboeken || 0, "dagboeken"],
+          ["\uD83D\uDD25", wi.streakDays || 0, "dagen actief"]
+        ].map(([ico, val, lbl]) => /*#__PURE__*/React.createElement("div", {
+          key: lbl,
+          style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px", textAlign: "center" }
+        },
+          /*#__PURE__*/React.createElement("div", { style: { fontSize: 22 } }, ico),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#4CAF7A", fontSize: 22, fontWeight: 700 } }, val),
+          /*#__PURE__*/React.createElement("div", { style: { color: "rgba(61,74,88,0.4)", fontSize: 10 } }, lbl)
+        ))
+      ),
+      letters.length > 0 && /*#__PURE__*/React.createElement("div", {
+        style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px" }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 12, fontWeight: 600, margin: "0 0 6px" } }, "\u2709\uFE0F Jouw brieven"),
+        letters.map((l, i) => {
+          const unlockTime = l.unlockDate ? new Date(l.unlockDate).getTime() : 0;
+          const locked = Date.now() < unlockTime;
+          const dl = locked ? Math.ceil((unlockTime - Date.now()) / 86400000) : 0;
+          return /*#__PURE__*/React.createElement("div", {
+            key: l.id,
+            style: { display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i < letters.length - 1 ? "1px solid rgba(61,74,88,0.06)" : "none" }
+          },
+            /*#__PURE__*/React.createElement("span", { style: { fontSize: 16 } }, locked ? "\uD83D\uDD12" : "\uD83D\uDCEC"),
+            /*#__PURE__*/React.createElement("span", { style: { flex: 1, color: "rgba(61,74,88,0.5)", fontSize: 11 } }, l.date),
+            /*#__PURE__*/React.createElement("span", { style: { color: locked ? "#E6A832" : "#4CAF7A", fontSize: 10, fontWeight: 600 } }, locked ? "Nog " + dl + " dagen" : "Open")
+          );
+        })
+      )
+    ),
+
+    /*#__PURE__*/React.createElement("button", {
+      className: "mb",
+      style: { width: "100%", marginTop: 16, padding: "10px 0" },
+      onClick: () => setShowJourney(false)
+    }, "Sluiten")
+  )), showGoals && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => setShowGoals(false)
   }, /*#__PURE__*/React.createElement("div", {
