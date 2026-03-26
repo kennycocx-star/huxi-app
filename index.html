@@ -1508,7 +1508,7 @@ function HuxiApp() {
       ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
       dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
-      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy
+      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, soundOn
     };
     try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
     if (userKey) firebaseSave(userKey, data);
@@ -1768,6 +1768,19 @@ function HuxiApp() {
     setLetters([]);
     setDiary([]);
     setSeenEx([]);
+    setLastExId(null);
+    setDailyMood(null);
+    setLastTaskTexts([]);
+    setDailyActions(0);
+    setDailyBreaths(0);
+    setDailyTasks([]);
+    setTasksGenerated(false);
+    setCheckinDone(false);
+    setLastDay("");
+    setLastCheckinDate("");
+    setStreakShields(0);
+    setBuddy("pet_none");
+    setGoals([]);
   };
   const tapA = msg => {
     setAnimalMsg(msg);
@@ -1967,6 +1980,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
               if (data.goals) setGoals(data.goals);
               if (data.buddy) setBuddy(data.buddy);
               if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
+              if (data.soundOn !== undefined) setSoundOn(data.soundOn);
               const today = new Date().toDateString();
               if (data.lastDay === today) {
                 setLastDay(today); setDailyActions(data.dailyActions || 0);
@@ -5406,6 +5420,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     key: "a",
     className: "tb",
     onClick: () => {
+          try { localStorage.removeItem("huxi-profile"); } catch(e) {}
           setPhase("login");
           setAccType(null);
           setCheckinDone(false);
