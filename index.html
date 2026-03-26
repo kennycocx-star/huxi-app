@@ -3374,18 +3374,18 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     onClick: () => tapA("De vos kijkt je nieuwsgierig aan")
   }, "\uD83E\uDD8A"), accType === "child" && (() => {
     const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
-    const hidden = avatar.hiddenPets || [];
+    const hidden = (avatar && avatar.hiddenPets) || [];
     const visiblePets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none" && !hidden.includes(i));
     const elems = visiblePets.map((petId, idx) => /*#__PURE__*/React.createElement("text", {
       key: petId,
-      x: 70 + idx * 28,
-      y: buddy === petId ? 20 : 26,
-      fontSize: buddy === petId ? 24 : 18,
+      x: 70 + idx * 26,
+      y: buddy === petId ? 18 : 25,
+      fontSize: buddy === petId ? 22 : 18,
       style: { cursor: "pointer" },
-      onClick: () => tapA(buddy === petId ? "\u2B50 Jouw beste vriend is altijd bij je!" : "Dit diertje woont in jouw wereld!")
+      onClick: () => tapA(buddy === petId ? "\u2B50 Je beste vriend is altijd bij je!" : "Dit diertje woont in jouw wereld!")
     }, (PET_EM[petId] || "\uD83D\uDC3E") + (buddy === petId ? "\u2B50" : "")));
     if (elems.length === 0) return null;
-    return /*#__PURE__*/React.createElement(React.Fragment, null, ...elems);
+    return /*#__PURE__*/React.createElement.apply(React, ["g", {key:"pets"}].concat(elems));
   })(), /*#__PURE__*/React.createElement("text", {
     x: -80,
     y: 34,
@@ -4321,42 +4321,19 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     /*#__PURE__*/React.createElement("button", { className: "mb", style: { width: "100%", padding: "10px 0" }, onClick: () => setShowStreak(false) }, "Sluiten")
   )), showAvatar && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
-    onClick: () => {
-      setShowAvatar(false);
-      setShowShop(false);
-    }
+    onClick: () => { setShowAvatar(false); setShowShop(false); }
   }, /*#__PURE__*/React.createElement("div", {
     className: "fadeIn",
-    style: {
-      ...modal,
-      maxHeight: "90vh"
-    },
+    style: { ...modal, maxHeight: "92vh", padding: "14px 14px 10px", display: "flex", flexDirection: "column", gap: 0 },
     onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      color: g,
-      fontSize: 17,
-      fontWeight: 700,
-      textAlign: "center",
-      marginBottom: 4
-    }
-  }, "Jouw Avatar"), /*#__PURE__*/React.createElement("p", {
-    style: {
-      color: "#E6A832",
-      fontSize: 13,
-      fontWeight: 700,
-      textAlign: "center",
-      marginBottom: 10
-    }
-  }, "\uD83E\uDE99 ", coins, " muntjes"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "flex-end",
-      marginBottom: 12,
-      gap: 8
-    }
-  }, /*#__PURE__*/React.createElement("svg", {
+  },
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 } },
+      /*#__PURE__*/React.createElement("h3", { style: { color: g, fontSize: 16, fontWeight: 700, margin: 0 } }, "\uD83D\uDC64 Jouw Avatar"),
+      /*#__PURE__*/React.createElement("span", { style: { color: "#E6A832", fontSize: 13, fontWeight: 700 } }, "\uD83E\uDE99 ", coins)
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" } },
+      /*#__PURE__*/React.createElement("div", { style: { flexShrink: 0 } },
+        /*#__PURE__*/React.createElement("svg", {
     width: 120,
     height: 160,
     viewBox: "0 0 120 160"
@@ -4800,167 +4777,57 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
     stroke: "#E85D3A",
     strokeWidth: 5,
     strokeLinecap: "round"
-  })), (() => {
-    const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
-    const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
-    if (ownedPets.length === 0) return null;
-    return /*#__PURE__*/React.createElement("div", {
-      style: { marginBottom: 8, background: "rgba(76,175,122,0.05)", borderRadius: 12, padding: "8px 10px" }
-    },
-      /*#__PURE__*/React.createElement("p", {
-        style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 6px" }
-      }, "\uD83D\uDC3E Mijn huisdieren"),
-      /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
-        ownedPets.map(petId => {
-          const isHidden = (avatar.hiddenPets || []).includes(petId);
-          const isBuddy = buddy === petId;
-          return /*#__PURE__*/React.createElement("div", {
-            key: petId,
-            style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }
-          },
-            /*#__PURE__*/React.createElement("span", {
-              style: {
-                fontSize: 26, cursor: "pointer", opacity: isHidden ? 0.3 : 1,
-                filter: isBuddy ? "drop-shadow(0 0 4px gold)" : "none"
-              },
-              onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); },
-              title: isBuddy ? "Beste vriend! Tik om te wisselen" : "Tik om beste vriend te maken"
-            }, (PET_EM[petId] || "\uD83D\uDC3E") + (isBuddy ? "\u2B50" : "")),
-            /*#__PURE__*/React.createElement("button", {
-              style: {
-                fontSize: 8, padding: "2px 5px", borderRadius: 5, cursor: "pointer",
-                fontFamily: "inherit", border: "1px solid rgba(76,175,122,0.2)",
-                background: isHidden ? "rgba(224,120,80,0.1)" : "white",
-                color: isHidden ? "#E07850" : "rgba(61,74,88,0.4)"
-              },
-              onClick: () => {
-                setAvatar(a => {
-                  const h = a.hiddenPets || [];
-                  return { ...a, hiddenPets: h.includes(petId) ? h.filter(x => x !== petId) : [...h, petId] };
-                });
-                setTimeout(saveData, 300);
-              }
-            }, isHidden ? "Toon" : "Verberg")
-          );
-        })
+  }))
       ),
-      /*#__PURE__*/React.createElement("p", {
-        style: { color: "rgba(61,74,88,0.35)", fontSize: 9, margin: "6px 0 0", textAlign: "center" }
-      }, "Tik op een dier om je beste vriend te kiezen \u2B50")
-    );
-  })(), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 8,
-      marginBottom: 12,
-      justifyContent: "center"
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    className: "mb",
-    style: {
-      padding: "6px 14px",
-      fontSize: 11
-    },
-    onClick: () => setShowShop(false)
-  }, "Mijn Spullen"), /*#__PURE__*/React.createElement("button", {
-    style: {
-      padding: "6px 14px",
-      fontSize: 11,
-      background: "rgba(230,168,50,0.15)",
-      border: "1px solid #E6A832",
-      borderRadius: 14,
-      color: "#8B6914",
-      fontWeight: 600,
-      cursor: "pointer",
-      fontFamily: "inherit"
-    },
-    onClick: () => setShowShop(true)
-  }, "\uD83E\uDE99 Winkel")), !showShop ? /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
-    style: {
-      color: g5,
-      fontSize: 10,
-      marginBottom: 6
-    }
-  }, "Tik om aan te doen:"), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      flexWrap: "wrap",
-      gap: 4
-    }
-  }, ownedItems.map(item => {
-    const cat = item.split("_")[0];
-    const labels = {
-      hat_none: "Geen hoed",
-      hat_cap: "Petje",
-      hat_crown: "Kroon",
-      hat_wizard: "Tovenaar",
-      hat_party: "Feest",
-      shirt_none: "Basis",
-      shirt_stripes: "Strepen",
-      shirt_heart: "Hart",
-      shirt_star: "Ster",
-      shirt_cool: "Cool",
-      shirt_rainbow: "Regenboog",
-      shirt_nature: "Natuur",
-      pants_none: "Basis",
-      pants_jeans: "Jeans",
-      pants_red: "Rood",
-      pants_purple: "Paars",
-      pants_gold: "Goud",
-      pants_star: "Ster",
-      shoes_none: "Basis",
-      shoes_sneaker: "Sneakers",
-      shoes_boot: "Laarzen",
-      shoes_gold: "Goud",
-      shoes_rainbow: "Regenboog",
-      skin_light: "Licht",
-      skin_medium: "Medium",
-      skin_dark: "Donker",
-      skin_pale: "Bleek",
-      hair_short: "Kort",
-      hair_long: "Lang",
-      hair_curly: "Krullen",
-      hair_spiky: "Stekels",
-      hairc_brown: "Bruin",
-      hairc_black: "Zwart",
-      hairc_blonde: "Blond",
-      hairc_red: "Rood",
-      hairc_blue: "Blauw",
-      hairc_pink: "Roze",
-      hairc_green: "Groen",
-      acc_none: "Geen",
-      acc_glasses: "Bril",
-      acc_scarf: "Sjaal",
-      pet_none: "Geen",
-      pet_cat: "Kat",
-      pet_dog: "Hond",
-      pet_rabbit: "Konijn",
-      pet_dragon: "Draak",
-      pet_unicorn: "Eenhoorn",
-      pet_phoenix: "Feniks"
-    };
-    const eq = avatar[cat] === item;
-    return /*#__PURE__*/React.createElement("button", {
-      key: item,
-      style: {
-        fontSize: 9,
-        padding: "4px 8px",
-        borderRadius: 8,
-        border: eq ? "2px solid #4CAF7A" : "1px solid rgba(76,175,122,0.2)",
-        background: eq ? "rgba(76,175,122,0.15)" : "white",
-        cursor: "pointer",
-        fontFamily: "inherit",
-        color: g
-      },
-      onClick: () => {
-        setAvatar(a => ({
-          ...a,
-          [cat]: item
-        }));
-        setTimeout(saveData, 300);
-      }
-    }, labels[item] || item);
-  }))) : /*#__PURE__*/React.createElement(React.Fragment, null, [{
+      /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+        (() => {
+          const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
+          const PET_NM = { pet_cat: "Kat", pet_dog: "Hond", pet_rabbit: "Konijn", pet_dragon: "Draak", pet_unicorn: "Eenhoorn", pet_phoenix: "Feniks", pet_dino: "Dino", pet_hamster: "Hamster", pet_fish: "Vis", pet_parrot: "Papegaai", pet_turtle: "Schildpad", pet_pony: "Pony" };
+          const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
+          if (ownedPets.length === 0) return /*#__PURE__*/React.createElement("p", {
+            style: { color: "rgba(61,74,88,0.35)", fontSize: 10, marginTop: 4, lineHeight: 1.4 }
+          }, "Koop een huisdier in de shop! \uD83D\uDC3E");
+          return /*#__PURE__*/React.createElement("div", null,
+            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 5px" } }, "\uD83D\uDC3E Huisdieren"),
+            ownedPets.map(petId => {
+              const isHidden = ((avatar && avatar.hiddenPets) || []).includes(petId);
+              const isBuddy = buddy === petId;
+              return /*#__PURE__*/React.createElement("div", {
+                key: petId,
+                style: {
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "4px 6px", borderRadius: 8, marginBottom: 4,
+                  background: isBuddy ? "rgba(255,215,0,0.12)" : "rgba(61,74,88,0.04)",
+                  border: isBuddy ? "1.5px solid #FFD700" : "1px solid rgba(61,74,88,0.08)",
+                  opacity: isHidden ? 0.4 : 1
+                }
+              },
+                /*#__PURE__*/React.createElement("span", { style: { fontSize: 20 } }, PET_EM[petId] || "\uD83D\uDC3E"),
+                /*#__PURE__*/React.createElement("span", { style: { flex: 1, fontSize: 11, color: g, fontWeight: isBuddy ? 700 : 400 } },
+                  (PET_NM[petId] || petId) + (isBuddy ? " \u2B50" : "")
+                ),
+                /*#__PURE__*/React.createElement("button", {
+                  style: { fontSize: 9, padding: "2px 5px", borderRadius: 5, border: "none", cursor: "pointer", fontFamily: "inherit", background: isBuddy ? "rgba(255,215,0,0.3)" : "rgba(61,74,88,0.08)", color: isBuddy ? "#8B6914" : g },
+                  onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); }
+                }, isBuddy ? "\u2B50 Vriend" : "\u2B50"),
+                /*#__PURE__*/React.createElement("button", {
+                  style: { fontSize: 9, padding: "2px 5px", borderRadius: 5, border: "none", cursor: "pointer", fontFamily: "inherit", background: isHidden ? "rgba(224,120,80,0.15)" : "rgba(61,74,88,0.08)", color: isHidden ? "#E07850" : g },
+                  onClick: () => {
+                    setAvatar(a => {
+                      const h = (a && a.hiddenPets) || [];
+                      return { ...a, hiddenPets: h.includes(petId) ? h.filter(x => x !== petId) : [...h, petId] };
+                    });
+                    setTimeout(saveData, 300);
+                  }
+                }, isHidden ? "\uD83D\uDC41 Toon" : "\uD83D\uDCF4 Verberg")
+              );
+            })
+          );
+        })()
+      )
+    ),
+    /*#__PURE__*/React.createElement("div", { style: { overflowY: "auto", flex: 1 } },
+      /*#__PURE__*/React.createElement(React.Fragment, null, [{
     cat: "Huid",
     k: "skin",
     items: [{
@@ -5337,18 +5204,14 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       setAvatar(a => ({ ...a, [grp.k]: grp.k + "_none" }));
       setTimeout(saveData, 300);
     }
-  }, "Geen \u2715"))))), /*#__PURE__*/React.createElement("button", {
-    className: "mb",
-    style: {
-      width: "100%",
-      marginTop: 10,
-      padding: "8px 0"
-    },
-    onClick: () => {
-      setShowAvatar(false);
-      setShowShop(false);
-    }
-  }, "Sluiten"))), showGuide && /*#__PURE__*/React.createElement("div", {
+  }, "Geen \u2715"))))
+    ),
+    /*#__PURE__*/React.createElement("button", {
+      className: "mb",
+      style: { width: "100%", marginTop: 8, padding: "9px 0", flexShrink: 0 },
+      onClick: () => { setShowAvatar(false); setShowShop(false); }
+    }, "Sluiten")
+  )), showGuide && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => setShowGuide(false)
   }, /*#__PURE__*/React.createElement("div", {
