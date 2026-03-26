@@ -1174,6 +1174,8 @@ function HuxiApp() {
   const [bonusEx, setBonusEx] = useState(null); // weekly surprise exercise
   const [goals, setGoals] = useState([]);
   const [goalDraft, setGoalDraft] = useState("");
+  const [goalDraftText, setGoalDraftText] = useState("");
+  const [goalPeriod, setGoalPeriod] = useState(180);
   const [plantSecQ, setPlantSecQ] = useState(0);
   const [buddy, setBuddy] = useState("pet_none");
   const [plantSecA, setPlantSecA] = useState("");
@@ -3145,7 +3147,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       animationDelay: p.del + "s",
       animationDuration: p.dur * moodSlow + "s"
     }
-  }))), /*#__PURE__*/React.createElement("div", {
+  }))), accType !== "junior" && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       bottom: "18%",
@@ -3865,7 +3867,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       fontWeight: 600,
       lineHeight: 1.5
     }
-  }, memTxt))), checkinDone && !showEx && !showMem && !showSett && !showGuide && !showLetter && !showLetters && !showDiary && !showPicker && !showTools && !activeTool && !showAvatar && !showShop && !showGoals && !showJourney && !curTask && /*#__PURE__*/React.createElement("div", {
+  }, memTxt))), checkinDone && !showEx && !showMem && !showSett && !showGuide && !showLetter && !showLetters && !showDiary && !showPicker && !showTools && !activeTool && !showAvatar && accType !== "junior" && !showShop && !showGoals && !showJourney && !curTask && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       bottom: 0,
@@ -3947,7 +3949,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }, "\uD83C\uDF43"), /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowDiary(true)
-  }, "\uD83D\uDCD4 Dagboek"), (accType === "child" || accType === "junior") && /*#__PURE__*/React.createElement("button", {
+  }, "\uD83D\uDCD4 Dagboek"), accType === "child" && /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowAvatar(true)
   }, "\uD83D\uDC64 Avatar"), accType === "junior" && /*#__PURE__*/React.createElement("button", {
@@ -5646,8 +5648,10 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
         { days: 548, label: "Over 1,5 jaar" }
       ];
       const canAdd = goals.filter(g2 => !g2.unlockDate || Date.now() >= new Date(g2.unlockDate).getTime()).length < 2 || goals.length === 0;
-      const [draft, setDraft] = React.useState("");
-      const [period, setPeriod] = React.useState(180);
+      const draft = goalDraftText;
+      const setDraft = setGoalDraftText;
+      const period = goalPeriod;
+      const setPeriod = setGoalPeriod;
       const openGoals = goals.filter(g2 => !g2.unlockDate || Date.now() >= new Date(g2.unlockDate).getTime());
       const lockedGoals = goals.filter(g2 => g2.unlockDate && Date.now() < new Date(g2.unlockDate).getTime());
       return /*#__PURE__*/React.createElement(React.Fragment, null,
