@@ -1568,6 +1568,7 @@ function HuxiApp() {
           if (d.secretA) setSecretA(d.secretA);
           if (d.goals) setGoals(d.goals);
           if (d.buddy) setBuddy(d.buddy);
+          if (d.soundOn !== undefined) setSoundOn(d.soundOn);
           setPhase("world");
         }
       }
@@ -1974,6 +1975,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
               } else {
                 setLastDay(today); setDailyActions(0); setDailyBreaths(0);
                 setDailyTasks([]); setTasksGenerated(false); setCheckinDone(false);
+                setDailyMood(null);
               }
               if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
               setPhase("world");
