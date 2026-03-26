@@ -4823,7 +4823,11 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
                   fontSize: 26, cursor: "pointer", lineHeight: 1,
                   opacity: ((avatar && avatar.hiddenPets) || []).includes(petId) ? 0.2 : 1
                 },
-                onClick: () => { setBuddy(petId === buddy ? "pet_none" : petId); setTimeout(saveData, 300); }
+                onClick: () => { const newBuddy = petId === buddy ? "pet_none" : petId;
+                setBuddy(newBuddy);
+                const saveBuddy = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy };
+                try { localStorage.setItem("huxi-profile", JSON.stringify(saveBuddy)); } catch(e) {}
+                if (userKey) firebaseSave(userKey, saveBuddy); }
               }, (PET_EM[petId] || "\uD83D\uDC3E") + (buddy === petId ? "\u2B50" : "")))
             ),
             /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.25)", fontSize: 8, margin: "3px 0 0" } },
@@ -5178,19 +5182,35 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       },
       onClick: () => {
         if (owned) {
-          setAvatar(a => ({
-            ...a,
-            [grp.k]: item.id
-          }));
-          setTimeout(saveData, 300);
+          const newAv = { ...avatar, [grp.k]: item.id };
+          setAvatar(newAv);
+          const saveEq = {
+            accType, reason, experience, treeName, userName, growth, coins,
+            ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood,
+            totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
+            dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
+            lastCheckinDate, streakShields, secretQ, secretA, goals, buddy
+          };
+          try { localStorage.setItem("huxi-profile", JSON.stringify(saveEq)); } catch(e) {}
+          if (userKey) firebaseSave(userKey, saveEq);
         } else if (canBuy) {
           if (item.p > 0) setCoins(c => c - item.p);
-          setOwnedItems(o => [...o, item.id]);
-          setAvatar(a => ({
-            ...a,
-            [grp.k]: item.id
-          }));
-          setTimeout(saveData, 300);
+          const newOwned = [...ownedItems, item.id];
+          const newAvatar = { ...avatar, [grp.k]: item.id };
+          setOwnedItems(newOwned);
+          setAvatar(newAvatar);
+          const saveNow = {
+            accType, reason, experience, treeName, userName, growth,
+            coins: item.p > 0 ? coins - item.p : coins,
+            ownedItems: newOwned,
+            avatar: newAvatar,
+            letters, diary, seenEx, lastExId, dailyMood,
+            totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
+            dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
+            lastCheckinDate, streakShields, secretQ, secretA, goals, buddy
+          };
+          try { localStorage.setItem("huxi-profile", JSON.stringify(saveNow)); } catch(e) {}
+          if (userKey) firebaseSave(userKey, saveNow);
         }
       }
     }, item.n, " ", !owned && item.p > 0 && /*#__PURE__*/React.createElement("span", {
