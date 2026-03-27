@@ -659,7 +659,6 @@ const EX = [{
   name: "4-7-8 Techniek",
   nameChild: "Tover-ademhaling",
   nameJunior: "Slaap-truc",
-  warn: "\u26A0\uFE0F Doe dit zittend of liggend op een rustige plek. Het vasthouden van de adem (7 tellen) kan bij beginners licht duizeligheid geven \u2014 dit trekt snel weg. Bouw rustig op: begin met 2 rondjes en verhoog geleidelijk. Stop als het oncomfortabel wordt. Nooit achter het stuur of staand.",
   desc: "4 in, 7 vasthouden, 8 uit",
   iS: 4,
   oS: 8,
@@ -703,7 +702,6 @@ const EX = [{
   id: "alternate",
   name: "Alternate Nostril",
   nameChild: "Links-rechts ademen",
-  warn: "\u26A0\uFE0F Doe dit zittend in een comfortabele positie met rechte rug. Houd je gezicht ontspannen en druk niet te hard op je neus. Sommige mensen voelen lichte duizeligheid bij de eerste keren \u2014 dit trekt snel weg. Stop als je je benauwd voelt.",
   desc: "Rechterhand omhoog. Duim sluit rechts, ringvinger sluit links. Adem in door links → vasthouden → uit door rechts → in door rechts → vasthouden → uit door links. Herhaal.",
   iS: 4,
   oS: 4,
@@ -1696,7 +1694,7 @@ function HuxiApp() {
   const getWeekBonus = () => {
     // Week-based surprise: different exercise each week, based on week number
     const weekNum = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
-    const allEx = EX.filter(e => e.lv !== "x"); // not the most advanced
+    const allEx = EX.filter(e => e.lv !== "x" && e.id !== "wimhof" && e.id !== "energize"); // not advanced, never auto-offer dangerous
     return allEx[weekNum % allEx.length];
   };
   const pickEx = () => {
@@ -1721,6 +1719,9 @@ function HuxiApp() {
         }
       }
     }
+    // Wim Hof en Energize NOOIT automatisch - alleen als gebruiker zelf kiest
+    pool = pool.filter(e => e.id !== "wimhof" && e.id !== "energize");
+    if (pool.length === 0) pool = EX.filter(e => e.lv === "b");
     if (pool.length > 1) pool = pool.filter(e => e.id !== lastExId);
     if (pool.length > 1 && accType !== "child" && accType !== "junior") pool = pool.filter(e => {
       if (e.en === "up" && (dailyMood === "tense" || dailyMood === "overwhelmed" || dailyMood === "restless")) return false;
@@ -1794,8 +1795,9 @@ function HuxiApp() {
       const updated = [entry, ...h.filter(e => e.date !== today)].slice(0, 90);
       return updated;
     });
+    const newCoinsM = (accType === "child" || accType === "junior") ? coins + 2 : coins;
     if (accType === "child" || accType === "junior") setCoins(c => c + 2);
-    setTimeout(saveData, 500);
+    setTimeout(saveData, 800);
   };
   const saveLetter = () => {
     if (!letterDraft.trim()) return;
@@ -1924,7 +1926,7 @@ function HuxiApp() {
     setDailyActions(a => a + 1);
     setTotalSessions(s => s + 1);
     if (accType === "child" || accType === "junior") setCoins(c => c + 6);
-    setTimeout(saveData, 500);
+    setTimeout(saveData, 800);
   };
   const nextStep = steps => {
     toolStep < steps.length - 1 ? setToolStep(s => s + 1) : finTool();
@@ -3866,32 +3868,37 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       lineHeight: 1.5
     }
   }, "\uD83D\uDD2C ", curEx.sci)),
-  curEx && curEx.warn && exPhase === "idle" && /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "rgba(230,168,50,0.12)",
-      border: "1px solid rgba(230,168,50,0.4)",
-      borderRadius: 14,
-      padding: "12px 14px",
-      marginBottom: 16,
-      textAlign: "left"
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    style: {
-      color: "#C4882A",
-      fontSize: 11,
-      lineHeight: 1.6,
-      margin: 0
-    }
-  }, curEx.warn)), exPhase === "idle" ? /*#__PURE__*/React.createElement("button", {
+  curEx && curEx.warn && exPhase === "idle" && (seenEx.includes(curEx.id)
+    ? /*#__PURE__*/React.createElement("p", {
+        style: { fontSize: 10, color: "rgba(200,140,40,0.7)", textAlign: "center", marginBottom: 8 }
+      }, "\u26A0\uFE0F Niet in water of achter het stuur")
+    : /*#__PURE__*/React.createElement("div", {
+        style: {
+          background: warnAcknowledged ? "rgba(76,175,122,0.08)" : "rgba(230,168,50,0.1)",
+          border: warnAcknowledged ? "1px solid rgba(76,175,122,0.3)" : "1.5px solid rgba(230,168,50,0.5)",
+          borderRadius: 14, padding: "12px 14px", marginBottom: 12, textAlign: "left"
+        }
+      },
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: warnAcknowledged ? "#4CAF7A" : "#C4882A", fontSize: 11, lineHeight: 1.7, margin: warnAcknowledged ? 0 : "0 0 10px" }
+      }, warnAcknowledged ? "\u2705 Gelezen \u2014 je kan starten." : curEx.warn),
+      !warnAcknowledged && /*#__PURE__*/React.createElement("button", {
+        style: {
+          background: "rgba(230,168,50,0.15)", border: "1px solid rgba(230,168,50,0.4)",
+          borderRadius: 10, padding: "8px 14px", fontSize: 11, fontWeight: 700,
+          color: "#C4882A", cursor: "pointer", width: "100%"
+        },
+        onClick: () => setWarnAcknowledged(true)
+      }, "\u2714 Ik heb dit gelezen"))), exPhase === "idle" ? /*#__PURE__*/React.createElement("button", {
     className: "mb",
     style: {
       padding: "12px 30px",
       fontSize: 15,
-      opacity: (curEx && curEx.warn && !warnAcknowledged) ? 0.35 : 1
+      opacity: (curEx && curEx.warn && !seenEx.includes(curEx.id) && !warnAcknowledged) ? 0.35 : 1
     },
-    disabled: !!(curEx && curEx.warn && !warnAcknowledged),
-    onClick: () => { if (curEx && curEx.warn && !warnAcknowledged) return; runEx(); }
-  }, (curEx && curEx.warn && !warnAcknowledged) ? "Lees eerst de waarschuwing ↑" : showSci ? "Begrepen, start" : "Start") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    disabled: !!(curEx && curEx.warn && !seenEx.includes(curEx.id) && !warnAcknowledged),
+    onClick: () => { if (curEx && curEx.warn && !seenEx.includes(curEx.id) && !warnAcknowledged) return; runEx(); }
+  }, (curEx && curEx.warn && !seenEx.includes(curEx.id) && !warnAcknowledged) ? "Lees eerst de waarschuwing ↑" : showSci ? "Begrepen, start" : "Start") : /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     style: {
       width: 140,
       height: 140,
