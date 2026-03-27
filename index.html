@@ -1487,23 +1487,29 @@ function HuxiApp() {
       clearInterval(countRef.current);
       setExPhase("done");
       setTimeout(() => {
+        const newBreaths = dailyBreaths + 1;
+        const newActions = dailyActions + 1;
+        const newSessions = totalSessions + 1;
+        const newCoinsF = coins + (ex.pts || 10);
+        const newGrowthF = Math.min(1, growth + 0.008);
+        const newWiF = { ...wi, leaves: wi.leaves + 1 };
+        const newExPerEx = { ...exPerEx, [ex.id]: (exPerEx[ex.id] || 0) + 1 };
         setShowEx(false);
         setExDone(true);
-        setGrowth(g => Math.min(1, g + 0.008));
-        setWi(w => ({
-          ...w,
-          leaves: w.leaves + 1
-        }));
+        setGrowth(newGrowthF);
+        setWi(newWiF);
         setLastExId(ex.id);
         setCoins(c => c + (ex.pts || 10));
-        setDailyActions(a => a + 1);
-        setDailyBreaths(b => b + 1);
-        setTotalSessions(s => s + 1);
-        setExPerEx(prev => ({ ...prev, [ex.id]: (prev[ex.id] || 0) + 1 }));
+        setDailyActions(newActions);
+        setDailyBreaths(newBreaths);
+        setTotalSessions(newSessions);
+        setExPerEx(newExPerEx);
         setPostMood(null);
         setShowPostMood(true);
         showWorldReward("breath");
-        saveData();
+        const saveF = { accType, reason, experience, treeName, userName, growth: newGrowthF, coins: newCoinsF, ownedItems, avatar, letters, diary, seenEx, lastExId: ex.id, dailyMood, totalSessions: newSessions, wi: newWiF, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: newBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx: newExPerEx };
+        try { localStorage.setItem("huxi-profile", JSON.stringify(saveF)); } catch(e) {}
+        if (userKey) firebaseSave(userKey, saveF);
       }, 1500);
     };
     const cyc = () => {
@@ -2023,7 +2029,7 @@ function HuxiApp() {
     setTotalSessions(newSessions);
     if (accType === "child" || accType === "junior") setCoins(c => c + 5);
     showWorldReward("task");
-    const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveT)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveT);
   };
