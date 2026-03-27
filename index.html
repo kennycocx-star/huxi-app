@@ -1799,48 +1799,44 @@ function HuxiApp() {
   };
   const saveLetter = () => {
     if (!letterDraft.trim()) return;
-    setLetters(p => {
-      const n = [{
-        text: letterDraft.trim(),
-        date: new Date().toLocaleDateString("nl-NL", {
-          day: "numeric",
-          month: "long",
-          year: "numeric"
-        }),
-        id: Date.now()
-      }, ...p];
-      return n;
-    });
+    const periods = letters.length === 0 ? [30] : letters.length === 1 ? [90] : letters.length === 2 ? [180] : letters.length === 3 ? [365] : [180, 365];
+    const period = letterPeriod && periods.includes(letterPeriod) ? letterPeriod : periods[0];
+    const unlockDate = new Date();
+    unlockDate.setDate(unlockDate.getDate() + period);
+    const newLetter = {
+      text: letterDraft.trim(),
+      date: new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long", year: "numeric" }),
+      id: Date.now(),
+      unlockDate: unlockDate.toISOString()
+    };
+    const newLetters = [...letters, newLetter];
+    setLetters(newLetters);
     setLetterDraft("");
     setShowLetter(false);
-    setWi(w => ({
-      ...w,
-      flowers: w.flowers + 1,
-      brieven: w.brieven + 1
-    }));
+    showWorldReward("letter");
+    const newWi = { ...wi, flowers: wi.flowers + 1, brieven: wi.brieven + 1 };
+    setWi(newWi);
+    const newCoins = (accType === "child" || accType === "junior") ? coins + 8 : coins;
     if (accType === "child" || accType === "junior") setCoins(c => c + 8);
-    setTimeout(saveData, 500);
+    const saveL = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions };
+    try { localStorage.setItem("huxi-profile", JSON.stringify(saveL)); } catch(e) {}
+    if (userKey) firebaseSave(userKey, saveL);
   };
   const saveDiary = () => {
     if (!diaryDraft.trim()) return;
-    setDiary(p => [{
-      text: diaryDraft.trim(),
-      date: new Date().toLocaleDateString("nl-NL", {
-        day: "numeric",
-        month: "long"
-      }),
-      id: Date.now()
-    }, ...p].slice(0, 90));
+    const newEntry = { text: diaryDraft.trim(), date: new Date().toLocaleDateString("nl-NL", { day: "numeric", month: "long" }), id: Date.now() };
+    const newDiary = [newEntry, ...diary].slice(0, 90);
+    setDiary(newDiary);
     setDiaryDraft("");
     setShowDiary(false);
     showWorldReward("diary");
-    setWi(w => ({
-      ...w,
-      grass: w.grass + 1,
-      dagboeken: w.dagboeken + 1
-    }));
+    const newWi = { ...wi, grass: wi.grass + 1, dagboeken: wi.dagboeken + 1 };
+    setWi(newWi);
+    const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     if (accType === "child" || accType === "junior") setCoins(c => c + 5);
-    setTimeout(saveData, 500);
+    const saveD = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions };
+    try { localStorage.setItem("huxi-profile", JSON.stringify(saveD)); } catch(e) {}
+    if (userKey) firebaseSave(userKey, saveD);
   };
   const switchAcc = () => {
     try {
@@ -1958,19 +1954,23 @@ function HuxiApp() {
     }
   };
   const completeTask = tid => {
+    const newTasks = dailyTasks.filter(t => t.id !== tid);
+    const newGrowth = Math.min(1, growth + 0.003);
+    const newWi = { ...wi, tasks: wi.tasks + 1, bushes: wi.bushes + (wi.tasks % 5 === 0 ? 1 : 0) };
+    const newActions = dailyActions + 1;
+    const newSessions = totalSessions + 1;
+    const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     setCurTask(null);
-    setDailyTasks(p => p.filter(t => t.id !== tid));
-    setGrowth(g => Math.min(1, g + 0.003));
-    setWi(w => ({
-      ...w,
-      tasks: w.tasks + 1,
-      bushes: w.bushes + (w.tasks % 5 === 0 ? 1 : 0)
-    }));
-    setDailyActions(a => a + 1);
-    setTotalSessions(s => s + 1);
+    setDailyTasks(newTasks);
+    setGrowth(newGrowth);
+    setWi(newWi);
+    setDailyActions(newActions);
+    setTotalSessions(newSessions);
     if (accType === "child" || accType === "junior") setCoins(c => c + 5);
     showWorldReward("task");
-    setTimeout(saveData, 500);
+    const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions };
+    try { localStorage.setItem("huxi-profile", JSON.stringify(saveT)); } catch(e) {}
+    if (userKey) firebaseSave(userKey, saveT);
   };
   const finishTask = () => {
     if (taskTimerRef.current) {
@@ -4394,10 +4394,14 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
         }, ...p]);
         setLetterDraft("");
         setShowLetter(false);
-        setWi(w => ({...w, flowers: w.flowers+1, brieven: w.brieven+1}));
-        setGrowth(g2 => Math.min(1, g2+0.003));
+        const newWiL = {...wi, flowers: wi.flowers+1, brieven: wi.brieven+1};
+        const newGrowthL = Math.min(1, growth+0.003);
+        setWi(newWiL);
+        setGrowth(newGrowthL);
         showWorldReward("letter");
-        setTimeout(saveData, 500);
+        const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions };
+        try { localStorage.setItem("huxi-profile", JSON.stringify(saveLW)); } catch(e) {}
+        if (userKey) firebaseSave(userKey, saveLW);
       }
     }, !letterDraft.trim() ? "Schrijf eerst je brief..." : "Bewaar brief \uD83C\uDF3F")));
   })())), showLetters && /*#__PURE__*/React.createElement("div", {
