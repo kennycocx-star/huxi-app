@@ -4084,7 +4084,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
       },
         MCH.map(m => /*#__PURE__*/React.createElement("button", {
           key: m.id,
-          style: {
+          style: accType === "child" ? {
             background: postMood === m.id ? m.c : "white",
             color: postMood === m.id ? "white" : m.c,
             border: "2px solid " + m.c,
@@ -4092,6 +4092,14 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
             fontSize: 15, fontWeight: 600, cursor: "pointer",
             display: "flex", alignItems: "center", gap: 10,
             transition: "all 0.15s"
+          } : {
+            background: postMood === m.id ? m.c + "22" : "transparent",
+            color: "rgba(61,74,88,0.75)",
+            border: "none", borderRadius: 12, padding: "10px 14px",
+            fontSize: 14, fontWeight: postMood === m.id ? 700 : 500,
+            cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
+            transition: "all 0.15s", width: "100%",
+            borderLeft: postMood === m.id ? "3px solid " + m.c : "3px solid transparent"
           },
           onClick: () => {
             setPostMood(m.id);
@@ -4106,7 +4114,7 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
             });
             setTimeout(() => setShowPostMood(false), 600);
           }
-        }, m.a, " ", m.l))
+        }, accType === "child" ? m.a + " " + m.l : m.l))
       )
     )
   ), isOffline && phase === "world" && /*#__PURE__*/React.createElement("div", {
