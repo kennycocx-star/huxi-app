@@ -2,18 +2,6 @@
    HUXI App - Alle stijlen
    ================================================================ */
 
-/* Basis reset */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-html, body {
-  background: #F5F7FA;
-  overflow: hidden;
-  height: 100vh;
-  height: 100dvh;
-  -webkit-text-size-adjust: 100%;
-  -webkit-tap-highlight-color: transparent;
-}
-#root { width: 100%; height: 100%; }
-
 /* ================================================================
    App-specifieke stijlen
    ================================================================ */
