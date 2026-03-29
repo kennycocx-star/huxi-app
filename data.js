@@ -4,13 +4,6 @@
 // EX: alle ademhalingsoefeningen met parameters
 // ================================================================
 
-const {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo
-} = React;
 const ACCS = [{
   id: "child",
   label: "Kinderen",
