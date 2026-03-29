@@ -2078,19 +2078,22 @@ function HuxiApp() {
     style: {
       ...F,
       background: `linear-gradient(180deg,${c.s1} 0%,${c.s2} 55%,${c.gl} 100%)`,
-      zIndex: 1
+      zIndex: 1,
+      display: "none"
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       ...F,
       background: TOVL[tod],
-      zIndex: 2
+      zIndex: 2,
+      display: "none"
     }
   }), /*#__PURE__*/React.createElement("div", {
     style: {
       ...F,
       background: moodWarm,
-      zIndex: 2
+      zIndex: 2,
+      display: "none"
     }
   }), tod === "Nacht" && /*#__PURE__*/React.createElement("div", {
     style: {
