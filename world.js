@@ -45,9 +45,39 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
     }))
   );
 
+  // Canvas sizing — moet VOOR de animatie-loop, en opnieuw bij resize
   React.useEffect(() => {
     const cv = canvasRef.current;
     if (!cv) return;
+
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = cv.getBoundingClientRect();
+      const w = rect.width > 0 ? rect.width : cv.offsetWidth || 340;
+      const h = rect.height > 0 ? rect.height : cv.offsetHeight || 420;
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+    }
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
+
+  React.useEffect(() => {
+    const cv = canvasRef.current;
+    if (!cv) return;
+
+    // Wacht tot canvas afmetingen bekend zijn
+    function startLoop() {
+      if (cv.width === 0 || cv.height === 0) {
+        const dpr = window.devicePixelRatio || 1;
+        const w = cv.offsetWidth || 340;
+        const h = cv.offsetHeight || 420;
+        cv.width = Math.round(w * dpr);
+        cv.height = Math.round(h * dpr);
+      }
+
     const ctx = cv.getContext('2d');
     const CVW = cv.width, CVH = cv.height;
     const CX = CVW/2, GY = Math.round(CVH*0.745);
@@ -329,7 +359,6 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
 
         // Takken
         function startY(frac,glo){
-          // Eerste tak (f>=0.85) begint altijd op topY = stamtop, nooit spatie
           if(frac>=0.85) return topY;
           const t=ease(growth,glo,Math.min(1,glo+0.18));
           return topY+(GY-stamH*frac-topY)*t;
@@ -347,8 +376,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
         firefliesRef.current.forEach(f=>{updateFirefly(f,0.016);drawFirefly(f,fAlpha,aT);});
       }
 
-      // DIER BERICHTEN (emoji op canvas voor interactie)
-      // Fox altijd zichtbaar als easter egg
+      // DIER BERICHTEN
       if(growth>0.40){
         ctx.font=`${Math.round(CVW*0.058)}px serif`;ctx.globalAlpha=ease(growth,0.40,0.60);
         ctx.fillText('🦊',CVW*0.072,GY-CVH*0.105);ctx.globalAlpha=1;
@@ -365,20 +393,15 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
       animRef.current = requestAnimationFrame(loop);
     }
     animRef.current = requestAnimationFrame(loop);
-    return () => { if(animRef.current) cancelAnimationFrame(animRef.current); };
-  }, [season, growth, wp, tod, totalSessions, rareAnimal, wi]); // FIX M1: wi toegevoegd
-
-  // FIX H3: devicePixelRatio voor scherpe rendering op retina/high-DPI schermen
-  React.useEffect(() => {
-    const cv = canvasRef.current;
-    if (!cv) return;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = cv.getBoundingClientRect();
-    if (rect.width > 0 && rect.height > 0) {
-      cv.width = Math.round(rect.width * dpr);
-      cv.height = Math.round(rect.height * dpr);
     }
-  }, []);
+
+    // Kleine vertraging zodat de DOM layout klaar is voor we starten
+    const timer = setTimeout(startLoop, 50);
+    return () => {
+      clearTimeout(timer);
+      if(animRef.current) cancelAnimationFrame(animRef.current);
+    };
+  }, [season, growth, wp, tod, totalSessions, rareAnimal, wi]);
 
   return React.createElement('canvas', {
     ref: canvasRef,
