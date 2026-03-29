@@ -1617,16 +1617,23 @@ function HuxiApp() {
   }, []);
 
   // Persistent storage
-  const saveData = () => {
-    const data = {
+  // saveDataRef houdt altijd de MEEST RECENTE state bij - geen stale closure
+  const saveDataRef = useRef({});
+  useEffect(() => {
+    saveDataRef.current = {
       accType, reason, experience, treeName, userName, growth, coins,
       ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
       dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
-      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx
+      lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx,
+      userKey
     };
+  });
+  const saveData = () => {
+    const data = saveDataRef.current;
+    if (!data.accType) return;
     try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
-    if (userKey) firebaseSave(userKey, data);
+    if (data.userKey) firebaseSave(data.userKey, data);
   };
   const loadData = () => {
     try {
