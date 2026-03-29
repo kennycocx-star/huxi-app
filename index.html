@@ -1435,8 +1435,9 @@ function HuxiApp() {
     }, 60000);
     return () => clearInterval(iv);
   }, [phase]);
-  // Reset daily state on new day
+  // Reset daily state on new day - maar NIET als lastDay leeg is (dan laden we data)
   useEffect(() => {
+    if (!lastDay) return; // Nog geen data geladen - niet resetten
     const today = new Date().toDateString();
     if (today !== lastDay) {
       setLastDay(today);
@@ -1446,6 +1447,8 @@ function HuxiApp() {
       setDailyTasks([]);
       setTasksGenerated(false);
       setDailyBreaths(0);
+      // Sla de dag reset op zodat het bewaard blijft
+      setTimeout(saveData, 1000);
     }
   }, [lastDay]);
   // Enrich derived from world items - slow accumulation
@@ -3359,10 +3362,10 @@ html,body{background:#F5F7FA;overflow:hidden;height:100vh;height:100dvh;-webkit-
   }))), accType !== "junior" && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
-      bottom: "18%",
+      top: 0,
       left: 0,
       right: 0,
-      height: "68%",
+      bottom: 0,
       zIndex: 10,
       filter: !checkinDone ? "blur(3px)" : "none",
       transition: "filter 1.5s",
