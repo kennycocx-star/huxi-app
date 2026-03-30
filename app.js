@@ -2239,7 +2239,7 @@ function HuxiApp() {
       },
       onClick: () => tapA("\uD83D\uDC3E " + (PET_EM[buddy] || "") + " loopt met je mee!")
     }, PET_EM[buddy]),
-    ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none" && p !== buddy).map(petId => {
+    ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none" && p !== buddy && petPositions[p] !== false).map(petId => {
       const pos = petPositions[petId] || { x: 10 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 18) % 70, y: 30 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 13) % 35 };
       return /*#__PURE__*/React.createElement("div", {
         key: petId,
@@ -3837,32 +3837,55 @@ function HuxiApp() {
             style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "4px 0" }
           }, "Koop een huisdier \uD83D\uDC3E");
           return /*#__PURE__*/React.createElement("div", null,
-            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.45)", fontSize: 10, fontWeight: 700, margin: "0 0 5px" } },
-              "\uD83D\uDC3E Huisdieren — tik om te activeren"
+            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 6px" } },
+              "\uD83D\uDC3E Jouw huisdieren"
             ),
-            /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
-              ownedPets.map(petId => {
+            ownedPets.map(petId => {
               const isBuddy = buddy === petId;
               return /*#__PURE__*/React.createElement("div", {
                 key: petId,
-                style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" },
-                onClick: () => {
-                  const newBuddy = isBuddy ? "pet_none" : petId;
-                  setBuddy(newBuddy);
-                  const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx };
-                  try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
-                  if (userKey) firebaseSave(userKey, s);
-                }
+                style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px", marginBottom: 4, borderRadius: 10, background: isBuddy ? "rgba(76,175,122,0.12)" : "rgba(61,74,88,0.04)", border: isBuddy ? "1px solid rgba(76,175,122,0.4)" : "1px solid transparent" }
               },
-                /*#__PURE__*/React.createElement("span", {
-                  style: { fontSize: 32, lineHeight: 1, filter: isBuddy ? "drop-shadow(0 0 8px #4CAF7A)" : "none" }
-                }, PET_EM[petId] || "🐾"),
-                /*#__PURE__*/React.createElement("span", {
-                  style: { fontSize: 9, color: isBuddy ? "#4CAF7A" : "rgba(61,74,88,0.4)", fontWeight: isBuddy ? 700 : 400 }
-                }, isBuddy ? "⭐ Actief" : "Tik")
+                /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+                  /*#__PURE__*/React.createElement("span", { style: { fontSize: 22 } }, PET_EM[petId] || "\uD83D\uDC3E"),
+                  /*#__PURE__*/React.createElement("span", { style: { fontSize: 12, color: "#3D4A58", fontWeight: isBuddy ? 700 : 400 } }, petId.replace("pet_","").replace(/_/g," "))
+                ),
+                /*#__PURE__*/React.createElement("button", {
+                  title: isBuddy ? "Dit is je beste vriend" : "Maak beste vriend",
+                  style: { background: "none", border: "none", fontSize: 18, cursor: "pointer", opacity: isBuddy ? 1 : 0.2, transition: "opacity 0.2s", padding: "0 4px" },
+                  onClick: () => {
+                    const newBuddy = isBuddy ? "pet_none" : petId;
+                    setBuddy(newBuddy);
+                    const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx };
+                    try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
+                    if (userKey) firebaseSave(userKey, s);
+                  }
+                }, "\u2B50")
               );
-            })
-            )
+            }),
+            /*#__PURE__*/React.createElement("button", {
+              style: { marginTop: 8, background: "none", border: "1px solid rgba(61,74,88,0.15)", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: "rgba(61,74,88,0.45)", cursor: "pointer", width: "100%", fontFamily: "inherit" },
+              onClick: () => {
+                setBuddy("pet_none");
+                const newPP = {};
+                ownedPets.forEach(p => { newPP[p] = false; });
+                setPetPositions(newPP);
+                const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: "pet_none", moodHistory, petPositions: newPP, exPerEx };
+                try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
+                if (userKey) firebaseSave(userKey, s);
+              }
+            }, "\u274C Geen dieren in wereld"),
+            /*#__PURE__*/React.createElement("button", {
+              style: { marginTop: 4, background: "none", border: "1px solid rgba(76,175,122,0.25)", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: "rgba(76,175,122,0.7)", cursor: "pointer", width: "100%", fontFamily: "inherit" },
+              onClick: () => {
+                const newPP = {};
+                ownedPets.forEach(p => { newPP[p] = true; });
+                setPetPositions(newPP);
+                const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPP, exPerEx };
+                try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
+                if (userKey) firebaseSave(userKey, s);
+              }
+            }, "\u2705 Alle dieren in wereld")
           );
         })()
       )
