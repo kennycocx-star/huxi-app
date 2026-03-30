@@ -2229,7 +2229,7 @@ function HuxiApp() {
       style: {
         position: "absolute",
         bottom: "19%",
-        left: "50%",
+        left: "38%",
         fontSize: 34,
         zIndex: 11,
         userSelect: "none",
@@ -2239,7 +2239,7 @@ function HuxiApp() {
       },
       onClick: () => tapA("\uD83D\uDC3E " + (PET_EM[buddy] || "") + " loopt met je mee!")
     }, PET_EM[buddy]),
-    ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none" && p !== buddy && !((avatar && avatar.hiddenPets) || []).includes(p)).map(petId => {
+    ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none" && p !== buddy).map(petId => {
       const pos = petPositions[petId] || { x: 10 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 18) % 70, y: 30 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 13) % 35 };
       return /*#__PURE__*/React.createElement("div", {
         key: petId,
@@ -3838,18 +3838,17 @@ function HuxiApp() {
           }, "Koop een huisdier \uD83D\uDC3E");
           return /*#__PURE__*/React.createElement("div", null,
             /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.45)", fontSize: 10, fontWeight: 700, margin: "0 0 5px" } },
-              "\uD83D\uDC3E Huisdieren (tik = beste vriend)"
+              "\uD83D\uDC3E Huisdieren — tik om te activeren"
             ),
             /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
               ownedPets.map(petId => {
-              const isHidden = ((avatar && avatar.hiddenPets) || []).includes(petId);
               const isBuddy = buddy === petId;
               return /*#__PURE__*/React.createElement("div", {
                 key: petId,
                 style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }
               },
                 /*#__PURE__*/React.createElement("span", {
-                  style: { fontSize: 28, lineHeight: 1, opacity: isHidden ? 0.25 : 1 }
+                  style: { fontSize: 28, lineHeight: 1 }
                 }, PET_EM[petId] || "\uD83D\uDC3E"),
                 /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 3 } },
                   /*#__PURE__*/React.createElement("button", {
@@ -3865,16 +3864,7 @@ function HuxiApp() {
                       try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
                       if (userKey) firebaseSave(userKey, s);
                     }
-                  }, isBuddy ? "\u2B50 Vriend" : "Vriend?"),
-                  /*#__PURE__*/React.createElement("button", {
-                    style: {
-                      fontSize: 9, padding: "2px 5px", borderRadius: 6, border: "none", cursor: "pointer",
-                      background: isHidden ? "rgba(200,80,60,0.12)" : "rgba(61,74,88,0.08)",
-                      color: isHidden ? "#C4553A" : "rgba(61,74,88,0.45)", fontWeight: 600
-                    },
-                    onClick: () => {
-                      const h = (avatar && avatar.hiddenPets) || [];
-                      const newH = isHidden ? h.filter(x => x !== petId) : [...h, petId];
+                  }, isBuddy ? "\u2B50 Vriend" : "Vriend?") : [...h, petId];
                       const newAv = { ...avatar, hiddenPets: newH };
                       setAvatar(newAv);
                       const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
@@ -3887,7 +3877,7 @@ function HuxiApp() {
             })
             ),
             /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.25)", fontSize: 8, margin: "3px 0 0" } },
-              "Tik opnieuw om ster te verwijderen \u2022 Verberg via categorie"
+              "Actief huisdier loopt naast je avatar in de wereld \uD83D\uDC3E"
             )
           );
         })()
