@@ -296,8 +296,9 @@ function HuxiApp() {
       setTasksGenerated(false);
       setDailyBreaths(0);
       setDailyMood(null); // FIX C1: reset mood bij nieuwe dag
-      // Direct opslaan via saveData (gebruikt saveDataRef - altijd actueel)
-      saveData();
+      const resetData = { ...saveDataRef.current, lastDay: today, dailyActions: 0, checkinDone: false, dailyTasks: [], tasksGenerated: false, dailyBreaths: 0, dailyMood: null };
+      try { localStorage.setItem("huxi-profile", JSON.stringify(resetData)); } catch(e) {}
+      if (saveDataRef.current.userKey) firebaseSave(saveDataRef.current.userKey, resetData);
     }
   }, [lastDay]);
   // Enrich derived from world items - slow accumulation
@@ -3276,7 +3277,13 @@ function HuxiApp() {
       shoes_sneaker: "#E85D3A",
       shoes_boot: "#4A3020",
       shoes_gold: "#FFD700",
-      shoes_rainbow: "#FF69B4"
+      shoes_rainbow: "#FF69B4",
+      shoes_sandal: "#C8A870",
+      shoes_rocket: "#C4553A",
+      shoes_cloud: "#A8C4D8",
+      shoes_star_shoes: "#FFD700",
+      shoes_dragon: "#8B2500",
+      shoes_galaxy: "#2C1654"
     }[avatar.shoes] || "#3D4858"
   }), /*#__PURE__*/React.createElement("ellipse", {
     cx: 75,
@@ -3288,7 +3295,13 @@ function HuxiApp() {
       shoes_sneaker: "#E85D3A",
       shoes_boot: "#4A3020",
       shoes_gold: "#FFD700",
-      shoes_rainbow: "#FF69B4"
+      shoes_rainbow: "#FF69B4",
+      shoes_sandal: "#C8A870",
+      shoes_rocket: "#C4553A",
+      shoes_cloud: "#A8C4D8",
+      shoes_star_shoes: "#FFD700",
+      shoes_dragon: "#8B2500",
+      shoes_galaxy: "#2C1654"
     }[avatar.shoes] || "#3D4858"
   }), /*#__PURE__*/React.createElement("rect", {
     x: 42,
@@ -3302,7 +3315,13 @@ function HuxiApp() {
       pants_red: "#C4553A",
       pants_purple: "#7B4DAA",
       pants_gold: "#DAA520",
-      pants_star: "#2D5A87"
+      pants_star: "#2D5A87",
+      pants_camo: "#4A5E3A",
+      pants_galaxy: "#2C1654",
+      pants_cloud: "#A8C4D8",
+      pants_dino: "#4CAF7A",
+      pants_rainbow: "#FF6B6B",
+      pants_aurora: "#1A0A2E"
     }[avatar.pants] || "#3D7A5A"
   }), /*#__PURE__*/React.createElement("rect", {
     x: 68,
@@ -3316,7 +3335,13 @@ function HuxiApp() {
       pants_red: "#C4553A",
       pants_purple: "#7B4DAA",
       pants_gold: "#DAA520",
-      pants_star: "#2D5A87"
+      pants_star: "#2D5A87",
+      pants_camo: "#4A5E3A",
+      pants_galaxy: "#2C1654",
+      pants_cloud: "#A8C4D8",
+      pants_dino: "#4CAF7A",
+      pants_rainbow: "#FF6B6B",
+      pants_aurora: "#1A0A2E"
     }[avatar.pants] || "#3D7A5A"
   }), /*#__PURE__*/React.createElement("rect", {
     x: 35,
@@ -3331,7 +3356,16 @@ function HuxiApp() {
       shirt_star: "#4A90C4",
       shirt_cool: "#333",
       shirt_rainbow: "#FF6347",
-      shirt_nature: "#4CAF7A"
+      shirt_nature: "#4CAF7A",
+      shirt_space: "#1A1A2E",
+      shirt_fire: "#C4553A",
+      shirt_ice: "#87CEEB",
+      shirt_gold: "#DAA520",
+      shirt_cloud: "#A8C4D8",
+      shirt_dino: "#4CAF7A",
+      shirt_cat: "#F4A460",
+      shirt_galaxy: "#2C1654",
+      shirt_aurora: "#0D2137"
     }[avatar.shirt] || "#4CAF7A"
   }), avatar.shirt === "shirt_stripes" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("line", {
     x1: 38,
@@ -3378,7 +3412,16 @@ function HuxiApp() {
     y: 103,
     textAnchor: "middle",
     fontSize: 16
-  }, "\uD83C\uDF3F"), /*#__PURE__*/React.createElement("rect", {
+  }, "\uD83C\uDF3F"),
+  avatar.shirt === "shirt_space" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\uD83D\uDE80"),
+  avatar.shirt === "shirt_fire" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\uD83D\uDD25"),
+  avatar.shirt === "shirt_ice" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\u2744\uFE0F"),
+  avatar.shirt === "shirt_gold" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\u2B50"),
+  avatar.shirt === "shirt_cloud" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\u26C5"),
+  avatar.shirt === "shirt_dino" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\uD83E\uDD95"),
+  avatar.shirt === "shirt_cat" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\uD83D\uDC31"),
+  avatar.shirt === "shirt_galaxy" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\uD83C\uDF0C"),
+  avatar.shirt === "shirt_aurora" && /*#__PURE__*/React.createElement("text", { x: 60, y: 103, textAnchor: "middle", fontSize: 14 }, "\uD83C\uDF0C"), /*#__PURE__*/React.createElement("rect", {
     x: 22,
     y: 78,
     width: 10,
@@ -3441,7 +3484,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   }), avatar.hair === "hair_long" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
     d: "M32,35 Q35,10 60,8 Q85,10 88,35 Q88,22 60,18 Q32,22 32,35",
@@ -3452,7 +3501,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   }), /*#__PURE__*/React.createElement("path", {
     d: "M32,35 Q28,55 30,75",
@@ -3464,7 +3519,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858",
     strokeWidth: 8,
     strokeLinecap: "round"
@@ -3478,7 +3539,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858",
     strokeWidth: 8,
     strokeLinecap: "round"
@@ -3493,7 +3560,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   }), /*#__PURE__*/React.createElement("circle", {
     cx: 60,
@@ -3506,7 +3579,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   }), /*#__PURE__*/React.createElement("circle", {
     cx: 80,
@@ -3519,7 +3598,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   })), avatar.hair === "hair_spiky" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("polygon", {
     points: "40,18 45,0 50,18",
@@ -3530,7 +3615,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   }), /*#__PURE__*/React.createElement("polygon", {
     points: "55,15 60,-2 65,15",
@@ -3541,7 +3632,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   }), /*#__PURE__*/React.createElement("polygon", {
     points: "70,18 75,0 80,18",
@@ -3552,7 +3649,13 @@ function HuxiApp() {
       hairc_red: "#C4553A",
       hairc_blue: "#4A90C4",
       hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
+      hairc_green: "#4CAF7A",
+      hairc_purple: "#9B59B6",
+      hairc_rainbow: "#FF6B6B",
+      hairc_silver: "#BDC3C7",
+      hairc_orange: "#E67E22",
+      hairc_teal: "#1ABC9C",
+      hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
   })), /*#__PURE__*/React.createElement("circle", {
     cx: 50,
@@ -3700,7 +3803,31 @@ function HuxiApp() {
     stroke: "#E85D3A",
     strokeWidth: 5,
     strokeLinecap: "round"
-  }))
+  }),
+  avatar.acc === "acc_sunglasses" && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("rect", { x: 42, y: 38, width: 14, height: 10, rx: 3, fill: "#222", opacity: 0.85 }),
+    /*#__PURE__*/React.createElement("rect", { x: 64, y: 38, width: 14, height: 10, rx: 3, fill: "#222", opacity: 0.85 }),
+    /*#__PURE__*/React.createElement("line", { x1: 56, y1: 43, x2: 64, y2: 43, stroke: "#222", strokeWidth: 1.5 })),
+  avatar.acc === "acc_necklace" && /*#__PURE__*/React.createElement("path", { d: "M42,68 Q60,80 78,68", fill: "none", stroke: "#FFD700", strokeWidth: 2, strokeLinecap: "round" }),
+  avatar.acc === "acc_cape" && /*#__PURE__*/React.createElement("path", { d: "M35,72 Q28,110 35,135 Q60,125 85,135 Q92,110 85,72", fill: "#C4553A", opacity: 0.85 }),
+  avatar.acc === "acc_wings" && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("ellipse", { cx: 18, cy: 92, rx: 18, ry: 28, fill: "#E8D5FF", opacity: 0.8 }),
+    /*#__PURE__*/React.createElement("ellipse", { cx: 102, cy: 92, rx: 18, ry: 28, fill: "#E8D5FF", opacity: 0.8 })),
+  avatar.acc === "acc_crown_acc" && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("polygon", { points: "46,24 50,12 54,24", fill: "#FFD700" }),
+    /*#__PURE__*/React.createElement("polygon", { points: "57,24 60,8 63,24", fill: "#FFD700" }),
+    /*#__PURE__*/React.createElement("polygon", { points: "66,24 70,12 74,24", fill: "#FFD700" }),
+    /*#__PURE__*/React.createElement("rect", { x: 44, y: 24, width: 32, height: 5, rx: 1, fill: "#FFD700" })),
+  avatar.acc === "acc_fairy_wand" && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("line", { x1: 92, y1: 62, x2: 112, y2: 32, stroke: "#9B59B6", strokeWidth: 2 }),
+    /*#__PURE__*/React.createElement("text", { x: 112, y: 30, textAnchor: "middle", fontSize: 12 }, "\u2B50")),
+  avatar.acc === "acc_flower_acc" && /*#__PURE__*/React.createElement("text", { x: 90, y: 28, textAnchor: "middle", fontSize: 16 }, "\uD83C\uDF38"),
+  avatar.acc === "acc_star_acc" && /*#__PURE__*/React.createElement("text", { x: 92, y: 30, textAnchor: "middle", fontSize: 14 }, "\u2B50"),
+  avatar.acc === "acc_rainbow_acc" && /*#__PURE__*/React.createElement("text", { x: 90, y: 28, textAnchor: "middle", fontSize: 14 }, "\uD83C\uDF08"),
+  avatar.acc === "acc_halo_gold" && /*#__PURE__*/React.createElement("ellipse", { cx: 60, cy: 8, rx: 22, ry: 6, fill: "none", stroke: "#FFD700", strokeWidth: 4 }),
+  avatar.acc === "acc_dragon_wings" && /*#__PURE__*/React.createElement(React.Fragment, null,
+    /*#__PURE__*/React.createElement("path", { d: "M10,72 Q0,42 22,52 Q16,72 36,76", fill: "#C4553A", opacity: 0.85 }),
+    /*#__PURE__*/React.createElement("path", { d: "M110,72 Q120,42 98,52 Q104,72 84,76", fill: "#C4553A", opacity: 0.85 })))
       ),
       /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
         (() => {
@@ -3750,7 +3877,7 @@ function HuxiApp() {
                       const newH = isHidden ? h.filter(x => x !== petId) : [...h, petId];
                       const newAv = { ...avatar, hiddenPets: newH };
                       setAvatar(newAv);
-                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, stmoodHistory, petPositions, exPerEx };
+                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
                       try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
                       if (userKey) firebaseSave(userKey, s);
                     }
@@ -4869,7 +4996,7 @@ function HuxiApp() {
         style: { flex: 1, background: "#E07850", border: "none", borderRadius: 12, padding: "12px 0", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" },
         onClick: async () => {
           if (userKey) {
-            try { await fetch("https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
+            try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
           }
           try { localStorage.removeItem("huxi-profile"); } catch(e) {}
           setShowDeleteConfirm(false); setShowSett(false);
