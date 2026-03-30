@@ -3845,39 +3845,23 @@ function HuxiApp() {
               const isBuddy = buddy === petId;
               return /*#__PURE__*/React.createElement("div", {
                 key: petId,
-                style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }
+                style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" },
+                onClick: () => {
+                  const newBuddy = isBuddy ? "pet_none" : petId;
+                  setBuddy(newBuddy);
+                  const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx };
+                  try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
+                  if (userKey) firebaseSave(userKey, s);
+                }
               },
                 /*#__PURE__*/React.createElement("span", {
-                  style: { fontSize: 28, lineHeight: 1 }
-                }, PET_EM[petId] || "\uD83D\uDC3E"),
-                /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 3 } },
-                  /*#__PURE__*/React.createElement("button", {
-                    style: {
-                      fontSize: 9, padding: "2px 5px", borderRadius: 6, border: "none", cursor: "pointer",
-                      background: isBuddy ? "#4CAF7A" : "rgba(76,175,122,0.12)",
-                      color: isBuddy ? "white" : "rgba(61,74,88,0.5)", fontWeight: 600
-                    },
-                    onClick: () => {
-                      const newBuddy = isBuddy ? "pet_none" : petId;
-                      setBuddy(newBuddy);
-                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
-                      try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
-                      if (userKey) firebaseSave(userKey, s);
-                    }
-                  }, isBuddy ? "\u2B50 Vriend" : "Vriend?") : [...h, petId];
-                      const newAv = { ...avatar, hiddenPets: newH };
-                      setAvatar(newAv);
-                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
-                      try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
-                      if (userKey) firebaseSave(userKey, s);
-                    }
-                  }, isHidden ? "\uD83D\uDC41\uFE0F Tonen" : "\uD83D\uDEAB Verbergen")
-                )
+                  style: { fontSize: 32, lineHeight: 1, filter: isBuddy ? "drop-shadow(0 0 8px #4CAF7A)" : "none" }
+                }, PET_EM[petId] || "🐾"),
+                /*#__PURE__*/React.createElement("span", {
+                  style: { fontSize: 9, color: isBuddy ? "#4CAF7A" : "rgba(61,74,88,0.4)", fontWeight: isBuddy ? 700 : 400 }
+                }, isBuddy ? "⭐ Actief" : "Tik")
               );
             })
-            ),
-            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.25)", fontSize: 8, margin: "3px 0 0" } },
-              "Actief huisdier loopt naast je avatar in de wereld \uD83D\uDC3E"
             )
           );
         })()
