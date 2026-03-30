@@ -4311,6 +4311,7 @@ function HuxiApp() {
           const newAvatar = { ...avatar, [grp.k]: item.id };
           setOwnedItems(newOwned);
           setAvatar(newAvatar);
+          if (grp.k === 'pet') setBuddy(item.id);
           const saveNow = {
             accType, reason, experience, treeName, userName, growth,
             coins: item.p > 0 ? coins - item.p : coins,
@@ -4600,7 +4601,7 @@ function HuxiApp() {
       ),
       /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 12 } },
         [
-          ["\uD83D\uDD25", wi.streakDays || 0, "dagen actief"],
+          ["\uD83D\uDD25", wi.checkins || 0, "dagen actief"],
           ["\uD83C\uDF2C\uFE0F", wi.leaves || 0, "oefeningen"],
           ["\uD83D\uDCDD", wi.dagboeken || 0, "dagboeken"]
         ].map(([ico, val, lbl]) => /*#__PURE__*/React.createElement("div", {
@@ -4632,7 +4633,7 @@ function HuxiApp() {
         style: { background: "rgba(255,255,255,0.8)", borderRadius: 14, padding: "16px", marginBottom: 12 }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 700, margin: "0 0 12px" } },
-          "Stemming \u2014 laatste " + Math.min(moodHistory.length, 30) + " dagen"
+          "Stemming \u2014 laatste " + Math.min(moodHistory.length, 30) + " check-ins"
         ),
         /*#__PURE__*/React.createElement("div", { style: { position: "relative", height: 60, marginBottom: 8 } },
           /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "flex-end", gap: 5, height: "100%", position: "absolute", inset: 0 } },
