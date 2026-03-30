@@ -745,7 +745,7 @@ function HuxiApp() {
     setWorldReward(type);
     setTimeout(() => setWorldReward(null), 2500);
   };
-  const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
+  const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" , pet_fox: "\uD83E\uDD8A", pet_owl: "\uD83E\uDD89", pet_bear: "\uD83D\uDC3B", pet_penguin: "\uD83D\uDC27", pet_frog: "\uD83D\uDC38", pet_butterfly: "\uD83E\uDD8B", pet_wolf: "\uD83D\uDC3A", pet_lion: "\uD83E\uDD81", pet_galaxy_cat: "\u2728\uD83D\uDC31", pet_lava_dragon: "\uD83D\uDD25\uD83D\uDC09", pet_aurora_fox: "\uD83C\uDF0C\uD83E\uDD8A", pet_crystal_wolf: "\uD83D\uDC8E\uD83D\uDC3A", pet_rainbow_pony: "\uD83C\uDF08\uD83E\uDD84" };
 
   const doCheckin = id => {
     const today = new Date().toDateString();
@@ -3831,7 +3831,7 @@ function HuxiApp() {
       ),
       /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
         (() => {
-          const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
+          const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" , pet_fox: "\uD83E\uDD8A", pet_owl: "\uD83E\uDD89", pet_bear: "\uD83D\uDC3B", pet_penguin: "\uD83D\uDC27", pet_frog: "\uD83D\uDC38", pet_butterfly: "\uD83E\uDD8B", pet_wolf: "\uD83D\uDC3A", pet_lion: "\uD83E\uDD81", pet_galaxy_cat: "\u2728\uD83D\uDC31", pet_lava_dragon: "\uD83D\uDD25\uD83D\uDC09", pet_aurora_fox: "\uD83C\uDF0C\uD83E\uDD8A", pet_crystal_wolf: "\uD83D\uDC8E\uD83D\uDC3A", pet_rainbow_pony: "\uD83C\uDF08\uD83E\uDD84" };
           const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
           if (ownedPets.length === 0) return /*#__PURE__*/React.createElement("p", {
             style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "4px 0" }
