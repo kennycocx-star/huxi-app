@@ -3661,7 +3661,7 @@ function HuxiApp() {
       hairc_teal: "#1ABC9C",
       hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
-  }))
+  })),
   /*#__PURE__*/React.createElement("circle", {
     cx: 50,
     cy: 42,
