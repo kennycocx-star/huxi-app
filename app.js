@@ -3661,7 +3661,7 @@ function HuxiApp() {
       hairc_teal: "#1ABC9C",
       hairc_galaxy: "#6C3483"
     }[avatar.hairc] || "#3D4858"
-  })),,
+  })),
   avatar.hair === "hair_bun" && /*#__PURE__*/React.createElement(React.Fragment, null,
     /*#__PURE__*/React.createElement("path", {
       d: "M32,35 Q35,10 60,8 Q85,10 88,35 Q88,22 60,18 Q32,22 32,35",
