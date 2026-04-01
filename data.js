@@ -4,7 +4,7 @@
 // EX: alle ademhalingsoefeningen met parameters
 // ================================================================
 
-const ACCS = [{
+var ACCS = [{
   id: "child",
   label: "Kinderen",
   age: "6–11",
@@ -29,7 +29,7 @@ const ACCS = [{
   emoji: "🔬",
   desc: "Begeleid je cliënten"
 }];
-const REASONS_A = [{
+var REASONS_A = [{
   id: "stress",
   l: "Stress en spanning",
   e: "😰"
@@ -58,7 +58,7 @@ const REASONS_A = [{
   l: "Gewoon nieuwsgierig",
   e: "🌿"
 }];
-const REASONS_C = [{
+var REASONS_C = [{
   id: "worried",
   l: "Ik maak me soms zorgen",
   e: "🌧️"
@@ -79,7 +79,7 @@ const REASONS_C = [{
   l: "Ik wil gewoon leren ontspannen!",
   e: "🌈"
 }];
-const REASONS_J = [{
+var REASONS_J = [{
   id: "stress",
   l: "Stress (school, thuis, etc.)",
   e: "😰"
@@ -104,7 +104,7 @@ const REASONS_J = [{
   l: "Gewoon kijken wat het is",
   e: "🌿"
 }];
-const MA = [{
+var MA = [{
   id: "calm",
   l: "Rustig",
   c: "#70BCBC"
@@ -125,7 +125,7 @@ const MA = [{
   l: "Overweldigd",
   c: "#C4553A"
 }];
-const MJ = [{
+var MJ = [{
   id: "calm",
   l: "Chill",
   c: "#70BCBC"
@@ -146,7 +146,7 @@ const MJ = [{
   l: "Echt niet oké",
   c: "#C4553A"
 }];
-const MCH = [{
+var MCH = [{
   id: "calm",
   l: "Blij",
   c: "#70BCBC",
@@ -172,7 +172,7 @@ const MCH = [{
   c: "#C4553A",
   a: "🐻"
 }];
-const EXPLVL = [{
+var EXPLVL = [{
   id: "none",
   l: "Nee, helemaal nieuw",
   e: "🌱"
@@ -185,11 +185,11 @@ const EXPLVL = [{
   l: "Ja, ik heb ervaring",
   e: "🌳"
 }];
-const CQ = ["Hoe voel je je vandaag?", "Hoe is je dag tot nu toe?", "Hoe gaat het met je?", "Waar sta je vandaag?", "Hoe voel je je nu?"];
-const OFFR = ["Zullen we samen ademen?", "Even een moment voor jezelf?", "Zullen we even stilstaan?"];
-const MEMZ = ["Je bent dapper en sterk 💚", "Elke dag is een nieuw begin 🌅", "Jij maakt de wereld mooier 🌸", "Adem in… en laat los 🍃", "Je bent precies goed zoals je bent ✨", "Kleine stappen maken grote reizen 🦋", "Dit moment is van jou 🌼", "Je doet het geweldig 🌻"];
+var CQ = ["Hoe voel je je vandaag?", "Hoe is je dag tot nu toe?", "Hoe gaat het met je?", "Waar sta je vandaag?", "Hoe voel je je nu?"];
+var OFFR = ["Zullen we samen ademen?", "Even een moment voor jezelf?", "Zullen we even stilstaan?"];
+var MEMZ = ["Je bent dapper en sterk 💚", "Elke dag is een nieuw begin 🌅", "Jij maakt de wereld mooier 🌸", "Adem in… en laat los 🍃", "Je bent precies goed zoals je bent ✨", "Kleine stappen maken grote reizen 🦋", "Dit moment is van jou 🌼", "Je doet het geweldig 🌻"];
 // 450 micro-opdrachten: 10 categorieën x 15 per cat x 3 leeftijdsgroepen
-const MICRO = {
+var MICRO = {
   adult: [
   // Ademhaling snel
   "Haal vijf keer diep adem door je neus", "Adem langzaam in voor vier tellen, uit voor zes — herhaal dit rustig", "Zucht drie keer alles van je af — echt luid", "Adem in door je neus, blaas uit door je mond — op je eigen tempo", "Leg je hand op je buik en voel hoe hij meebeweegt met je adem", "Doe een dubbele inademing en blaas dan héél langzaam uit", "Adem in alsof je aan een bloem ruikt, uit alsof je een kaarsje uitblaast", "Sluit je ogen en neem een paar bewuste ademhalingen", "Adem naar je schouders toe en laat ze zakken bij het uitademen", "Houd na het inademen even je adem vast en laat dan alles los", "Probeer zo langzaam mogelijk uit te ademen", "Voel de koele lucht bij je neus als je inademt", "Adem in terwijl je je handen opheft, uit terwijl je ze laat zakken", "Neem één hele diepe ademhaling — de diepste van de dag", "Adem in en tel rustig mee in je hoofd",
@@ -214,11 +214,11 @@ const MICRO = {
   child: ["Blaas alsof je een ballon opblaast — doe dit vijf keer", "Snuif als een hondje — dan blaas als een draak", "Adem in en maak jezelf zo groot mogelijk — blaas uit en word zo klein als een muis", "Blaas alsof je een paardenbloem wegblaast", "Doe alsof je een warme chocolademelk afkoelt", "Snuif alsof je aan de lekkerste bloem ruikt — blaas dan zachtjes uit", "Adem in als een beer — groot en sterk — blaas uit als een vlinder", "Blaas alsof je zeepbellen maakt", "Leg je handen op je buik — voel hem groter en kleiner worden", "Doe de slang: ssssssss bij het uitademen", "Blaas alle zorgen weg als wolkjes", "Adem in en houd vast — tel tot drie — en laat los!", "Doe de leeuw: adem in en blaas uit met je tong naar buiten", "Adem in door je neus, uit door je mond — doe het zo langzaam als je kan", "Adem in en tel tot drie in je hoofd — blaas dan alles uit", "Schud je hele lichaam als een natte hond", "Maak jezelf zo groot als een reus — dan zo klein als een kabouter", "Waar in je lichaam kriebelt het?", "Knijp je tenen samen en laat los — voel je het verschil?", "Trek je schouders op tot je oren en laat ze dan vallen — PLOF", "Maak je handen tot vuisten — knijp heel hard — en open ze als bloemen", "Doe alsof je een robot bent — alles stijf — en dan een slappe pop", "Stamp zachtjes met je voeten op de grond — voel je de grond?", "Beweeg alleen je vingers — zo snel als je kan", "Sta op één been als een flamingo — hoe lang lukt het?", "Maak je gezicht zo raar mogelijk — en laat dan los", "Kriebel je eigen armen van boven naar beneden", "Doe alsof je door pindakaas loopt — heel langzaam", "Span al je spieren aan — alles — en laat dan alles tegelijk los", "Draai rondjes met je hoofd alsof het een bal is", "Zoek vijf dingen die dezelfde kleur hebben", "Sluit je ogen — welke geluiden hoor je allemaal?", "Zoek iets dat zacht is en voel eraan", "Wat is het grappigste ding dat je nu kan zien?", "Luister heel goed — wat is het stilste geluid?", "Zoek iets dat koud is en raak het aan", "Hoeveel verschillende kleuren kan je tellen in de kamer?", "Voel aan je haar — hoe voelt het vandaag?", "Kijk uit het raam — wat beweegt er allemaal?", "Zoek iets rond en iets vierkant", "Welke kleur heeft de lucht nu?", "Raak drie verschillende dingen aan — welke voelt het raarst?", "Zoek het kleinste ding dat je kan vinden", "Zoek iets dat ruikt — wat ruik je?", "Luister of je een vogel of dier hoort", "Wat was het leukste van vandaag?", "Wie is je favoriete persoon en waarom?", "Wat is je lievelingseten — denk er even aan hoe lekker het is", "Welk speelgoed of ding maakt je het blij?", "Noem iets leuks dat iemand voor je gedaan heeft", "Wat vind je het leukst aan je huis?", "Wie maakt je altijd aan het lachen?", "Wat is het fijnste plekje waar je kan zitten?", "Welke dag was de leukste dag ooit?", "Wat vind je het leukst aan jezelf?", "Noem iets buiten dat je mooi vindt", "Welk verhaal of filmpje vind je het allerleukst?", "Welk dier vind je het coolste?", "Wat is het leukste spel dat je kent?", "Wat zou je morgen het liefst willen doen?", "Als je gevoel een diertje was — welk dier zou het zijn?", "Hoe voelt je buik nu — vlinders, knopen, of rustig?", "Wat zou je nu het liefst willen doen?", "Als je een toverkracht had — wat zou je veranderen?", "Hoe was je dag — vertel het in drie woorden", "Waar denk je nu aan?", "Wat maakte je vandaag blij en wat maakte je verdrietig?", "Als je dag een kleur had — welke kleur zou het zijn?", "Heb je vandaag gelachen? Wanneer?", "Wat vond je vandaag moeilijk?", "Hoe zou je je voelen als alles perfect was?", "Wat helpt jou als je je niet lekker voelt?", "Is er iets dat je dwars zit?", "Als je een wolk kon sturen naar iemand — naar wie?", "Teken een gezichtje dat laat zien hoe je je voelt", "Noem iets waar je goed in bent", "Wat heb je vandaag goed gedaan?", "Je bent dapper — wanneer was je dapper?", "Welke superkracht heb jij in het echt?", "Wat zou je beste vriend zeggen over jou?", "Waar ben je trots op?", "Noem drie dingen die jou speciaal maken", "Wat heb je geleerd dat je eerst niet kon?", "Wat is iets aardigs dat je voor iemand hebt gedaan?", "Als je een superheld was — welke zou je zijn?", "Jij maakt de wereld leuker — weet je waarom?", "Wat wil je later worden en waarom?", "Noem iets dat je hebt volgehouden ook al was het moeilijk", "Wat is je lievelingsding aan jezelf?", "Waar word je blij van?", "Spring vijf keer op en neer als een kangoeroe", "Doe de flamingo — sta op één been en tel tot tien", "Schud je armen als spaghetti", "Doe alsof je door de jungle sluipt", "Maak je zo lang mogelijk — rek tot aan het plafond", "Draai rondjes met je armen als een windmolen", "Doe de penguin-wandeling door de kamer", "Stamp als een olifant — drie grote stampen", "Wiebel je hele lichaam als een pudding", "Doe alsof je zwemt — welke slag doe je?", "Maak sprongetjes als een konijn", "Beweeg als een slak — zo langzaam mogelijk", "Doe alsof je een kat bent die net wakker wordt — rek en strek", "Klap in je handen boven je hoofd en raak dan je tenen aan", "Balanceer alsof je op een koord loopt", "Aan wie denk je nu? Stuur ze een knuffel in gedachten", "Teken een hartje voor iemand die je lief vindt", "Wat is het liefste dat iemand ooit voor je gedaan heeft?", "Wie zou je nu het liefst een knuffel geven?", "Als je een cadeau kon toveren voor iemand — wat zou het zijn?", "Wie maakt je het vaakst aan het lachen?", "Denk aan iemand die je mist — stuur ze een gedachte-knuffel", "Wie is de grappigste persoon die je kent?", "Welk compliment zou je aan je mama of papa willen geven?", "Denk aan je beste vriendje — wat vind je het leukst aan hen?", "Wie helpt jou als je verdrietig bent?", "Vertel in je hoofd aan je knuffel hoe je dag was", "Wat zou je juf of meester blij maken?", "Wat zou je doen als je de hele dag mocht besteden met je favoriete persoon?", "Als je een brief kon sturen naar iedereen — wat zou erin staan?", "Kijk naar buiten — zie je wolken? Welke vormen hebben ze?", "Zoek iets groens — het mag heel klein zijn", "Luister heel goed — hoor je een vogel?", "Hoe voelt de lucht vandaag — warm of koud?", "Als je een dier kon zijn voor één dag — welk dier kies je?", "Kijk naar de lucht — beschrijf de kleur", "Welk seizoen is het en hoe merk je dat?", "Als je een boom was — welke boom zou je zijn?", "Voel je de wind? Uit welke richting komt hij?", "Welk weer past bij hoe je je voelt?", "Als je een bloem was — welke kleur zou je zijn?", "Zoek de mooiste steen die je kan vinden", "Kijk naar een boom — hoeveel vogels zie je?", "Zoek een insect of beestje en kijk wat het doet", "Zoek een blaadje of bloem als je buiten bent", "Als je dag een kleur was — welke kleur?", "Welk dier ben je vandaag?", "Verzin een toverspreuk voor geluk", "Als je een liedje moest zingen over vandaag — hoe zou het gaan?", "Teken met je vinger in de lucht hoe je je voelt", "Welk weer is het in je hoofd vandaag?", "Als je een smaak was — welke smaak ben je nu?", "Verzin een naam voor je gevoel van vandaag", "Als je kon vliegen — waar zou je naartoe gaan?", "Welke superheld-naam zou je hebben?", "Als je gevoel een geluid was — welk geluid?", "Maak een grappig gezicht dat laat zien hoe je je voelt", "Als je een wolk kon vormen — welke vorm?", "Verzin een geheim wachtwoord voor als je je beter wil voelen", "Als je dag een film was — hoe zou hij heten?"],
   junior: ["Vijf diepe ademhalingen — focus alleen op het gevoel", "Adem in voor vier tellen, uit voor zes — op je eigen ritme", "Zucht het van je af — letterlijk — drie keer", "Blaas alle spanning uit alsof je rook uitblaast", "Leg je hand op je borst en voel je hartslag terwijl je ademt", "Dubbele inademing, lange uitademing — het reset je zenuwstelsel", "Adem in en hou even vast — laat dan langzaam los", "Concentreer je op alleen maar uitademen — de inademing komt vanzelf", "Doe je ogen dicht en neem een paar rustige ademhalingen", "Adem alsof je door een rietje uitblaast", "Voel hoe je buik beweegt — niet je borst", "Adem zo diep mogelijk in — vul jezelf helemaal", "Volg je adem met je aandacht van begin tot eind", "Neem één bewuste ademhaling — de rest volgt vanzelf", "Adem in door je neus, uit door je mond — merk het verschil", "Check je kaak — is hij gespannen? Laat los", "Waar zit de stress in je lichaam? Benoem het", "Rol je schouders naar achteren — ze kruipen altijd omhoog", "Ontspan je gezicht — je fronst waarschijnlijk zonder het te weten", "Voel je voeten in je schoenen — druk ze even in de grond", "Span al je spieren aan voor vijf seconden — laat dan alles los", "Check je houding — zit of sta je recht?", "Beweeg je nek langzaam van links naar rechts", "Knijp in je handen en laat los — voel het verschil", "Leg je hand op je buik en voel hoe hij meebeweegt", "Schud je handen los alsof er water aan hangt", "Voel waar je lichaam het meest ontspannen is", "Rek je uit alsof je net wakker wordt — het mag overdreven", "Trek je tenen op en laat ze weer los", "Draai je polsen een paar keer rond", "Noem vijf dingen die je nu ziet — snel", "Sluit je ogen en focus op wat je hoort", "Wat ruik je op dit moment?", "Raak iets aan en beschrijf het in je hoofd", "Kijk naar buiten — wat is het eerste dat opvalt?", "Luister naar het verste geluid dat je kan opvangen", "Zoek iets moois in de ruimte waar je bent", "Welke kleur overheerst om je heen?", "Voel de temperatuur op je huid — warm of koel?", "Zoek iets met een bijzondere textuur", "Let op de schaduwen in de ruimte", "Hoor je achtergrondgeluiden die je normaal negeert?", "Merk op wat er beweegt om je heen", "Kijk naar je handen — bekijk ze echt even", "Focus op één geluid en volg het", "Noem één ding waar je blij mee bent vandaag", "Wie is er voor je geweest deze week?", "Wat is iets dat vanzelfsprekend lijkt maar eigenlijk bijzonder is?", "Welk moment van vandaag was oké of zelfs goed?", "Noem iets aan jezelf waar je tevreden mee bent", "Welk nummer of serie maakt je blij?", "Wie zou je willen bedanken — en waarvoor?", "Wat is het beste dat je deze week gegeten hebt?", "Noem een plek waar je je fijn voelt", "Welke skill heb je die je vroeger niet had?", "Wie snapt jou het best?", "Noem een herinnering die je doet glimlachen", "Waar kijk je naar uit?", "Wat heb je dat niet iedereen heeft?", "Wat maakt je leven een beetje makkelijker?", "Hoe voel je je echt — niet het standaard antwoord?", "Als je gevoel een emoji was — welke?", "Wat houdt je bezig op dit moment?", "Hoe was vandaag op een schaal van 1-10?", "Wat heb je nodig maar vraag je niet snel?", "Als je één ding kon veranderen aan vandaag — wat?", "Ben je moe? Gestrest? Verveeld? Check het even echt", "Wat zou je tegen je beste vriend zeggen als die zich zo voelde?", "Hoe was je energie vandaag?", "Wat is iets dat je wil maar steeds uitstelt?", "Waar ben je het hardst mee bezig in je hoofd?", "Wat deed je goed vandaag dat niemand gezien heeft?", "Hoe wil je je morgen voelen?", "Als je je gevoel moest uitleggen aan een alien — hoe?", "Waar maak je je druk over dat misschien niet zo erg is?", "Wat is iets waar je stiekem best goed in bent?", "Noem een moment dat je trots was op jezelf", "Wat maakt jou anders dan de rest — op een goede manier?", "Welk compliment hoor je het liefst?", "Wat heb je overwonnen dat moeilijk was?", "Wat zou je tegen jezelf van een jaar geleden zeggen?", "Waar ben je sterker in geworden?", "Noem iets dat je hebt volgehouden", "Wat waardeer je aan jezelf dat anderen misschien niet zien?", "Wat is een risico dat je genomen hebt en dat goed uitpakte?", "Waar ga je voor — wat is je ding?", "Noem drie woorden die jou beschrijven", "Wat is het moedigste dat je ooit gedaan hebt?", "Waar wil je over vijf jaar staan?", "Als je een quote moest kiezen voor je leven — welke?", "Sta op en rek je uit — echt goed", "Schud je handen los", "Loop even naar het raam en kijk dertig seconden naar buiten", "Doe een paar kniebuigingen — het geeft energie", "Rol je nek langzaam rond", "Strek je armen boven je hoofd en reik zo hoog mogelijk", "Draai je bovenlichaam naar links en rechts", "Ga even staan als je zit — of zitten als je staat", "Wiebel met je tenen in je schoenen", "Wandel even door de kamer en terug", "Strek je benen als je zit", "Schud je hele lichaam los — alles tegelijk", "Zet je lievelingsnummer op en beweeg mee", "Doe tien jumping jacks — of vijf als dat genoeg is", "Doe een plank voor tien seconden — of probeer het", "Denk aan iemand die je blij maakt", "Stuur een berichtje naar iemand — gewoon omdat", "Wie zou je nu willen spreken?", "Denk aan het beste gesprek dat je recent gehad hebt", "Wat zou je tegen iemand zeggen die zich voelt zoals jij nu?", "Wie is iemand die je inspireert?", "Wat waardeer je het meest aan je vrienden?", "Wie ken je die het nu misschien moeilijk heeft?", "Als je één persoon kon bellen — wie zou het zijn?", "Wat is het leukste compliment dat je ooit gekregen hebt?", "Denk aan iemand die je lang niet gesproken hebt", "Wat zou je voor iemand willen doen vandaag?", "Wie geeft je het gevoel dat je jezelf kan zijn?", "Denk aan een leraar of coach die impact op je had", "Als je een boodschap kon sturen naar de hele wereld — wat?", "Kijk naar de lucht — hoe ziet ze eruit?", "Zoek iets natuurlijks om je heen", "Luister of je iets van natuur hoort — wind, vogels, regen", "Hoe voelt de buitenlucht als je diep inademt?", "Welk seizoen past bij je stemming?", "Kijk naar een boom of plant en merk de details op", "Als je ergens in de natuur kon zijn — waar?", "Merk het weer op — hoe beïnvloedt het je stemming?", "Zoek iets levends om je heen", "Kijk naar de wolken en zoek een vorm", "Welk natuurgeluid kalmeert jou het meest?", "Merk op hoeveel groen er om je heen is", "Kijk naar het licht — is het helder, zacht, warm?", "Hoe ruikt het buiten vandaag?", "Als je een plek in de natuur moest kiezen om te zitten — welke?", "Beschrijf je dag in drie woorden", "Als je stemming een nummer was — welk nummer?", "Welke film of serie past bij hoe je je voelt?", "Als je gevoel een meme was — welke?", "Beschrijf je energie als een percentage", "Welk seizoen is het in je hoofd?", "Als je dag een playlist was — welke vibe?", "Verzin een titel voor vandaag", "Welk karakter uit een serie ben je vandaag?", "Als je mood een kleur had — welke?", "Beschrijf vandaag alsof het een film-review is", "Welk weer is het in je hoofd?", "Als je een superpower had voor de rest van de dag — welke?", "Rate je dag met een emoji", "Als je je gevoel kon posten als story — wat zou erop staan?"]
 };
-const pickMicro = type => {
+var pickMicro = type => {
   const list = MICRO[type] || MICRO.adult;
   return list[Math.floor(Math.random() * list.length)];
 };
-const SC = {
+var SC = {
   Lente: {
     lf: "#4CAF7A",
     la: "#6BC5A0",
@@ -264,14 +264,14 @@ const SC = {
     trunk: "#3D4A58"
   }
 };
-const TOVL = {
+var TOVL = {
   Ochtend: "rgba(255,210,120,0.12)",
   Middag: "rgba(0,0,0,0)",
   Avond: "rgba(255,100,30,0.22)",
   Nacht: "rgba(8,8,50,0.58)"
 };
 
-const EX = [{
+var EX = [{
   id: "basic",
   name: "Basis Ademhaling",
   nameChild: "Rustig ademen",
@@ -447,6 +447,6 @@ const EX = [{
   pts: 65,
   sci: "Kapalabhati-variant die het sympathisch zenuwstelsel activeert. Klinisch bewezen voor verhoogde alertheid en mentale helderheid. Niet geschikt bij angst of paniek."
 }];
-const GRND = ["Noem 5 dingen die je ZIET 👀", "Noem 4 dingen die je HOORT 👂", "Noem 3 dingen die je VOELT ✋", "Noem 2 dingen die je RUIKT 👃", "Noem 1 ding dat je PROEFT 👅"];
-const BSCAN = ["Voel je voeten op de grond 🦶", "Merk je benen op", "Voel je buik — adem hier naartoe", "Let op je schouders — laat ze zakken", "Ontspan je gezicht en kaak"];
-const VIS = ["Sluit je ogen 👁️", "Stel je een veilige plek voor", "Voel de warmte, hoor de geluiden", "Blijf hier rustig ademen", "Open langzaam je ogen"];
+var GRND = ["Noem 5 dingen die je ZIET 👀", "Noem 4 dingen die je HOORT 👂", "Noem 3 dingen die je VOELT ✋", "Noem 2 dingen die je RUIKT 👃", "Noem 1 ding dat je PROEFT 👅"];
+var BSCAN = ["Voel je voeten op de grond 🦶", "Merk je benen op", "Voel je buik — adem hier naartoe", "Let op je schouders — laat ze zakken", "Ontspan je gezicht en kaak"];
+var VIS = ["Sluit je ogen 👁️", "Stel je een veilige plek voor", "Voel de warmte, hoor de geluiden", "Blijf hier rustig ademen", "Open langzaam je ogen"];
