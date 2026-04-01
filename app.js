@@ -1,5 +1,4 @@
-// ================================================================
-// HUXI App — Hoofd applicatie (HuxiApp)
+Fix: timer reset bij nieuwe dag toegevoegd aan resetData// HUXI App — Hoofd applicatie (HuxiApp)
 // Bevat alle React state, UI logica en gebruikersinterface
 //
 // Afhankelijkheden (geladen via index.html):
