@@ -124,23 +124,38 @@ var breathAudio = (() => {
     osc.start(); osc.stop(c.currentTime + duration);
     activeNodes.push(osc);
   };
-  // Kling = klaar
+  // Kling = klaar (zachte afsluiting)
   var done = () => {
     stopAll();
     var c = getCtx();
     var osc = c.createOscillator();
     var gain = c.createGain();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(523, c.currentTime);
-    osc.frequency.setValueAtTime(659, c.currentTime + 0.15);
-    osc.frequency.setValueAtTime(784, c.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.2, c.currentTime);
-    gain.gain.linearRampToValueAtTime(0, c.currentTime + 1);
+    osc.frequency.setValueAtTime(396, c.currentTime);
+    osc.frequency.linearRampToValueAtTime(528, c.currentTime + 0.8);
+    gain.gain.setValueAtTime(0.1, c.currentTime);
+    gain.gain.linearRampToValueAtTime(0, c.currentTime + 1.5);
     osc.connect(gain).connect(c.destination);
-    osc.start(); osc.stop(c.currentTime + 1);
+    osc.start(); osc.stop(c.currentTime + 1.5);
     activeNodes.push(osc);
   };
-  return { breathIn, breathOut, hold, done, stopAll };
+  // Rustig SOS geluid — diepe zachte toon
+  var sosTone = (duration) => {
+    stopAll();
+    var c = getCtx();
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 174; // diepe rustgevende frequentie
+    gain.gain.setValueAtTime(0, c.currentTime);
+    gain.gain.linearRampToValueAtTime(0.12, c.currentTime + 0.5);
+    gain.gain.setValueAtTime(0.12, c.currentTime + duration - 0.5);
+    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
+    osc.connect(gain).connect(c.destination);
+    osc.start(); osc.stop(c.currentTime + duration);
+    activeNodes.push(osc);
+  };
+  return { breathIn, breathOut, hold, done, sosTone, stopAll };
 })();
 
 function HuxiApp() {
@@ -2364,9 +2379,9 @@ function HuxiApp() {
     buddy && buddy !== "pet_none" && PET_EM[buddy] && /*#__PURE__*/React.createElement("div", {
       style: {
         position: "absolute",
-        bottom: "19%",
-        left: "38%",
-        fontSize: 34,
+        bottom: "18%",
+        left: "55%",
+        fontSize: 28,
         zIndex: 11,
         userSelect: "none",
         animation: "petWalk 1.8s ease-in-out infinite",
@@ -3509,7 +3524,7 @@ function HuxiApp() {
           const buddyEM = buddy && buddy !== "pet_none" ? (PET_EM[buddy] || "\uD83D\uDC3E") : null;
           return /*#__PURE__*/React.createElement("div", null,
             buddyEM && /*#__PURE__*/React.createElement("div", {
-              style: { position: "absolute", top: 14, left: 138, fontSize: 38, lineHeight: 1, zIndex: 2 }
+              style: { position: "absolute", top: 50, left: 148, fontSize: 30, lineHeight: 1, zIndex: 2, animation: "petWalk 1.8s ease-in-out infinite" }
             }, buddyEM),
             /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 4px" } },
               "\uD83D\uDC3E Huisdieren"
@@ -3521,7 +3536,7 @@ function HuxiApp() {
                 const isBuddy = buddy === petId;
                 return /*#__PURE__*/React.createElement("div", {
                   key: petId,
-                  style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 8, background: isBuddy ? "rgba(220,117,83,0.1)" : "rgba(61,74,88,0.03)", border: isBuddy ? "1px solid rgba(220,117,83,0.35)" : "1px solid transparent" }
+                  style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 8, background: "transparent", border: "none" }
                 },
                   /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
                     /*#__PURE__*/React.createElement("span", { style: { fontSize: 18 } }, PET_EM[petId] || "\uD83D\uDC3E"),
@@ -4861,7 +4876,7 @@ function HuxiApp() {
         ? /*#__PURE__*/React.createElement("button", {
             onClick: () => {
               setSosStep(sosStep + 1);
-              if (sosStep < 4) breathAudio.breathIn(2);
+              if (sosStep < 4) breathAudio.sosTone(3);
               else breathAudio.done();
             },
             style: { padding: "14px 40px", borderRadius: 50, background: "linear-gradient(135deg,#70BCBC,#DC7553)", color: "#fff", fontSize: 16, fontWeight: 700, border: "none", cursor: "pointer" }
@@ -4872,7 +4887,7 @@ function HuxiApp() {
               style: { padding: "14px 30px", borderRadius: 50, background: "#70BCBC", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }
             }, "\uD83C\uDF3F Ik voel me beter"),
             /*#__PURE__*/React.createElement("button", {
-              onClick: () => { setSosStep(0); breathAudio.breathIn(3); },
+              onClick: () => { setSosStep(0); breathAudio.sosTone(4); },
               style: { padding: "14px 30px", borderRadius: 50, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }
             }, "\uD83D\uDD04 Nog een keer")
           )
@@ -4881,7 +4896,7 @@ function HuxiApp() {
 
   // SOS knop — altijd zichtbaar in world
   phase === "world" && !showEx && !sosActive && /*#__PURE__*/React.createElement("button", {
-    onClick: () => { setSosActive(true); setSosStep(0); breathAudio.breathIn(3); },
+    onClick: () => { setSosActive(true); setSosStep(0); breathAudio.sosTone(4); },
     style: { position: "absolute", top: 12, left: 12, zIndex: 50, width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#DC7553,#E07850)", color: "#fff", fontSize: 14, fontWeight: 800, border: "none", cursor: "pointer", boxShadow: "0 2px 8px rgba(220,117,83,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }
   }, "SOS"));
 }
