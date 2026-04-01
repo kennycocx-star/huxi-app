@@ -1,4 +1,4 @@
-// HUXI App — Hoofd applicatie (HuxiApp)
+ // HUXI App — Hoofd applicatie (HuxiApp)
 // Bevat alle React state, UI logica en gebruikersinterface
 //
 // Afhankelijkheden (geladen via index.html):
