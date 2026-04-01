@@ -57,86 +57,101 @@ var OBC = {
 var breathAudio = (() => {
   var ctx = null;
   var activeNodes = [];
+  var noiseBuffer = null;
   var getCtx = () => {
     if (!ctx || ctx.state === "closed") ctx = new (window.AudioContext || window.webkitAudioContext)();
     if (ctx.state === "suspended") ctx.resume();
+    // Maak ruis-buffer 1x aan (klinkt als wind/adem)
+    if (!noiseBuffer || noiseBuffer.sampleRate !== ctx.sampleRate) {
+      var sr = ctx.sampleRate;
+      noiseBuffer = ctx.createBuffer(1, sr * 8, sr);
+      var d = noiseBuffer.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
     return ctx;
   };
   var stopAll = () => {
     activeNodes.forEach(n => { try { n.stop(); } catch(e) {} });
     activeNodes = [];
   };
-  // Stijgende toon = adem in
+  // Gefilterde ruis = natuurlijk ademgeluid
+  var makeBreath = (c, duration, isIn) => {
+    var src = c.createBufferSource();
+    src.buffer = noiseBuffer;
+    // Bandpass filter: klinkt als lucht door neus/mond
+    var bp = c.createBiquadFilter();
+    bp.type = "bandpass";
+    bp.frequency.value = isIn ? 600 : 400;
+    bp.Q.value = 0.5;
+    // Laagdoorlaat voor zachtheid
+    var lp = c.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = isIn ? 1200 : 800;
+    // Volume: langzaam op en af zoals echte ademhaling
+    var gain = c.createGain();
+    var t = c.currentTime;
+    if (isIn) {
+      // Inademen: stilte → langzaam luider → zacht einde
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.06, t + duration * 0.15);
+      gain.gain.linearRampToValueAtTime(0.18, t + duration * 0.6);
+      gain.gain.linearRampToValueAtTime(0.12, t + duration * 0.85);
+      gain.gain.linearRampToValueAtTime(0, t + duration);
+    } else {
+      // Uitademen: vol begin → langzaam zachter (langer staart)
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.18, t + duration * 0.08);
+      gain.gain.linearRampToValueAtTime(0.14, t + duration * 0.3);
+      gain.gain.linearRampToValueAtTime(0.06, t + duration * 0.7);
+      gain.gain.linearRampToValueAtTime(0, t + duration);
+    }
+    src.connect(bp).connect(lp).connect(gain).connect(c.destination);
+    src.start(t); src.stop(t + duration);
+    activeNodes.push(src);
+  };
+  // Adem in — ruisgeluid dat aanzwelt
   var breathIn = (duration) => {
     stopAll();
     var c = getCtx();
-    var osc = c.createOscillator();
-    var gain = c.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(220, c.currentTime);
-    osc.frequency.linearRampToValueAtTime(440, c.currentTime + duration);
-    gain.gain.setValueAtTime(0, c.currentTime);
-    gain.gain.linearRampToValueAtTime(0.15, c.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.15, c.currentTime + duration - 0.3);
-    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
-    osc.connect(gain).connect(c.destination);
-    osc.start(); osc.stop(c.currentTime + duration);
-    activeNodes.push(osc);
+    makeBreath(c, duration, true);
   };
-  // Dalende toon = adem uit
+  // Adem uit — ruisgeluid dat wegzakt
   var breathOut = (duration) => {
     stopAll();
     var c = getCtx();
-    var osc = c.createOscillator();
-    var gain = c.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(440, c.currentTime);
-    osc.frequency.linearRampToValueAtTime(220, c.currentTime + duration);
-    gain.gain.setValueAtTime(0, c.currentTime);
-    gain.gain.linearRampToValueAtTime(0.15, c.currentTime + 0.3);
-    gain.gain.setValueAtTime(0.15, c.currentTime + duration - 0.3);
-    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
-    osc.connect(gain).connect(c.destination);
-    osc.start(); osc.stop(c.currentTime + duration);
-    activeNodes.push(osc);
+    makeBreath(c, duration, false);
   };
-  // Zachte pulse = vasthouden
+  // Vasthouden — heel zachte lage brom, nauwelijks hoorbaar
   var hold = (duration) => {
     stopAll();
     var c = getCtx();
     var osc = c.createOscillator();
     var gain = c.createGain();
     osc.type = "sine";
-    osc.frequency.value = 330;
-    gain.gain.setValueAtTime(0, c.currentTime);
-    gain.gain.linearRampToValueAtTime(0.08, c.currentTime + 0.2);
-    // Zachte pulse effect
-    var pulseRate = 1.5;
-    for (var i = 0; i < duration * pulseRate; i++) {
-      var t = c.currentTime + i / pulseRate;
-      gain.gain.setValueAtTime(0.08, t);
-      gain.gain.linearRampToValueAtTime(0.03, t + 0.3 / pulseRate);
-      gain.gain.linearRampToValueAtTime(0.08, t + 0.6 / pulseRate);
-    }
-    gain.gain.setValueAtTime(0.08, c.currentTime + duration - 0.2);
-    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
+    osc.frequency.value = 80; // heel laag, als zachte brom
+    var t = c.currentTime;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.04, t + 0.4);
+    gain.gain.setValueAtTime(0.04, t + duration - 0.4);
+    gain.gain.linearRampToValueAtTime(0, t + duration);
     osc.connect(gain).connect(c.destination);
-    osc.start(); osc.stop(c.currentTime + duration);
+    osc.start(t); osc.stop(t + duration);
     activeNodes.push(osc);
   };
-  // Kling = klaar (zachte afsluiting)
+  // Klaar — zacht belletje, heel subtiel
   var done = () => {
     stopAll();
     var c = getCtx();
     var osc = c.createOscillator();
     var gain = c.createGain();
     osc.type = "sine";
-    osc.frequency.setValueAtTime(396, c.currentTime);
-    osc.frequency.linearRampToValueAtTime(528, c.currentTime + 0.8);
-    gain.gain.setValueAtTime(0.1, c.currentTime);
-    gain.gain.linearRampToValueAtTime(0, c.currentTime + 1.5);
+    osc.frequency.value = 285; // zachte lage toon
+    var t = c.currentTime;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.07, t + 0.2);
+    gain.gain.linearRampToValueAtTime(0, t + 2);
     osc.connect(gain).connect(c.destination);
-    osc.start(); osc.stop(c.currentTime + 1.5);
+    osc.start(t); osc.stop(t + 2);
     activeNodes.push(osc);
   };
   // Rustig SOS geluid — diepe zachte toon
@@ -146,13 +161,14 @@ var breathAudio = (() => {
     var osc = c.createOscillator();
     var gain = c.createGain();
     osc.type = "sine";
-    osc.frequency.value = 174; // diepe rustgevende frequentie
-    gain.gain.setValueAtTime(0, c.currentTime);
-    gain.gain.linearRampToValueAtTime(0.12, c.currentTime + 0.5);
-    gain.gain.setValueAtTime(0.12, c.currentTime + duration - 0.5);
-    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
+    osc.frequency.value = 136; // nog dieper, OM-frequentie
+    var t = c.currentTime;
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.09, t + 0.8);
+    gain.gain.setValueAtTime(0.09, t + duration - 0.8);
+    gain.gain.linearRampToValueAtTime(0, t + duration);
     osc.connect(gain).connect(c.destination);
-    osc.start(); osc.stop(c.currentTime + duration);
+    osc.start(t); osc.stop(t + duration);
     activeNodes.push(osc);
   };
   return { breathIn, breathOut, hold, done, sosTone, stopAll };
@@ -3514,51 +3530,13 @@ function HuxiApp() {
   );
 })()
       ),
-      /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-        (() => {
-          const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" , pet_fox: "\uD83E\uDD8A", pet_owl: "\uD83E\uDD89", pet_bear: "\uD83D\uDC3B", pet_penguin: "\uD83D\uDC27", pet_frog: "\uD83D\uDC38", pet_butterfly: "\uD83E\uDD8B", pet_wolf: "\uD83D\uDC3A", pet_lion: "\uD83E\uDD81", pet_galaxy_cat: "\u2728\uD83D\uDC31", pet_lava_dragon: "\uD83D\uDD25\uD83D\uDC09", pet_aurora_fox: "\uD83C\uDF0C\uD83E\uDD8A", pet_crystal_wolf: "\uD83D\uDC8E\uD83D\uDC3A", pet_rainbow_pony: "\uD83C\uDF08\uD83E\uDD84" };
-          const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
-          if (ownedPets.length === 0) return /*#__PURE__*/React.createElement("p", {
-            style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "4px 0" }
-          }, "Koop een huisdier \uD83D\uDC3E");
-          const buddyEM = buddy && buddy !== "pet_none" ? (PET_EM[buddy] || "\uD83D\uDC3E") : null;
-          return /*#__PURE__*/React.createElement("div", null,
-            buddyEM && /*#__PURE__*/React.createElement("div", {
-              style: { position: "absolute", top: 50, left: 148, fontSize: 30, lineHeight: 1, zIndex: 2, animation: "petWalk 1.8s ease-in-out infinite" }
-            }, buddyEM),
-            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 4px" } },
-              "\uD83D\uDC3E Huisdieren"
-            ),
-            /*#__PURE__*/React.createElement("div", {
-              style: { maxHeight: 130, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }
-            },
-              ownedPets.map(petId => {
-                const isBuddy = buddy === petId;
-                return /*#__PURE__*/React.createElement("div", {
-                  key: petId,
-                  style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 8, background: "transparent", border: "none" }
-                },
-                  /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
-                    /*#__PURE__*/React.createElement("span", { style: { fontSize: 18 } }, PET_EM[petId] || "\uD83D\uDC3E"),
-                    /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "#45545E" } }, petId.replace("pet_","").replace(/_/g," "))
-                  ),
-                  /*#__PURE__*/React.createElement("button", {
-                    title: isBuddy ? "Vriend verwijderen" : "Maak vriend",
-                    style: { background: "none", border: "none", fontSize: 15, cursor: "pointer", opacity: isBuddy ? 1 : 0.18, transition: "opacity 0.15s", padding: "0 2px" },
-                    onClick: () => {
-                      const newBuddy = isBuddy ? "pet_none" : petId;
-                      setBuddy(newBuddy);
-                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-                      try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
-                      if (userKey) firebaseSave(userKey, s);
-                    }
-                  }, "\u2B50")
-                );
-              })
-            )
-          );
-        })()
-      )
+      (() => {
+        const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34", pet_fox: "\uD83E\uDD8A", pet_owl: "\uD83E\uDD89", pet_bear: "\uD83D\uDC3B", pet_penguin: "\uD83D\uDC27", pet_frog: "\uD83D\uDC38", pet_butterfly: "\uD83E\uDD8B", pet_wolf: "\uD83D\uDC3A", pet_lion: "\uD83E\uDD81", pet_galaxy_cat: "\u2728\uD83D\uDC31", pet_lava_dragon: "\uD83D\uDD25\uD83D\uDC09", pet_aurora_fox: "\uD83C\uDF0C\uD83E\uDD8A", pet_crystal_wolf: "\uD83D\uDC8E\uD83D\uDC3A", pet_rainbow_pony: "\uD83C\uDF08\uD83E\uDD84" };
+        const buddyEM = buddy && buddy !== "pet_none" ? (PET_EM[buddy] || "") : null;
+        return buddyEM ? /*#__PURE__*/React.createElement("div", {
+          style: { fontSize: 28, lineHeight: 1, alignSelf: "flex-end", marginBottom: 8, animation: "petWalk 1.8s ease-in-out infinite" }
+        }, buddyEM) : null;
+      })()
     ),
     /*#__PURE__*/React.createElement("div", { style: { overflowY: "auto", flex: 1 } },
       /*#__PURE__*/React.createElement(React.Fragment, null, [{
@@ -4079,8 +4057,8 @@ function HuxiApp() {
         fontSize: 9,
         padding: "5px 8px",
         borderRadius: 8,
-        border: owned ? "2px solid #DC7553" : "1px solid rgba(220,117,83,0.2)",
-        background: owned ? "rgba(220,117,83,0.1)" : "white",
+        border: (grp.k === 'pet' && buddy === item.id) ? "2px solid #DC7553" : owned ? "2px solid #DC7553" : "1px solid rgba(220,117,83,0.2)",
+        background: (grp.k === 'pet' && buddy === item.id) ? "rgba(220,117,83,0.18)" : owned ? "rgba(220,117,83,0.1)" : "white",
         cursor: owned || canBuy ? "pointer" : "default",
         opacity: owned || canBuy ? 1 : 0.35,
         fontFamily: "inherit",
@@ -4088,23 +4066,39 @@ function HuxiApp() {
       },
       onClick: () => {
         if (owned) {
-          const newAv = { ...avatar, [grp.k]: item.id };
-          setAvatar(newAv);
-          const saveEq = {
-            accType, reason, experience, treeName, userName, growth, coins,
-            ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood,
-            totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
-            dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
-            lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx
-          };
-          try { localStorage.setItem("huxi-profile", JSON.stringify(saveEq)); } catch(e) {}
-          if (userKey) firebaseSave(userKey, saveEq);
+          if (grp.k === 'pet') {
+            // Huisdier: tik om als buddy te kiezen (of te verwijderen)
+            const newBuddy = buddy === item.id ? "pet_none" : item.id;
+            setBuddy(newBuddy);
+            const saveEq = {
+              accType, reason, experience, treeName, userName, growth, coins,
+              ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
+              totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
+              dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
+              lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
+            };
+            try { localStorage.setItem("huxi-profile", JSON.stringify(saveEq)); } catch(e) {}
+            if (userKey) firebaseSave(userKey, saveEq);
+          } else {
+            const newAv = { ...avatar, [grp.k]: item.id };
+            setAvatar(newAv);
+            const saveEq = {
+              accType, reason, experience, treeName, userName, growth, coins,
+              ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood,
+              totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
+              dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
+              lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
+            };
+            try { localStorage.setItem("huxi-profile", JSON.stringify(saveEq)); } catch(e) {}
+            if (userKey) firebaseSave(userKey, saveEq);
+          }
         } else if (canBuy) {
           if (item.p > 0) setCoins(c => c - item.p);
           const newOwned = [...ownedItems, item.id];
-          const newAvatar = { ...avatar, [grp.k]: item.id };
+          const newAvatar = grp.k === 'pet' ? avatar : { ...avatar, [grp.k]: item.id };
+          const newBuddy = grp.k === 'pet' ? item.id : buddy;
           setOwnedItems(newOwned);
-          setAvatar(newAvatar);
+          if (grp.k !== 'pet') setAvatar(newAvatar);
           if (grp.k === 'pet') setBuddy(item.id);
           const saveNow = {
             accType, reason, experience, treeName, userName, growth,
@@ -4114,7 +4108,7 @@ function HuxiApp() {
             letters, diary, seenEx, lastExId, dailyMood,
             totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
             dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
-            lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx
+            lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
           };
           try { localStorage.setItem("huxi-profile", JSON.stringify(saveNow)); } catch(e) {}
           if (userKey) firebaseSave(userKey, saveNow);
@@ -4130,7 +4124,7 @@ function HuxiApp() {
       style: {
         color: canBuy ? "#E6A832" : "#999"
       }
-    }, "\uD83E\uDE99", item.p), owned && "\u2713");
+    }, "\uD83E\uDE99", item.p), owned && (grp.k === 'pet' && buddy === item.id ? "\u2B50" : "\u2713"));
   })),
   /*#__PURE__*/React.createElement("button", {
     key: "none_" + grp.k,
