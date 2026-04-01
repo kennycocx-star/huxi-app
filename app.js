@@ -52,6 +52,97 @@ var OBC = {
   width: "100%",
   maxWidth: 360
 };
+// ═══ BREATH AUDIO ═══
+// Zachte tonen zodat gebruikers ademoefeningen kunnen volgen zonder te kijken
+var breathAudio = (() => {
+  var ctx = null;
+  var activeNodes = [];
+  var getCtx = () => {
+    if (!ctx || ctx.state === "closed") ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  };
+  var stopAll = () => {
+    activeNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+    activeNodes = [];
+  };
+  // Stijgende toon = adem in
+  var breathIn = (duration) => {
+    stopAll();
+    var c = getCtx();
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(220, c.currentTime);
+    osc.frequency.linearRampToValueAtTime(440, c.currentTime + duration);
+    gain.gain.setValueAtTime(0, c.currentTime);
+    gain.gain.linearRampToValueAtTime(0.15, c.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.15, c.currentTime + duration - 0.3);
+    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
+    osc.connect(gain).connect(c.destination);
+    osc.start(); osc.stop(c.currentTime + duration);
+    activeNodes.push(osc);
+  };
+  // Dalende toon = adem uit
+  var breathOut = (duration) => {
+    stopAll();
+    var c = getCtx();
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(440, c.currentTime);
+    osc.frequency.linearRampToValueAtTime(220, c.currentTime + duration);
+    gain.gain.setValueAtTime(0, c.currentTime);
+    gain.gain.linearRampToValueAtTime(0.15, c.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.15, c.currentTime + duration - 0.3);
+    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
+    osc.connect(gain).connect(c.destination);
+    osc.start(); osc.stop(c.currentTime + duration);
+    activeNodes.push(osc);
+  };
+  // Zachte pulse = vasthouden
+  var hold = (duration) => {
+    stopAll();
+    var c = getCtx();
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = "sine";
+    osc.frequency.value = 330;
+    gain.gain.setValueAtTime(0, c.currentTime);
+    gain.gain.linearRampToValueAtTime(0.08, c.currentTime + 0.2);
+    // Zachte pulse effect
+    var pulseRate = 1.5;
+    for (var i = 0; i < duration * pulseRate; i++) {
+      var t = c.currentTime + i / pulseRate;
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.linearRampToValueAtTime(0.03, t + 0.3 / pulseRate);
+      gain.gain.linearRampToValueAtTime(0.08, t + 0.6 / pulseRate);
+    }
+    gain.gain.setValueAtTime(0.08, c.currentTime + duration - 0.2);
+    gain.gain.linearRampToValueAtTime(0, c.currentTime + duration);
+    osc.connect(gain).connect(c.destination);
+    osc.start(); osc.stop(c.currentTime + duration);
+    activeNodes.push(osc);
+  };
+  // Kling = klaar
+  var done = () => {
+    stopAll();
+    var c = getCtx();
+    var osc = c.createOscillator();
+    var gain = c.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(523, c.currentTime);
+    osc.frequency.setValueAtTime(659, c.currentTime + 0.15);
+    osc.frequency.setValueAtTime(784, c.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.2, c.currentTime);
+    gain.gain.linearRampToValueAtTime(0, c.currentTime + 1);
+    osc.connect(gain).connect(c.destination);
+    osc.start(); osc.stop(c.currentTime + 1);
+    activeNodes.push(osc);
+  };
+  return { breathIn, breathOut, hold, done, stopAll };
+})();
+
 function HuxiApp() {
   // ═══ ALL HOOKS FIRST ═══
   const [phase, setPhase] = useState("login");
@@ -407,6 +498,7 @@ function HuxiApp() {
     const fin = () => {
       clearInterval(countRef.current);
       setExPhase("done");
+      breathAudio.done();
       // Bereken nieuwe waarden DIRECT - geen setTimeout meer
       const newBreaths = dailyBreaths + 1;
       const newActions = dailyActions + 1;
@@ -438,17 +530,21 @@ function HuxiApp() {
     const cyc = () => {
       setExPhase("in");
       startCount(ex.iS);
+      breathAudio.breathIn(ex.iS);
       exRef.current = setTimeout(() => {
         if (ex.hI > 0) {
           setExPhase("hold");
           startCount(ex.hI);
+          breathAudio.hold(ex.hI);
           exRef.current = setTimeout(() => {
             setExPhase("out");
             startCount(ex.oS);
+            breathAudio.breathOut(ex.oS);
             exRef.current = setTimeout(() => {
               if (ex.hO > 0) {
                 setExPhase("hold2");
                 startCount(ex.hO);
+                breathAudio.hold(ex.hO);
                 exRef.current = setTimeout(() => {
                   rnd++;
                   setExRound(rnd);
@@ -464,6 +560,7 @@ function HuxiApp() {
         } else {
           setExPhase("out");
           startCount(ex.oS);
+          breathAudio.breathOut(ex.oS);
           exRef.current = setTimeout(() => {
             rnd++;
             setExRound(rnd);
@@ -477,6 +574,7 @@ function HuxiApp() {
   const stopEx = useCallback(() => {
     clearTimeout(exRef.current);
     clearInterval(countRef.current);
+    breathAudio.stopAll();
     setShowEx(false);
   }, []);
 
