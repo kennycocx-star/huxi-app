@@ -249,6 +249,17 @@ function HuxiApp() {
   const [taskInput, setTaskInput] = useState("");
   const [taskTimer, setTaskTimer] = useState(0);
   const [dailyActions, setDailyActions] = useState(0);
+  // ═══ THERAPEUT ═══
+  const [therapistCode, setTherapistCode] = useState(null);
+  const [therapistClients, setTherapistClients] = useState([]);
+  const [therapistLoading, setTherapistLoading] = useState(false);
+  const [linkedTherapist, setLinkedTherapist] = useState(null);
+  const [linkInput, setLinkInput] = useState("");
+  const [linkMsg, setLinkMsg] = useState("");
+  const [showTherapistPanel, setShowTherapistPanel] = useState(false);
+  // ═══ SOS ═══
+  const [sosActive, setSosActive] = useState(false);
+  const [sosStep, setSosStep] = useState(0);
   const [lastDay, setLastDay] = useState(() => new Date().toDateString());
   const [totalSessions, setTotalSessions] = useState(0);
   // Invisible level: based on total sessions completed, not shown to user
@@ -459,7 +470,7 @@ function HuxiApp() {
       setLastTaskTexts(newLastTaskTexts);
       setTasksGenerated(true);
       // FIX C2: directe save zodat taken niet verloren gaan bij sluiten
-      const saveTaskGen = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts: newLastTaskTexts, dailyBreaths, dailyTasks: newTasks, tasksGenerated: true, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+      const saveTaskGen = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts: newLastTaskTexts, dailyBreaths, dailyTasks: newTasks, tasksGenerated: true, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
       try { localStorage.setItem("huxi-profile", JSON.stringify(saveTaskGen)); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveTaskGen);
     }
@@ -523,7 +534,7 @@ function HuxiApp() {
       setLastBreathTime(Date.now());
       showWorldReward("breath");
       // DIRECTE SAVE - geen delay
-      const saveF = { accType, reason, experience, treeName, userName, growth: newGrowthF, coins: newCoinsF, ownedItems, avatar, letters, diary, seenEx, lastExId: ex.id, dailyMood, totalSessions: newSessions, wi: newWiF, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: newBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx: newExPerEx };
+      const saveF = { accType, reason, experience, treeName, userName, growth: newGrowthF, coins: newCoinsF, ownedItems, avatar, letters, diary, seenEx, lastExId: ex.id, dailyMood, totalSessions: newSessions, wi: newWiF, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: newBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx: newExPerEx, therapistCode, linkedTherapist };
       try { localStorage.setItem("huxi-profile", JSON.stringify(saveF)); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveF);
     };
@@ -588,7 +599,8 @@ function HuxiApp() {
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
       dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
       lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx,
-      userKey, goalPeriod, reminder, lastBreathTime, lastTaskTime // FIX M2+M3: goalPeriod en reminder opgeslagen
+      userKey, goalPeriod, reminder, lastBreathTime, lastTaskTime, // FIX M2+M3: goalPeriod en reminder opgeslagen
+      therapistCode, linkedTherapist
     };
   });
   const saveData = () => {
@@ -889,7 +901,7 @@ function HuxiApp() {
     setMoodHistory(newMoodH);
     if (accType === "child" || accType === "junior") setCoins(newCoinsC);
     // Inline save met nieuwe waarden (geen stale closure probleem)
-    const saveCI = { accType, reason, experience, treeName, userName, growth: newGrowthC, coins: newCoinsC, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood: id, totalSessions, wi: newWiC, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone: true, lastCheckinDate: today, streakShields: newShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx };
+    const saveCI = { accType, reason, experience, treeName, userName, growth: newGrowthC, coins: newCoinsC, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood: id, totalSessions, wi: newWiC, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone: true, lastCheckinDate: today, streakShields: newShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx, therapistCode, linkedTherapist };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveCI)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveCI);
   };
@@ -914,7 +926,7 @@ function HuxiApp() {
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 8 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveL = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveL = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveL)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveL);
   };
@@ -930,7 +942,7 @@ function HuxiApp() {
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveD = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveD = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveD)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveD);
   };
@@ -1025,7 +1037,7 @@ function HuxiApp() {
     setDailyActions(newActionsT);
     setTotalSessions(newSessionsT);
     if (accType === "child" || accType === "junior") setCoins(newCoinsT);
-    const saveTL = { accType, reason, experience, treeName, userName, growth: newGrowthT, coins: newCoinsT, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessionsT, wi: newWiT, lastDay, dailyActions: newActionsT, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveTL = { accType, reason, experience, treeName, userName, growth: newGrowthT, coins: newCoinsT, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessionsT, wi: newWiT, lastDay, dailyActions: newActionsT, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveTL)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveTL);
   };
@@ -1072,7 +1084,7 @@ function HuxiApp() {
     setTotalSessions(newSessions);
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
     showWorldReward("task");
-    const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveT)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveT);
   };
@@ -1194,6 +1206,8 @@ function HuxiApp() {
               if (Array.isArray(data.moodHistory)) setMoodHistory(data.moodHistory);
               if (data.petPositions && typeof data.petPositions === "object") setPetPositions(data.petPositions);
               if (data.exPerEx && typeof data.exPerEx === "object") setExPerEx(data.exPerEx);
+              if (data.therapistCode) setTherapistCode(data.therapistCode);
+              if (data.linkedTherapist) setLinkedTherapist(data.linkedTherapist);
               setLastTaskTexts(Array.isArray(data.lastTaskTexts) ? data.lastTaskTexts : []);
               const today = new Date().toDateString();
               if (data.lastDay === today) {
@@ -2372,7 +2386,7 @@ function HuxiApp() {
           const y = Math.max(5, Math.min(75, ((e.clientY - rect.top) / rect.height) * 100));
           const newPos = { ...petPositions, [petId]: { x, y } };
           setPetPositions(newPos);
-          const saveP = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPos, exPerEx };
+          const saveP = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPos, exPerEx, therapistCode, linkedTherapist };
           try { localStorage.setItem("huxi-profile", JSON.stringify(saveP)); } catch(e2) {}
           if (userKey) firebaseSave(userKey, saveP);
         },
@@ -3190,7 +3204,7 @@ function HuxiApp() {
         setWi(newWiL);
         setGrowth(newGrowthL);
         showWorldReward("letter");
-        const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+        const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
         try { localStorage.setItem("huxi-profile", JSON.stringify(saveLW)); } catch(e) {}
         if (userKey) firebaseSave(userKey, saveLW);
       }
@@ -3519,7 +3533,7 @@ function HuxiApp() {
                     onClick: () => {
                       const newBuddy = isBuddy ? "pet_none" : petId;
                       setBuddy(newBuddy);
-                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx };
+                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
                       try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
                       if (userKey) firebaseSave(userKey, s);
                     }
@@ -4114,7 +4128,7 @@ function HuxiApp() {
     onClick: () => {
       setAvatar(a => ({ ...a, [grp.k]: grp.k + "_none" }));
       const newAvReset = { ...avatar, [grp.k]: grp.k + "_none" };
-      const saveAR = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAvReset, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+      const saveAR = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAvReset, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
       try { localStorage.setItem("huxi-profile", JSON.stringify(saveAR)); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveAR);
     }
@@ -4558,7 +4572,7 @@ function HuxiApp() {
               const newGoals = [newGoal, ...goals];
               setGoals(newGoals);
               setDraft("");
-              const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx };
+              const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
               try { localStorage.setItem("huxi-profile", JSON.stringify(saveG)); } catch(e2) {}
               if (userKey) firebaseSave(userKey, saveG);
             }
@@ -4603,7 +4617,7 @@ function HuxiApp() {
               onClick: () => {
                 const newGoals = goals.filter(x => x.id !== goal.id);
                 setGoals(newGoals);
-                const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx };
+                const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
                 try { localStorage.setItem("huxi-profile", JSON.stringify(saveG)); } catch(e2) {}
                 if (userKey) firebaseSave(userKey, saveG);
               }
@@ -4699,12 +4713,51 @@ function HuxiApp() {
           setLastTaskTexts([]);
         }
   }, "Uitloggen")],
+  // Therapeut koppeling in instellingen
+  accType === "therapist" ? ["Mijn koppelcode", /*#__PURE__*/React.createElement("button", {
+    key: "tc",
+    className: "tb",
+    onClick: async () => {
+      if (therapistCode) { setLinkMsg("Je code: " + therapistCode); return; }
+      setLinkMsg("Code aanmaken...");
+      var code = await therapistRegister(userKey, userName);
+      if (code) { setTherapistCode(code); setLinkMsg("Je code: " + code); saveData(); }
+      else setLinkMsg("Fout bij aanmaken");
+    }
+  }, therapistCode ? "\uD83D\uDD11 " + therapistCode : "\uD83D\uDD11 Code aanmaken")] :
+  ["Therapeut koppelen", /*#__PURE__*/React.createElement("div", { key: "tl", style: { display: "flex", gap: 6, alignItems: "center" } },
+    linkedTherapist
+      ? /*#__PURE__*/React.createElement("button", { className: "tb", style: { color: "#E07850", fontSize: 11 }, onClick: async () => {
+          await clientUnlinkTherapist(userKey, linkedTherapist);
+          setLinkedTherapist(null); setLinkMsg("Ontkoppeld"); saveData();
+        } }, "\u274C Ontkoppelen")
+      : /*#__PURE__*/React.createElement(React.Fragment, null,
+          /*#__PURE__*/React.createElement("input", { type: "text", maxLength: 6, placeholder: "Code", value: linkInput,
+            onChange: e => setLinkInput(e.target.value.replace(/\D/g, "")),
+            style: { width: 70, padding: "6px 8px", borderRadius: 8, border: "1px solid #ccc", fontSize: 13, textAlign: "center" }
+          }),
+          /*#__PURE__*/React.createElement("button", { className: "tb", style: { fontSize: 11 }, onClick: async () => {
+            if (linkInput.length !== 6) { setLinkMsg("Vul 6 cijfers in"); return; }
+            setLinkMsg("Koppelen...");
+            var th = await therapistLookup(linkInput);
+            if (!th) { setLinkMsg("Code niet gevonden"); return; }
+            var ok = await clientLinkToTherapist(userKey, linkInput);
+            if (ok) { setLinkedTherapist(linkInput); setLinkMsg("Gekoppeld aan " + th.name); setLinkInput(""); saveData(); }
+            else setLinkMsg("Koppeling mislukt");
+          } }, "\u2705 Koppel"))
+  )],
+  linkMsg ? ["", /*#__PURE__*/React.createElement("span", { key: "lm", style: { fontSize: 11, color: "#70BCBC" } }, linkMsg)] : null,
+  accType === "therapist" ? ["Dashboard", /*#__PURE__*/React.createElement("button", {
+    key: "td",
+    className: "tb",
+    onClick: () => { setShowTherapistPanel(true); setShowSett(false); }
+  }, "\uD83D\uDCCA Cliënten bekijken")] : null,
   ["Nieuw begin", /*#__PURE__*/React.createElement("button", {
     key: "del",
     className: "tb",
     style: { color: "#E07850" },
     onClick: () => setShowDeleteConfirm(true)
-  }, "\uD83D\uDDD1\uFE0F Verwijderen")]].map(([l, ctrl], i) => /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDDD1\uFE0F Verwijderen")]].filter(Boolean).map(([l, ctrl], i) => /*#__PURE__*/React.createElement("div", {
     key: i,
     style: {
       display: "flex",
@@ -4726,7 +4779,111 @@ function HuxiApp() {
       padding: "11px 0"
     },
     onClick: () => setShowSett(false)
-  }, "Sluiten"))));
+  }, "Sluiten"))),
+
+  // ═══ THERAPEUT DASHBOARD ═══
+  showTherapistPanel && /*#__PURE__*/React.createElement("div", {
+    style: { ...F, background: "rgba(0,0,0,0.5)", zIndex: 800, display: "flex", alignItems: "center", justifyContent: "center" },
+    onClick: () => setShowTherapistPanel(false)
+  }, /*#__PURE__*/React.createElement("div", {
+    style: { background: "#fff", borderRadius: 20, padding: 24, width: "90%", maxWidth: 380, maxHeight: "80vh", overflowY: "auto" },
+    onClick: e => e.stopPropagation()
+  }, /*#__PURE__*/React.createElement("h3", { style: { color: g, fontSize: 18, fontWeight: 700, marginBottom: 4, textAlign: "center" } }, "\uD83D\uDCCA Cliënten Dashboard"),
+    /*#__PURE__*/React.createElement("p", { style: { color: g5, fontSize: 12, textAlign: "center", marginBottom: 16 } }, therapistCode ? "Koppelcode: " + therapistCode : "Nog geen koppelcode"),
+    !therapistLoading && therapistClients.length === 0 && /*#__PURE__*/React.createElement("p", { style: { color: g5, fontSize: 13, textAlign: "center", padding: "20px 0" } }, "Nog geen cliënten gekoppeld. Deel je koppelcode met cliënten zodat zij zich kunnen verbinden."),
+    therapistLoading && /*#__PURE__*/React.createElement("p", { style: { color: g5, fontSize: 13, textAlign: "center" } }, "Laden..."),
+    therapistClients.map((cl, i) => /*#__PURE__*/React.createElement("div", {
+      key: i,
+      style: { background: "#F5F7FA", borderRadius: 14, padding: 14, marginBottom: 10 }
+    },
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 } },
+        /*#__PURE__*/React.createElement("span", { style: { fontWeight: 700, color: g, fontSize: 14 } }, cl.name),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: cl.lastDay === new Date().toDateString() ? "#70BCBC" : "#E07850" } }, cl.lastDay === new Date().toDateString() ? "\u2705 Vandaag actief" : "\u23F0 " + (cl.lastDay || "Niet actief"))
+      ),
+      /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
+          "\uD83D\uDE42 " + (cl.mood === "calm" ? "Kalm" : cl.mood === "ok" ? "Oké" : cl.mood === "restless" ? "Rusteloos" : cl.mood === "tense" ? "Gespannen" : cl.mood === "overwhelmed" ? "Overweldigd" : "Geen check-in")),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
+          "\uD83C\uDF2C\uFE0F " + cl.sessions + " sessies"),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
+          "\uD83C\uDF31 " + Math.round(cl.growth * 100) + "% groei"),
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
+          "\uD83D\uDCA7 " + cl.dailyBreaths + "x geademd vandaag")
+      ),
+      cl.moodHistory && cl.moodHistory.length > 0 && /*#__PURE__*/React.createElement("div", { style: { marginTop: 8, display: "flex", gap: 3, alignItems: "flex-end" } },
+        /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: g5, marginRight: 4 } }, "Stemming:"),
+        cl.moodHistory.filter(m => m.type === "daily").slice(-7).map((m, j) => /*#__PURE__*/React.createElement("div", {
+          key: j,
+          style: { width: 8, height: m.mood === "calm" ? 20 : m.mood === "ok" ? 16 : m.mood === "restless" ? 12 : m.mood === "tense" ? 8 : 4,
+            background: m.mood === "calm" ? "#70BCBC" : m.mood === "ok" ? "#70BCBC" : m.mood === "restless" ? "#E8A840" : m.mood === "tense" ? "#E07850" : "#DC7553",
+            borderRadius: 3, opacity: 0.8 }
+        }))
+      )
+    )),
+    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 12 } },
+      /*#__PURE__*/React.createElement("button", {
+        className: "mb",
+        style: { flex: 1, padding: "10px 0" },
+        onClick: async () => {
+          if (!therapistCode) return;
+          setTherapistLoading(true);
+          var cls = await therapistLoadClients(therapistCode);
+          setTherapistClients(cls);
+          setTherapistLoading(false);
+        }
+      }, "\uD83D\uDD04 Vernieuwen"),
+      /*#__PURE__*/React.createElement("button", {
+        className: "mb",
+        style: { flex: 1, padding: "10px 0" },
+        onClick: () => setShowTherapistPanel(false)
+      }, "Sluiten")
+    )
+  )),
+
+  // ═══ SOS NOODKNOP ═══
+  sosActive && /*#__PURE__*/React.createElement("div", {
+    style: { ...F, background: "linear-gradient(160deg, #1A2B3A 0%, #162430 100%)", zIndex: 900, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", padding: 30 }
+  },
+    /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", maxWidth: 340 } },
+      /*#__PURE__*/React.createElement("span", { style: { fontSize: 48 } }, ["\uD83D\uDC41\uFE0F", "\uD83D\uDC42", "\u270B", "\uD83D\uDC43", "\uD83D\uDC45"][sosStep] || "\uD83C\uDF1F"),
+      /*#__PURE__*/React.createElement("h2", { style: { color: "#fff", fontSize: 22, fontWeight: 700, margin: "16px 0 8px" } },
+        sosStep === 0 ? "Noem 5 dingen die je ZIET" :
+        sosStep === 1 ? "Noem 4 dingen die je HOORT" :
+        sosStep === 2 ? "Noem 3 dingen die je VOELT" :
+        sosStep === 3 ? "Noem 2 dingen die je RUIKT" :
+        sosStep === 4 ? "Noem 1 ding dat je PROEFT" :
+        "Je bent hier. Je bent veilig."
+      ),
+      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(255,255,255,0.6)", fontSize: 14, marginBottom: 30 } },
+        sosStep < 5 ? "Neem de tijd. Adem rustig." : "De storm gaat voorbij. Jij bent sterker."
+      ),
+      sosStep < 5
+        ? /*#__PURE__*/React.createElement("button", {
+            onClick: () => {
+              setSosStep(sosStep + 1);
+              if (sosStep < 4) breathAudio.breathIn(2);
+              else breathAudio.done();
+            },
+            style: { padding: "14px 40px", borderRadius: 50, background: "linear-gradient(135deg,#70BCBC,#DC7553)", color: "#fff", fontSize: 16, fontWeight: 700, border: "none", cursor: "pointer" }
+          }, "Volgende \u2192")
+        : /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } },
+            /*#__PURE__*/React.createElement("button", {
+              onClick: () => { setSosActive(false); setSosStep(0); breathAudio.stopAll(); },
+              style: { padding: "14px 30px", borderRadius: 50, background: "#70BCBC", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }
+            }, "\uD83C\uDF3F Ik voel me beter"),
+            /*#__PURE__*/React.createElement("button", {
+              onClick: () => { setSosStep(0); breathAudio.breathIn(3); },
+              style: { padding: "14px 30px", borderRadius: 50, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }
+            }, "\uD83D\uDD04 Nog een keer")
+          )
+    )
+  ),
+
+  // SOS knop — altijd zichtbaar in world
+  phase === "world" && !showEx && !sosActive && /*#__PURE__*/React.createElement("button", {
+    onClick: () => { setSosActive(true); setSosStep(0); breathAudio.breathIn(3); },
+    style: { position: "absolute", top: 12, left: 12, zIndex: 50, width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#DC7553,#E07850)", color: "#fff", fontSize: 14, fontWeight: 800, border: "none", cursor: "pointer", boxShadow: "0 2px 8px rgba(220,117,83,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }
+  }, "SOS"));
 }
 // Render de HUXI app
 ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(HuxiApp));
