@@ -298,7 +298,7 @@ function HuxiApp() {
       setTasksGenerated(false);
       setDailyBreaths(0);
       setDailyMood(null); // FIX C1: reset mood bij nieuwe dag
-      const resetData = { ...saveDataRef.current, lastDay: today, dailyActions: 0, checkinDone: false, dailyTasks: [], tasksGenerated: false, dailyBreaths: 0, dailyMood: null, wi: saveDataRef.current.wi };
+      const resetData = { ...saveDataRef.current, lastDay: today, dailyActions: 0, checkinDone: false, dailyTasks: [], tasksGenerated: false, dailyBreaths: 0, dailyMood: null, wi: saveDataRef.current.wi, lastBreathTime: null, lastTaskTime: null };
       try { localStorage.setItem("huxi-profile", JSON.stringify(resetData)); } catch(e) {}
       if (saveDataRef.current.userKey) firebaseSave(saveDataRef.current.userKey, resetData);
     }
