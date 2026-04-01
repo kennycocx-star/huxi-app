@@ -10,7 +10,7 @@
 //   - js/world.js   (BoomCanvas)
 // ================================================================
 
-const {
+var {
   useState,
   useEffect,
   useRef,
@@ -18,7 +18,7 @@ const {
   useMemo
 } = React;
 
-const W = {
+var W = {
   width: "100%",
   height: "100dvh",
   maxWidth: 430,
@@ -31,21 +31,21 @@ const W = {
   background: "#F5F7FA",
   WebkitOverflowScrolling: "touch"
 };
-const F = {
+var F = {
   position: "absolute",
   top: 0,
   left: 0,
   right: 0,
   bottom: 0
 };
-const OB = {
+var OB = {
   ...F,
   background: "linear-gradient(160deg,#2C3E50 0%,#1A2B3A 30%,#162430 60%,#1E3040 100%)",
   display: "flex",
   alignItems: "center",
   justifyContent: "center"
 };
-const OBC = {
+var OBC = {
   textAlign: "center",
   zIndex: 2,
   padding: "16px 20px",
