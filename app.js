@@ -1,4 +1,4 @@
-Fix: timer reset bij nieuwe dag toegevoegd aan resetData// HUXI App — Hoofd applicatie (HuxiApp)
+// HUXI App — Hoofd applicatie (HuxiApp)
 // Bevat alle React state, UI logica en gebruikersinterface
 //
 // Afhankelijkheden (geladen via index.html):
@@ -2079,6 +2079,12 @@ function HuxiApp() {
     }
   }, "Toevoegen"))))));
 
+    // ═══ COOLDOWNS ═══
+    const breathCooldown = lastBreathTime ? Math.max(0, 1800000 - (Date.now() - lastBreathTime)) : 0;
+    const taskCooldown = lastTaskTime ? Math.max(0, 1800000 - (Date.now() - lastTaskTime)) : 0;
+    const breathOnCooldown = breathCooldown > 0;
+    const taskOnCooldown = taskCooldown > 0;
+    const fmtMin = ms => Math.ceil(ms / 60000) + " min";
   // ═══ WORLD ═══
   return /*#__PURE__*/React.createElement("div", {
     style: W
@@ -2674,12 +2680,7 @@ function HuxiApp() {
       filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.2))",
       animation: "treeGrow 0.4s ease-out"
     }
-  }, worldReward === "breath" ? "\uD83E\uDD8B" : worldReward === "task" ? "\uD83C\uDF38" : worldReward === "diary" ? "\uD83D\uDC9A" : worldReward === "letter" ? "\u2728" : worldReward === "shop" ? "\uD83C\uDF89" : "\uD83C\uDF1F"), 
-  const breathCooldown = lastBreathTime ? Math.max(0, 1800000 - (Date.now() - lastBreathTime)) : 0;
-  const taskCooldown = lastTaskTime ? Math.max(0, 1800000 - (Date.now() - lastTaskTime)) : 0;
-  const breathOnCooldown = breathCooldown > 0;
-  const taskOnCooldown = taskCooldown > 0;
-  const fmtMin = ms => Math.ceil(ms / 60000) + " min";
+  }, worldReward === "breath" ? "\uD83E\uDD8B" : worldReward === "task" ? "\uD83C\uDF38" : worldReward === "diary" ? "\uD83D\uDC9A" : worldReward === "letter" ? "\u2728" : worldReward === "shop" ? "\uD83C\uDF89" : "\uD83C\uDF1F"),
   !activeTool && !showAvatar && !showShop && !showGoals && !showJourney && !curTask && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
