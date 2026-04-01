@@ -10,7 +10,7 @@ const firebaseSave = async (key, data) => {
     await fetch(FIREBASE_URL + "/users/" + key + ".json", {
       method: "PUT", body: JSON.stringify(data)
     });
-  } catch(e) {}
+  } catch(e) { console.warn("Firebase save fout:", e); }
 };
 
 const firebaseLoad = async (key) => {
@@ -18,7 +18,7 @@ const firebaseLoad = async (key) => {
     const res = await fetch(FIREBASE_URL + "/users/" + key + ".json");
     const data = await res.json();
     return data && data !== "null" ? data : null;
-  } catch(e) { return null; }
+  } catch(e) { console.warn("Firebase load fout:", e); return null; }
 };
 
 const makeKey = (name, pin) =>
