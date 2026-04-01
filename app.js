@@ -1,4 +1,4 @@
-// ================================================================
+// Fix: timer reset bij nieuwe dag toegevoegd aan resetData
 // HUXI App — Hoofd applicatie (HuxiApp)
 // Bevat alle React state, UI logica en gebruikersinterface
 //
@@ -151,6 +151,9 @@ function HuxiApp() {
   const [lastTaskTexts, setLastTaskTexts] = useState([]);
   const [tasksGenerated, setTasksGenerated] = useState(false);
   const [dailyBreaths, setDailyBreaths] = useState(0);
+  const [lastBreathTime, setLastBreathTime] = useState(null);
+  const [lastTaskTime, setLastTaskTime] = useState(null);
+  const [cdTick, setCdTick] = useState(Date.now());
   const [curTask, setCurTask] = useState(null);
   const [taskInput, setTaskInput] = useState("");
   const [taskTimer, setTaskTimer] = useState(0);
@@ -296,8 +299,9 @@ function HuxiApp() {
       setTasksGenerated(false);
       setDailyBreaths(0);
       setDailyMood(null); // FIX C1: reset mood bij nieuwe dag
-      // Direct opslaan via saveData (gebruikt saveDataRef - altijd actueel)
-      saveData();
+      const resetData = { ...saveDataRef.current, lastDay: today, dailyActions: 0, checkinDone: false, dailyTasks: [], tasksGenerated: false, dailyBreaths: 0, dailyMood: null, wi: saveDataRef.current.wi, lastBreathTime: null, lastTaskTime: null };
+      try { localStorage.setItem("huxi-profile", JSON.stringify(resetData)); } catch(e) {}
+      if (saveDataRef.current.userKey) firebaseSave(saveDataRef.current.userKey, resetData);
     }
   }, [lastDay]);
   // Enrich derived from world items - slow accumulation
@@ -318,6 +322,12 @@ function HuxiApp() {
     window.addEventListener("beforeunload", onUnload);
     return () => { clearInterval(iv); window.removeEventListener("beforeunload", onUnload); };
   }, [phase]);
+
+  // Update cooldown tick every second
+  useEffect(() => {
+    const iv = setInterval(() => setCdTick(Date.now()), 1000);
+    return () => clearInterval(iv);
+  }, []);
 
   // Reminders - stay until dismissed
   useEffect(() => {
@@ -418,6 +428,7 @@ function HuxiApp() {
       setExPerEx(newExPerEx);
       setPostMood(null);
       setShowPostMood(true);
+      setLastBreathTime(Date.now());
       showWorldReward("breath");
       // DIRECTE SAVE - geen delay
       const saveF = { accType, reason, experience, treeName, userName, growth: newGrowthF, coins: newCoinsF, ownedItems, avatar, letters, diary, seenEx, lastExId: ex.id, dailyMood, totalSessions: newSessions, wi: newWiF, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: newBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx: newExPerEx };
@@ -477,9 +488,9 @@ function HuxiApp() {
       accType, reason, experience, treeName, userName, growth, coins,
       ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
       totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
-      dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
+      dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
       lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx,
-      userKey, goalPeriod, reminder // FIX M2+M3: goalPeriod en reminder opgeslagen
+      userKey, goalPeriod, reminder, lastBreathTime, lastTaskTime // FIX M2+M3: goalPeriod en reminder opgeslagen
     };
   });
   const saveData = () => {
@@ -542,6 +553,8 @@ function HuxiApp() {
           if (d.streakShields !== undefined) setStreakShields(d.streakShields);
           if (d.goalPeriod !== undefined) setGoalPeriod(d.goalPeriod); // FIX M2
           if (d.reminder) setReminder(d.reminder); // FIX M3
+          if (d.lastBreathTime) setLastBreathTime(d.lastBreathTime);
+          if (d.lastTaskTime) setLastTaskTime(d.lastTaskTime);
           if (d.secretQ !== undefined) setSecretQ(d.secretQ);
           if (d.secretA) setSecretA(d.secretA);
           if (d.goals) setGoals(d.goals);
@@ -744,7 +757,7 @@ function HuxiApp() {
     setWorldReward(type);
     setTimeout(() => setWorldReward(null), 2500);
   };
-  const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
+  const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" , pet_fox: "\uD83E\uDD8A", pet_owl: "\uD83E\uDD89", pet_bear: "\uD83D\uDC3B", pet_penguin: "\uD83D\uDC27", pet_frog: "\uD83D\uDC38", pet_butterfly: "\uD83E\uDD8B", pet_wolf: "\uD83D\uDC3A", pet_lion: "\uD83E\uDD81", pet_galaxy_cat: "\u2728\uD83D\uDC31", pet_lava_dragon: "\uD83D\uDD25\uD83D\uDC09", pet_aurora_fox: "\uD83C\uDF0C\uD83E\uDD8A", pet_crystal_wolf: "\uD83D\uDC8E\uD83D\uDC3A", pet_rainbow_pony: "\uD83C\uDF08\uD83E\uDD84" };
 
   const doCheckin = id => {
     const today = new Date().toDateString();
@@ -778,7 +791,7 @@ function HuxiApp() {
     setMoodHistory(newMoodH);
     if (accType === "child" || accType === "junior") setCoins(newCoinsC);
     // Inline save met nieuwe waarden (geen stale closure probleem)
-    const saveCI = { accType, reason, experience, treeName, userName, growth: newGrowthC, coins: newCoinsC, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood: id, totalSessions, wi: newWiC, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone: true, lastCheckinDate: today, streakShields: newShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx };
+    const saveCI = { accType, reason, experience, treeName, userName, growth: newGrowthC, coins: newCoinsC, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood: id, totalSessions, wi: newWiC, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone: true, lastCheckinDate: today, streakShields: newShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveCI)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveCI);
   };
@@ -803,7 +816,7 @@ function HuxiApp() {
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 8 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveL = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveL = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveL)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveL);
   };
@@ -819,7 +832,7 @@ function HuxiApp() {
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveD = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveD = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveD)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveD);
   };
@@ -914,7 +927,7 @@ function HuxiApp() {
     setDailyActions(newActionsT);
     setTotalSessions(newSessionsT);
     if (accType === "child" || accType === "junior") setCoins(newCoinsT);
-    const saveTL = { accType, reason, experience, treeName, userName, growth: newGrowthT, coins: newCoinsT, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessionsT, wi: newWiT, lastDay, dailyActions: newActionsT, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+    const saveTL = { accType, reason, experience, treeName, userName, growth: newGrowthT, coins: newCoinsT, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessionsT, wi: newWiT, lastDay, dailyActions: newActionsT, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveTL)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveTL);
   };
@@ -953,6 +966,7 @@ function HuxiApp() {
     const newSessions = totalSessions + 1;
     const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     setCurTask(null);
+    setLastTaskTime(Date.now());
     setDailyTasks(newTasks);
     setGrowth(newGrowth);
     setWi(newWi);
@@ -1011,7 +1025,7 @@ function HuxiApp() {
     maxHeight: "80vh",
     overflow: "auto"
   };
-  const g = "#3D4A58";
+  const g = "#45545E";
   const g5 = "rgba(61,74,88,0.5)";
   const g3 = "rgba(61,74,88,0.3)";
 
@@ -1027,7 +1041,7 @@ function HuxiApp() {
   },
     /*#__PURE__*/React.createElement("div", { className: "fadeUp", style: { textAlign: "center", width: "100%", maxWidth: 340 } },
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 64, marginBottom: 8 } }, "\uD83C\uDF31"),
-      /*#__PURE__*/React.createElement("h1", { style: { color: "#5BB8A0", fontSize: 28, fontWeight: 700, margin: "0 0 4px", letterSpacing: 6 } }, "HUXI"),
+      /*#__PURE__*/React.createElement("h1", { style: { color: "#70BCBC", fontSize: 28, fontWeight: 700, margin: "0 0 4px", letterSpacing: 6 } }, "HUXI"),
       /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.6)", fontSize: 13, margin: "0 0 28px", fontStyle: "italic" } }, "Jouw rustige natuurwereld"),
       loginMode === "login" && /*#__PURE__*/React.createElement(React.Fragment, null,
         /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "24px 20px", marginBottom: 16 } },
@@ -1035,13 +1049,13 @@ function HuxiApp() {
           /*#__PURE__*/React.createElement("input", {
             type: "text", placeholder: "Bijv. Emma",
             value: loginName, onChange: e => setLoginName(e.target.value),
-            style: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 15, outline: "none", marginBottom: 16, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+            style: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(112,188,188,0.3)", fontSize: 15, outline: "none", marginBottom: 16, boxSizing: "border-box", color: "#45545E", background: "white" }
           }),
           /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 13, fontWeight: 600, margin: "0 0 8px", textAlign: "left" } }, "Jouw pincode (4 cijfers)"),
           /*#__PURE__*/React.createElement("input", {
             type: "number", placeholder: "1234",
             value: loginPin, onChange: e => setLoginPin(e.target.value.slice(0,4)),
-            style: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 15, outline: "none", marginBottom: 8, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+            style: { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(112,188,188,0.3)", fontSize: 15, outline: "none", marginBottom: 8, boxSizing: "border-box", color: "#45545E", background: "white" }
           }),
           /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.45)", fontSize: 11, margin: "0 0 4px", textAlign: "center" } }, "Bestaand profiel? Gebruik je naam en pincode. Nieuw? Kies gewoon een naam en 4 cijfers.")
         ),
@@ -1073,6 +1087,8 @@ function HuxiApp() {
               if (data.streakShields !== undefined) setStreakShields(data.streakShields);
               if (data.goalPeriod !== undefined) setGoalPeriod(data.goalPeriod); // FIX M2
               if (data.reminder) setReminder(data.reminder); // FIX M3
+              if (data.lastBreathTime) setLastBreathTime(data.lastBreathTime);
+              if (data.lastTaskTime) setLastTaskTime(data.lastTaskTime);
               if (data.secretQ !== undefined) setSecretQ(data.secretQ);
               if (data.secretA) setSecretA(data.secretA);
               setGoals(Array.isArray(data.goals) ? data.goals : []);
@@ -1099,7 +1115,7 @@ function HuxiApp() {
             setLoginLoading(false);
           },
           disabled: loginLoading,
-          style: { width: "100%", padding: "14px 0", borderRadius: 14, background: loginLoading ? "#666" : "linear-gradient(135deg,#4CAF7A,#5BB8A0)", color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", marginBottom: 12 }
+          style: { width: "100%", padding: "14px 0", borderRadius: 14, background: loginLoading ? "#666" : "linear-gradient(135deg,#DC7553,#70BCBC)", color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", marginBottom: 12 }
         }, loginLoading ? "Even laden... \uD83C\uDF3F" : "Ga naar mijn wereld \uD83C\uDF31"),
         /*#__PURE__*/React.createElement("button", {
           onClick: () => { setLoginMode("forgot"); setLoginError(""); },
@@ -1113,13 +1129,13 @@ function HuxiApp() {
           /*#__PURE__*/React.createElement("input", {
             type: "text", placeholder: "Jouw naam",
             value: loginName, onChange: e => setLoginName(e.target.value),
-            style: { width: "100%", padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 14, outline: "none", marginBottom: 12, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+            style: { width: "100%", padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(112,188,188,0.3)", fontSize: 14, outline: "none", marginBottom: 12, boxSizing: "border-box", color: "#45545E", background: "white" }
           }),
           /*#__PURE__*/React.createElement("p", { style: { color: "#A8D5B5", fontSize: 13, fontWeight: 600, margin: "0 0 8px", textAlign: "left" } }, "Geheime vraag antwoord"),
           /*#__PURE__*/React.createElement("input", {
             type: "text", placeholder: "Jouw antwoord",
             value: loginPin, onChange: e => setLoginPin(e.target.value),
-            style: { width: "100%", padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(91,184,160,0.3)", fontSize: 14, outline: "none", marginBottom: 8, boxSizing: "border-box", color: "#3D4A58", background: "white" }
+            style: { width: "100%", padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(112,188,188,0.3)", fontSize: 14, outline: "none", marginBottom: 8, boxSizing: "border-box", color: "#45545E", background: "white" }
           }),
           /*#__PURE__*/React.createElement("p", { style: { color: "rgba(168,213,181,0.4)", fontSize: 11, marginBottom: 0 } }, "Antwoord op je geheime vraag bij aanmaken")
         ),
@@ -1169,7 +1185,7 @@ function HuxiApp() {
     style: {
       fontSize: 44,
       fontWeight: 700,
-      color: "#5BB8A0",
+      color: "#70BCBC",
       letterSpacing: 8,
       margin: "4px 0"
     }
@@ -1229,15 +1245,15 @@ function HuxiApp() {
   }, /*#__PURE__*/React.createElement("div", { style: OB },
     /*#__PURE__*/React.createElement("div", { className: "fadeUp", style: { ...OBC, maxHeight: "90vh", overflowY: "auto" } },
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, accType === "child" ? "\uD83E\uDD8B" : "\uD83C\uDF3F"),
-      /*#__PURE__*/React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: "#5BB8A0", marginBottom: 4 } },
+      /*#__PURE__*/React.createElement("h2", { style: { fontSize: 20, fontWeight: 700, color: "#70BCBC", marginBottom: 4 } },
         accType === "child" ? "Waarom ben je hier?" : "Wat brengt je hier?"
       ),
       /*#__PURE__*/React.createElement("p", { style: { color: "rgba(200,230,180,0.6)", fontSize: 12, marginBottom: 16 } }, "Je mag meerdere dingen aanduiden"),
       reasons.map(r => /*#__PURE__*/React.createElement("button", {
         key: r.id, className: "rb",
         style: {
-          border: selectedReasons.includes(r.id) ? "2px solid #5BB8A0" : "2px solid transparent",
-          background: selectedReasons.includes(r.id) ? "rgba(91,184,160,0.15)" : "rgba(255,255,255,0.06)",
+          border: selectedReasons.includes(r.id) ? "2px solid #70BCBC" : "2px solid transparent",
+          background: selectedReasons.includes(r.id) ? "rgba(112,188,188,0.15)" : "rgba(255,255,255,0.06)",
           position: "relative"
         },
         onClick: () => setSelectedReasons(prev =>
@@ -1247,7 +1263,7 @@ function HuxiApp() {
         /*#__PURE__*/React.createElement("span", { style: { fontSize: 20 } }, r.e),
         /*#__PURE__*/React.createElement("span", { style: { color: "#D8E8F0", fontSize: 14, fontWeight: 600 } }, r.l),
         selectedReasons.includes(r.id) && /*#__PURE__*/React.createElement("span", {
-          style: { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#5BB8A0", fontSize: 18 }
+          style: { position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#70BCBC", fontSize: 18 }
         }, "\u2713")
       )),
       /*#__PURE__*/React.createElement("button", {
@@ -1279,7 +1295,7 @@ function HuxiApp() {
     style: {
       fontSize: 20,
       fontWeight: 700,
-      color: "#5BB8A0",
+      color: "#70BCBC",
       marginBottom: 6
     }
   }, "Hoe voel je je nu?"), /*#__PURE__*/React.createElement("p", {
@@ -1330,7 +1346,7 @@ function HuxiApp() {
     style: {
       fontSize: 20,
       fontWeight: 700,
-      color: "#5BB8A0",
+      color: "#70BCBC",
       marginBottom: 6
     }
   }, "Heb je ervaring met ademhaling?"), /*#__PURE__*/React.createElement("p", {
@@ -1393,7 +1409,7 @@ function HuxiApp() {
       style: {
         fontSize: 22,
         fontWeight: 700,
-        color: "#5BB8A0",
+        color: "#70BCBC",
         marginBottom: 8
       }
     }, isT ? "Je praktijk instellen" : accType === "child" ? "Hoe heet jij?" : "Nog even voorstellen"), /*#__PURE__*/React.createElement("input", {
@@ -1536,8 +1552,8 @@ function HuxiApp() {
     }
   }, "Cli\xEBnten"), /*#__PURE__*/React.createElement("button", {
     style: {
-      background: "rgba(76,175,122,0.1)",
-      border: "1px solid rgba(76,175,122,0.3)",
+      background: "rgba(220,117,83,0.1)",
+      border: "1px solid rgba(220,117,83,0.3)",
       borderRadius: 8,
       padding: "4px 10px",
       fontSize: 10,
@@ -1549,7 +1565,7 @@ function HuxiApp() {
   }, "+ Cli\xEBnt")), showAddClient && /*#__PURE__*/React.createElement("div", {
     style: {
       padding: 10,
-      background: "rgba(76,175,122,0.04)",
+      background: "rgba(220,117,83,0.04)",
       borderRadius: 10,
       marginBottom: 10
     }
@@ -1658,8 +1674,8 @@ function HuxiApp() {
     }
   }, /*#__PURE__*/React.createElement("button", {
     style: {
-      background: "rgba(76,175,122,0.1)",
-      border: "1px solid rgba(76,175,122,0.3)",
+      background: "rgba(220,117,83,0.1)",
+      border: "1px solid rgba(220,117,83,0.3)",
       borderRadius: 8,
       padding: "4px 10px",
       fontSize: 10,
@@ -1715,8 +1731,8 @@ function HuxiApp() {
     }
   }, "Eigen oefeningen"), /*#__PURE__*/React.createElement("button", {
     style: {
-      background: "rgba(76,175,122,0.1)",
-      border: "1px solid rgba(76,175,122,0.3)",
+      background: "rgba(220,117,83,0.1)",
+      border: "1px solid rgba(220,117,83,0.3)",
       borderRadius: 8,
       padding: "4px 10px",
       fontSize: 10,
@@ -1791,8 +1807,8 @@ function HuxiApp() {
   }, "\u2715"))), !showAgendaAdd ? /*#__PURE__*/React.createElement("button", {
     style: {
       marginTop: 8,
-      background: "rgba(76,175,122,0.1)",
-      border: "1px solid rgba(76,175,122,0.3)",
+      background: "rgba(220,117,83,0.1)",
+      border: "1px solid rgba(220,117,83,0.3)",
       borderRadius: 8,
       padding: "6px 12px",
       fontSize: 10,
@@ -1805,7 +1821,7 @@ function HuxiApp() {
     style: {
       marginTop: 8,
       padding: 10,
-      background: "rgba(76,175,122,0.04)",
+      background: "rgba(220,117,83,0.04)",
       borderRadius: 10
     }
   }, /*#__PURE__*/React.createElement("input", {
@@ -1949,8 +1965,8 @@ function HuxiApp() {
     key: ex.id,
     className: "rb",
     style: {
-      background: "rgba(76,175,122,0.05)",
-      borderColor: "rgba(76,175,122,0.15)"
+      background: "rgba(220,117,83,0.05)",
+      borderColor: "rgba(220,117,83,0.15)"
     },
     onClick: () => {
       setThClients(p => p.map(cl => cl.id === selClient.id ? {
@@ -1973,8 +1989,8 @@ function HuxiApp() {
     key: ce.id,
     className: "rb",
     style: {
-      background: "rgba(76,175,122,0.05)",
-      borderColor: "rgba(76,175,122,0.15)"
+      background: "rgba(220,117,83,0.05)",
+      borderColor: "rgba(220,117,83,0.15)"
     },
     onClick: () => {
       setThClients(p => p.map(cl => cl.id === selClient.id ? {
@@ -2013,8 +2029,8 @@ function HuxiApp() {
       width: "100%",
       padding: "10px 14px",
       borderRadius: 12,
-      border: "2px solid rgba(76,175,122,0.2)",
-      background: "rgba(76,175,122,0.04)",
+      border: "2px solid rgba(220,117,83,0.2)",
+      background: "rgba(220,117,83,0.04)",
       color: g,
       fontSize: 14,
       fontFamily: "inherit",
@@ -2070,6 +2086,15 @@ function HuxiApp() {
       setShowAddEx(false);
     }
   }, "Toevoegen"))))));
+
+  // ═══ COOLDOWNS ═══
+  const breathCooldown = lastBreathTime ? Math.max(0, 1800000 - (cdTick - lastBreathTime)) : 0;
+  const taskCooldown = lastTaskTime ? Math.max(0, 1800000 - (cdTick - lastTaskTime)) : 0;
+  const breathOnCooldown = breathCooldown > 0;
+  const taskOnCooldown = taskCooldown > 0;
+  const CDMAX = 1800000;
+  const fmtMin = ms => { const m = Math.floor(ms/60000); const s = Math.ceil((ms%60000)/1000); return m > 0 ? m + ":" + String(s).padStart(2,"0") : s + "s"; };
+  const CdBar = ({remain}) => React.createElement("div", {style:{width:"100%",height:3,borderRadius:2,background:"rgba(220,117,83,0.15)",marginTop:3,overflow:"hidden"}}, React.createElement("div", {style:{width: (1-remain/CDMAX)*100+"%",height:"100%",borderRadius:2,background:"linear-gradient(90deg,#DC7553,#70BCBC)",transition:"width 1s linear"}}));
 
   // ═══ WORLD ═══
   return /*#__PURE__*/React.createElement("div", {
@@ -2228,7 +2253,7 @@ function HuxiApp() {
       style: {
         position: "absolute",
         bottom: "19%",
-        left: "50%",
+        left: "38%",
         fontSize: 34,
         zIndex: 11,
         userSelect: "none",
@@ -2238,7 +2263,7 @@ function HuxiApp() {
       },
       onClick: () => tapA("\uD83D\uDC3E " + (PET_EM[buddy] || "") + " loopt met je mee!")
     }, PET_EM[buddy]),
-    ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none" && p !== buddy && !((avatar && avatar.hiddenPets) || []).includes(p)).map(petId => {
+    ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none" && p !== buddy && petPositions[p] !== false).map(petId => {
       const pos = petPositions[petId] || { x: 10 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 18) % 70, y: 30 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 13) % 35 };
       return /*#__PURE__*/React.createElement("div", {
         key: petId,
@@ -2249,7 +2274,7 @@ function HuxiApp() {
           const y = Math.max(5, Math.min(75, ((e.clientY - rect.top) / rect.height) * 100));
           const newPos = { ...petPositions, [petId]: { x, y } };
           setPetPositions(newPos);
-          const saveP = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPos, exPerEx };
+          const saveP = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPos, exPerEx };
           try { localStorage.setItem("huxi-profile", JSON.stringify(saveP)); } catch(e2) {}
           if (userKey) firebaseSave(userKey, saveP);
         },
@@ -2369,7 +2394,7 @@ function HuxiApp() {
     }
   }, m.a), /*#__PURE__*/React.createElement("span", {
     style: {
-      color: "#3D4A58",
+      color: "#45545E",
       fontSize: 14,
       fontWeight: 600
     }
@@ -2417,8 +2442,8 @@ function HuxiApp() {
     }
   }, (accType === "child" && (getSeasonalName(curEx) || curEx.nameChild)) || (accType === "junior" && curEx.nameJunior) || curEx.name), /*#__PURE__*/React.createElement("button", {
     style: {
-      background: "rgba(76,175,122,0.1)",
-      border: "1px solid rgba(76,175,122,0.2)",
+      background: "rgba(220,117,83,0.1)",
+      border: "1px solid rgba(220,117,83,0.2)",
       borderRadius: "50%",
       width: 22,
       height: 22,
@@ -2438,7 +2463,7 @@ function HuxiApp() {
     }
   }, curEx.desc), showSci && /*#__PURE__*/React.createElement("div", {
     style: {
-      background: "rgba(76,175,122,0.08)",
+      background: "rgba(220,117,83,0.08)",
       borderRadius: 14,
       padding: "12px 14px",
       marginBottom: 16,
@@ -2457,13 +2482,13 @@ function HuxiApp() {
       }, "\u26A0\uFE0F Niet in water of achter het stuur")
     : /*#__PURE__*/React.createElement("div", {
         style: {
-          background: warnAcknowledged ? "rgba(76,175,122,0.08)" : "rgba(230,168,50,0.1)",
-          border: warnAcknowledged ? "1px solid rgba(76,175,122,0.3)" : "1.5px solid rgba(230,168,50,0.5)",
+          background: warnAcknowledged ? "rgba(220,117,83,0.08)" : "rgba(230,168,50,0.1)",
+          border: warnAcknowledged ? "1px solid rgba(220,117,83,0.3)" : "1.5px solid rgba(230,168,50,0.5)",
           borderRadius: 14, padding: "12px 14px", marginBottom: 12, textAlign: "left"
         }
       },
       /*#__PURE__*/React.createElement("p", {
-        style: { color: warnAcknowledged ? "#4CAF7A" : "#C4882A", fontSize: 11, lineHeight: 1.7, margin: warnAcknowledged ? 0 : "0 0 10px" }
+        style: { color: warnAcknowledged ? "#DC7553" : "#C4882A", fontSize: 11, lineHeight: 1.7, margin: warnAcknowledged ? 0 : "0 0 10px" }
       }, warnAcknowledged ? "\u2705 Gelezen \u2014 je kan starten." : curEx.warn),
       !warnAcknowledged && /*#__PURE__*/React.createElement("button", {
         style: {
@@ -2496,7 +2521,7 @@ function HuxiApp() {
       position: "absolute",
       inset: 0,
       borderRadius: "50%",
-      border: "4px solid " + (exPhase === "hold" || exPhase === "hold2" ? "#E8A840" : "#5BB8A0"),
+      border: "4px solid " + (exPhase === "hold" || exPhase === "hold2" ? "#E8A840" : "#70BCBC"),
       transition: `transform ${exPhase === "in" ? curEx.iS : exPhase === "out" ? curEx.oS : exPhase === "hold" ? curEx.hI : exPhase === "hold2" ? curEx.hO : 1}s ease-in-out, border-color 0.3s`,
       transform: exPhase === "in" ? "scale(1.15)" : exPhase === "hold" ? "scale(1.15)" : exPhase === "out" ? "scale(0.6)" : exPhase === "hold2" ? "scale(0.6)" : "scale(1)",
       opacity: exPhase === "done" ? 1 : exPhase === "in" || exPhase === "hold" ? 1 : 0.5
@@ -2517,7 +2542,7 @@ function HuxiApp() {
     style: {
       fontSize: 28,
       fontWeight: 700,
-      color: "#4CAF7A",
+      color: "#DC7553",
       display: "block",
       marginTop: 2
     }
@@ -2535,7 +2560,7 @@ function HuxiApp() {
     }
   }, "~", Math.round(((custRounds || Math.round(curEx.r * (accType === "child" ? 0.5 : 1))) - exRound) * (curEx.iS + curEx.oS + curEx.hI + curEx.hO) / 60), " min"), exPhase === "done" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("p", {
     style: {
-      color: "#4CAF7A",
+      color: "#DC7553",
       fontSize: 13,
       fontWeight: 600
     }
@@ -2603,7 +2628,7 @@ function HuxiApp() {
     },
       /*#__PURE__*/React.createElement("div", { style: { fontSize: 40, marginBottom: 12 } }, "🌬️"),
       /*#__PURE__*/React.createElement("h2", {
-        style: { color: "#4CAF7A", fontSize: 18, fontWeight: 700, marginBottom: 6 }
+        style: { color: "#DC7553", fontSize: 18, fontWeight: 700, marginBottom: 6 }
       }, "Oefening gedaan!"),
       /*#__PURE__*/React.createElement("p", {
         style: { color: "rgba(61,74,88,0.6)", fontSize: 13, marginBottom: 20 }
@@ -2636,7 +2661,7 @@ function HuxiApp() {
             setMoodHistory(newMoodH);
             setExPerEx(prev => {
               const updated = { ...prev };
-              const saveP2 = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx: updated };
+              const saveP2 = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx: updated };
               try { localStorage.setItem("huxi-profile", JSON.stringify(saveP2)); } catch(e) {}
               if (userKey) firebaseSave(userKey, saveP2);
               return updated;
@@ -2666,7 +2691,8 @@ function HuxiApp() {
       filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.2))",
       animation: "treeGrow 0.4s ease-out"
     }
-  }, worldReward === "breath" ? "\uD83E\uDD8B" : worldReward === "task" ? "\uD83C\uDF38" : worldReward === "diary" ? "\uD83D\uDC9A" : worldReward === "letter" ? "\u2728" : worldReward === "shop" ? "\uD83C\uDF89" : "\uD83C\uDF1F"), !activeTool && !showAvatar && !showShop && !showGoals && !showJourney && !curTask && /*#__PURE__*/React.createElement("div", {
+  }, worldReward === "breath" ? "\uD83E\uDD8B" : worldReward === "task" ? "\uD83C\uDF38" : worldReward === "diary" ? "\uD83D\uDC9A" : worldReward === "letter" ? "\u2728" : worldReward === "shop" ? "\uD83C\uDF89" : "\uD83C\uDF1F"),
+  !activeTool && !showAvatar && !showShop && !showGoals && !showJourney && !curTask && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "absolute",
       bottom: 0,
@@ -2679,7 +2705,7 @@ function HuxiApp() {
   }, /*#__PURE__*/React.createElement("p", {
     style: {
       textAlign: "center",
-      color: allDone ? "#4CAF7A" : g5,
+      color: allDone ? "#DC7553" : g5,
       fontSize: 10,
       fontWeight: allDone ? 600 : 400,
       marginBottom: 6
@@ -2694,11 +2720,16 @@ function HuxiApp() {
   }, /*#__PURE__*/React.createElement("button", {
     className: "ab",
     style: {
-      opacity: canDoBreath ? 1 : 0.35
+      opacity: (!canDoBreath || breathOnCooldown) ? 0.35 : 1
     },
     onClick: () => {
       if (!canDoBreath) {
-        setWMsg("Je ademhaling voor vandaag is klaar — tot morgen 🌿");
+        setWMsg("Je ademhaling voor vandaag is klaar \u2014 tot morgen \uD83C\uDF3F");
+        setTimeout(() => setWMsg(""), 3000);
+        return;
+      }
+      if (breathOnCooldown) {
+        setWMsg("\u23F3 Nog " + fmtMin(breathCooldown) + " wachten voor je volgende ademhaling");
         setTimeout(() => setWMsg(""), 3000);
         return;
       }
@@ -2709,20 +2740,25 @@ function HuxiApp() {
         setShowPicker(true);
       }
     }
-  }, "\uD83C\uDF2C\uFE0F Adem"), /*#__PURE__*/React.createElement("button", {
+  }, breathOnCooldown ? "\u23F3 " + fmtMin(breathCooldown) : "\uD83C\uDF2C\uFE0F Adem"), /*#__PURE__*/React.createElement("button", {
     className: "ab",
     style: {
-      opacity: canDoTask ? 1 : 0.35
+      opacity: (!canDoTask || taskOnCooldown) ? 0.35 : 1
     },
     onClick: () => {
       if (!canDoTask) {
-        setWMsg("Alle opdrachten van vandaag zijn klaar — tot morgen 🌿");
+        setWMsg("Alle opdrachten van vandaag zijn klaar \u2014 tot morgen \uD83C\uDF3F");
+        setTimeout(() => setWMsg(""), 3000);
+        return;
+      }
+      if (taskOnCooldown) {
+        setWMsg("\u23F3 Nog " + fmtMin(taskCooldown) + " wachten voor je volgende opdracht");
         setTimeout(() => setWMsg(""), 3000);
         return;
       }
       startTask(dailyTasks[0]);
     }
-  }, "\uD83C\uDF3F Opdracht"), /*#__PURE__*/React.createElement("button", {
+  }, taskOnCooldown ? "\u23F3 " + fmtMin(taskCooldown) : "\uD83C\uDF3F Opdracht"), /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => {
       const lastLetter = letters[0];
@@ -2776,7 +2812,7 @@ function HuxiApp() {
     }
   }, /*#__PURE__*/React.createElement("p", {
     style: {
-      color: "#3D4A58",
+      color: "#45545E",
       fontSize: 17,
       fontWeight: 700,
       lineHeight: 1.5,
@@ -2806,7 +2842,7 @@ function HuxiApp() {
       height: 50,
       margin: "0 auto 12px",
       borderRadius: "50%",
-      border: "3px solid #5BB8A0",
+      border: "3px solid #70BCBC",
       display: "flex",
       alignItems: "center",
       justifyContent: "center"
@@ -2815,7 +2851,7 @@ function HuxiApp() {
     style: {
       fontSize: 18,
       fontWeight: 700,
-      color: "#3D4A58"
+      color: "#45545E"
     }
   }, taskTimer))))), showPicker && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
@@ -2836,8 +2872,8 @@ function HuxiApp() {
     className: "rb",
     style: {
       justifyContent: "center",
-      background: "rgba(76,175,122,0.1)",
-      borderColor: "rgba(76,175,122,0.3)",
+      background: "rgba(220,117,83,0.1)",
+      borderColor: "rgba(220,117,83,0.3)",
       marginBottom: 10
     },
     onClick: () => {
@@ -2907,7 +2943,7 @@ function HuxiApp() {
       },
       style: {
         background: "rgba(255,255,255,0.2)",
-        border: "1px solid rgba(91,184,160,0.3)",
+        border: "1px solid rgba(112,188,188,0.3)",
         borderRadius: 8,
         padding: "2px",
         color: g,
@@ -3000,7 +3036,7 @@ function HuxiApp() {
       placeholder: "Lieve ik... \n\nGebruik de vragen hieronder als inspiratie of schrijf gewoon wat in je opkomt."
     }),
     /*#__PURE__*/React.createElement("div", {
-      style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "10px 12px", marginBottom: 14 }
+      style: { background: "rgba(220,117,83,0.06)", borderRadius: 12, padding: "10px 12px", marginBottom: 14 }
     },
       /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 11, fontWeight: 600, margin: "0 0 6px" } }, "Voorbeeldvragen als inspiratie:"),
       ["Hoe gaat het nu met jou? \uD83D\uDCAD",
@@ -3029,8 +3065,8 @@ function HuxiApp() {
         key: d,
         onClick: () => setLetterPeriod(d),
         style: { flex: 1, padding: "12px 8px", borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: "pointer",
-          border: letterPeriod === d ? "2px solid #4CAF7A" : "2px solid rgba(76,175,122,0.2)",
-          background: letterPeriod === d ? "rgba(76,175,122,0.1)" : "white", color: g }
+          border: letterPeriod === d ? "2px solid #DC7553" : "2px solid rgba(220,117,83,0.2)",
+          background: letterPeriod === d ? "rgba(220,117,83,0.1)" : "white", color: g }
       }, labels[d] || d + " dagen"));
     })()
     ),
@@ -3056,7 +3092,7 @@ function HuxiApp() {
         setWi(newWiL);
         setGrowth(newGrowthL);
         showWorldReward("letter");
-        const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+        const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
         try { localStorage.setItem("huxi-profile", JSON.stringify(saveLW)); } catch(e) {}
         if (userKey) firebaseSave(userKey, saveLW);
       }
@@ -3086,7 +3122,7 @@ function HuxiApp() {
       style: {
         padding: "12px 14px",
         marginBottom: 8,
-        background: isL ? "rgba(150,150,150,0.08)" : "rgba(76,175,122,0.06)",
+        background: isL ? "rgba(150,150,150,0.08)" : "rgba(220,117,83,0.06)",
         borderRadius: 14
       }
     }, isL ? /*#__PURE__*/React.createElement("div", {
@@ -3216,7 +3252,7 @@ function HuxiApp() {
       wi.streakDays >= 100 ? "\uD83D\uDC8E" : wi.streakDays >= 30 ? "\u2B50" : "\uD83D\uDD25"
     ),
     /*#__PURE__*/React.createElement("h3", { style: { color: g, fontSize: 22, fontWeight: 700, margin: "0 0 4px" } }, wi.streakDays || 0, " dagen"),
-    /*#__PURE__*/React.createElement("p", { style: { color: "#5BB8A0", fontSize: 13, margin: "0 0 4px" } },
+    /*#__PURE__*/React.createElement("p", { style: { color: "#70BCBC", fontSize: 13, margin: "0 0 4px" } },
       wi.streakDays >= 365 ? "HUXI Legende \uD83C\uDFC6" : wi.streakDays >= 100 ? "Zen Master \uD83D\uDC8E" :
       wi.streakDays >= 60 ? "Inner Balance \uD83D\uDD25" : wi.streakDays >= 30 ? "Mindful Pro \u2B50" :
       wi.streakDays >= 14 ? "Rustige Kracht \uD83C\uDF33" : wi.streakDays >= 7 ? "Doorzetter \uD83C\uDF3F" :
@@ -3228,7 +3264,7 @@ function HuxiApp() {
         streakShields > 0 ? streakShields + " shield beschikbaar" : "Verdien een shield na 7 dagen"
       )
     ),
-    /*#__PURE__*/React.createElement("div", { style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px", marginBottom: 14, textAlign: "left" } },
+    /*#__PURE__*/React.createElement("div", { style: { background: "rgba(220,117,83,0.06)", borderRadius: 12, padding: "12px", marginBottom: 14, textAlign: "left" } },
       [[3,"\uD83C\uDF31","Je boom glinster"],[7,"\uD83E\uDD8C","Hert in je wereld"],[14,"\uD83C\uDF38","Bloemen op je boom"],[30,"\uD83C\uDF08","Regenboog"],[100,"\uD83C\uDF41","Gouden bladeren"],[365,"\uD83C\uDFC6","Gouden boom"]].map(([d,ic,lbl]) =>
         /*#__PURE__*/React.createElement("div", { key: d, style: { display: "flex", alignItems: "center", gap: 8, padding: "5px 0", opacity: (wi.streakDays||0) >= d ? 1 : 0.35 } },
           /*#__PURE__*/React.createElement("span", { style: { fontSize: 18, minWidth: 22 } }, (wi.streakDays||0) >= d ? ic : "\uD83D\uDD12"),
@@ -3256,511 +3292,142 @@ function HuxiApp() {
     ),
     /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" } },
       /*#__PURE__*/React.createElement("div", { style: { flexShrink: 0 } },
-        /*#__PURE__*/React.createElement("svg", {
-    width: 120,
-    height: 160,
-    viewBox: "0 0 120 160"
-  }, /*#__PURE__*/React.createElement("ellipse", {
-    cx: 60,
-    cy: 155,
-    rx: 25,
-    ry: 5,
-    fill: "rgba(0,0,0,0.1)"
-  }), /*#__PURE__*/React.createElement("ellipse", {
-    cx: 45,
-    cy: 148,
-    rx: 10,
-    ry: 5,
-    fill: {
-      shoes_none: "#3D4858",
-      shoes_sneaker: "#E85D3A",
-      shoes_boot: "#4A3020",
-      shoes_gold: "#FFD700",
-      shoes_rainbow: "#FF69B4"
-    }[avatar.shoes] || "#3D4858"
-  }), /*#__PURE__*/React.createElement("ellipse", {
-    cx: 75,
-    cy: 148,
-    rx: 10,
-    ry: 5,
-    fill: {
-      shoes_none: "#3D4858",
-      shoes_sneaker: "#E85D3A",
-      shoes_boot: "#4A3020",
-      shoes_gold: "#FFD700",
-      shoes_rainbow: "#FF69B4"
-    }[avatar.shoes] || "#3D4858"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: 42,
-    y: 118,
-    width: 10,
-    height: 32,
-    rx: 4,
-    fill: {
-      pants_none: "#3D7A5A",
-      pants_jeans: "#4A6FA5",
-      pants_red: "#C4553A",
-      pants_purple: "#7B4DAA",
-      pants_gold: "#DAA520",
-      pants_star: "#2D5A87"
-    }[avatar.pants] || "#3D7A5A"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: 68,
-    y: 118,
-    width: 10,
-    height: 32,
-    rx: 4,
-    fill: {
-      pants_none: "#3D7A5A",
-      pants_jeans: "#4A6FA5",
-      pants_red: "#C4553A",
-      pants_purple: "#7B4DAA",
-      pants_gold: "#DAA520",
-      pants_star: "#2D5A87"
-    }[avatar.pants] || "#3D7A5A"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: 35,
-    y: 75,
-    width: 50,
-    height: 48,
-    rx: 10,
-    fill: {
-      shirt_none: "#4CAF7A",
-      shirt_stripes: "#E6A832",
-      shirt_heart: "#E85D75",
-      shirt_star: "#4A90C4",
-      shirt_cool: "#333",
-      shirt_rainbow: "#FF6347",
-      shirt_nature: "#4CAF7A"
-    }[avatar.shirt] || "#4CAF7A"
-  }), avatar.shirt === "shirt_stripes" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("line", {
-    x1: 38,
-    y1: 85,
-    x2: 82,
-    y2: 85,
-    stroke: "white",
-    strokeWidth: 2,
-    opacity: 0.4
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: 38,
-    y1: 95,
-    x2: 82,
-    y2: 95,
-    stroke: "white",
-    strokeWidth: 2,
-    opacity: 0.4
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: 38,
-    y1: 105,
-    x2: 82,
-    y2: 105,
-    stroke: "white",
-    strokeWidth: 2,
-    opacity: 0.4
-  })), avatar.shirt === "shirt_heart" && /*#__PURE__*/React.createElement("text", {
-    x: 60,
-    y: 103,
-    textAnchor: "middle",
-    fontSize: 18
-  }, "\u2764\uFE0F"), avatar.shirt === "shirt_star" && /*#__PURE__*/React.createElement("text", {
-    x: 60,
-    y: 103,
-    textAnchor: "middle",
-    fontSize: 18
-  }, "\u2B50"), avatar.shirt === "shirt_cool" && /*#__PURE__*/React.createElement("text", {
-    x: 60,
-    y: 103,
-    textAnchor: "middle",
-    fontSize: 14,
-    fill: "white"
-  }, "COOL"), avatar.shirt === "shirt_nature" && /*#__PURE__*/React.createElement("text", {
-    x: 60,
-    y: 103,
-    textAnchor: "middle",
-    fontSize: 16
-  }, "\uD83C\uDF3F"), /*#__PURE__*/React.createElement("rect", {
-    x: 22,
-    y: 78,
-    width: 10,
-    height: 35,
-    rx: 5,
-    fill: {
-      skin_light: "#FFDBB4",
-      skin_medium: "#D4A574",
-      skin_dark: "#8D6E4C",
-      skin_pale: "#FFE8D0"
-    }[avatar.skin] || "#FFDBB4"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: 88,
-    y: 78,
-    width: 10,
-    height: 35,
-    rx: 5,
-    fill: {
-      skin_light: "#FFDBB4",
-      skin_medium: "#D4A574",
-      skin_dark: "#8D6E4C",
-      skin_pale: "#FFE8D0"
-    }[avatar.skin] || "#FFDBB4"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 27,
-    cy: 115,
-    r: 6,
-    fill: {
-      skin_light: "#FFDBB4",
-      skin_medium: "#D4A574",
-      skin_dark: "#8D6E4C",
-      skin_pale: "#FFE8D0"
-    }[avatar.skin] || "#FFDBB4"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 93,
-    cy: 115,
-    r: 6,
-    fill: {
-      skin_light: "#FFDBB4",
-      skin_medium: "#D4A574",
-      skin_dark: "#8D6E4C",
-      skin_pale: "#FFE8D0"
-    }[avatar.skin] || "#FFDBB4"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 60,
-    cy: 42,
-    r: 28,
-    fill: {
-      skin_light: "#FFDBB4",
-      skin_medium: "#D4A574",
-      skin_dark: "#8D6E4C",
-      skin_pale: "#FFE8D0"
-    }[avatar.skin] || "#FFDBB4"
-  }), (avatar.hair === "hair_short" || avatar.hair == null || avatar.hair === "hair_none") && /*#__PURE__*/React.createElement("path", {
-    d: "M32,35 Q35,10 60,8 Q85,10 88,35 Q88,22 60,18 Q32,22 32,35",
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  }), avatar.hair === "hair_long" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
-    d: "M32,35 Q35,10 60,8 Q85,10 88,35 Q88,22 60,18 Q32,22 32,35",
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M32,35 Q28,55 30,75",
-    fill: "none",
-    stroke: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858",
-    strokeWidth: 8,
-    strokeLinecap: "round"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M88,35 Q92,55 90,75",
-    fill: "none",
-    stroke: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858",
-    strokeWidth: 8,
-    strokeLinecap: "round"
-  })), avatar.hair === "hair_curly" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
-    cx: 40,
-    cy: 22,
-    r: 10,
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 60,
-    cy: 16,
-    r: 11,
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 80,
-    cy: 22,
-    r: 10,
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  })), avatar.hair === "hair_spiky" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("polygon", {
-    points: "40,18 45,0 50,18",
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  }), /*#__PURE__*/React.createElement("polygon", {
-    points: "55,15 60,-2 65,15",
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  }), /*#__PURE__*/React.createElement("polygon", {
-    points: "70,18 75,0 80,18",
-    fill: {
-      hairc_brown: "#3D4858",
-      hairc_black: "#222",
-      hairc_blonde: "#E6C86E",
-      hairc_red: "#C4553A",
-      hairc_blue: "#4A90C4",
-      hairc_pink: "#FF85A1",
-      hairc_green: "#4CAF7A"
-    }[avatar.hairc] || "#3D4858"
-  })), /*#__PURE__*/React.createElement("circle", {
-    cx: 50,
-    cy: 42,
-    r: 3.5,
-    fill: "white"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 70,
-    cy: 42,
-    r: 3.5,
-    fill: "white"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 51,
-    cy: 42,
-    r: 2,
-    fill: "#333"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 71,
-    cy: 42,
-    r: 2,
-    fill: "#333"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 51.5,
-    cy: 41.5,
-    r: 0.7,
-    fill: "white"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 71.5,
-    cy: 41.5,
-    r: 0.7,
-    fill: "white"
-  }), /*#__PURE__*/React.createElement("path", {
-    d: "M52,52 Q60,58 68,52",
-    fill: "none",
-    stroke: "#C4553A",
-    strokeWidth: 2,
-    strokeLinecap: "round"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 42,
-    cy: 50,
-    r: 4,
-    fill: "#FFB6B6",
-    opacity: 0.4
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 78,
-    cy: 50,
-    r: 4,
-    fill: "#FFB6B6",
-    opacity: 0.4
-  }), avatar.hat === "hat_cap" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("rect", {
-    x: 35,
-    y: 14,
-    width: 50,
-    height: 6,
-    rx: 3,
-    fill: "#E85D3A"
-  }), /*#__PURE__*/React.createElement("ellipse", {
-    cx: 60,
-    cy: 14,
-    rx: 28,
-    ry: 10,
-    fill: "#E85D3A"
-  })), avatar.hat === "hat_crown" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("polygon", {
-    points: "38,18 42,4 50,14 55,0 60,14 68,0 72,14 78,4 82,18",
-    fill: "#FFD700"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: 38,
-    y: 18,
-    width: 44,
-    height: 6,
-    rx: 2,
-    fill: "#FFD700"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 50,
-    cy: 12,
-    r: 2,
-    fill: "#FF6347"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 60,
-    cy: 8,
-    r: 2,
-    fill: "#4A90C4"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 70,
-    cy: 12,
-    r: 2,
-    fill: "#4CAF7A"
-  })), avatar.hat === "hat_wizard" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
-    d: "M40,22 L60,-10 L80,22",
-    fill: "#4A3FA5"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 60,
-    cy: -4,
-    r: 4,
-    fill: "#FFD700"
-  }), /*#__PURE__*/React.createElement("rect", {
-    x: 35,
-    y: 22,
-    width: 50,
-    height: 5,
-    rx: 2,
-    fill: "#4A3FA5"
-  })), avatar.hat === "hat_party" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("path", {
-    d: "M48,20 L60,-5 L72,20",
-    fill: "#FF6347"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 60,
-    cy: -5,
-    r: 4,
-    fill: "#FFD700"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 54,
-    cy: 10,
-    r: 2,
-    fill: "#4A90C4"
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 66,
-    cy: 12,
-    r: 2,
-    fill: "#4CAF7A"
-  })), avatar.acc === "acc_glasses" && /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("circle", {
-    cx: 50,
-    cy: 42,
-    r: 7,
-    fill: "none",
-    stroke: "#333",
-    strokeWidth: 1.5
-  }), /*#__PURE__*/React.createElement("circle", {
-    cx: 70,
-    cy: 42,
-    r: 7,
-    fill: "none",
-    stroke: "#333",
-    strokeWidth: 1.5
-  }), /*#__PURE__*/React.createElement("line", {
-    x1: 57,
-    y1: 42,
-    x2: 63,
-    y2: 42,
-    stroke: "#333",
-    strokeWidth: 1.5
-  })), avatar.acc === "acc_scarf" && /*#__PURE__*/React.createElement("path", {
-    d: "M35,68 Q60,78 85,68",
-    fill: "none",
-    stroke: "#E85D3A",
-    strokeWidth: 5,
-    strokeLinecap: "round"
-  }))
+        (() => {
+  const sk = {skin_light:"#FFDBB4",skin_medium:"#D4A574",skin_dark:"#8D6E4C",skin_pale:"#FFE8D0"}[avatar.skin]||"#FFDBB4";
+  const hc = {hairc_brown:"#5C4033",hairc_black:"#1A1A2E",hairc_blonde:"#E6C86E",hairc_red:"#C4553A",hairc_blue:"#4A90C4",hairc_pink:"#FF85A1",hairc_green:"#3D9E6A",hairc_purple:"#9B59B6",hairc_rainbow:"url(#rainbowG)",hairc_silver:"#BDC3C7",hairc_orange:"#E67E22",hairc_teal:"#1ABC9C",hairc_galaxy:"url(#galaxyG)"}[avatar.hairc]||"#5C4033";
+  const shC = {shoes_none:"#555",shoes_sneaker:"#E85D3A",shoes_boot:"#4A3020",shoes_gold:"#DAA520",shoes_rainbow:"#FF69B4",shoes_sandal:"#C8A870",shoes_rocket:"#C4553A",shoes_cloud:"#A8C4D8",shoes_star_shoes:"#FFD700",shoes_dragon:"#8B2500",shoes_galaxy:"url(#galaxyG)"}[avatar.shoes]||"#555";
+  const pC = {pants_none:"#4A5568",pants_jeans:"#4A6FA5",pants_red:"#C4553A",pants_purple:"#7B4DAA",pants_gold:"#DAA520",pants_star:"#2D5A87",pants_camo:"#4A5E3A",pants_galaxy:"url(#galaxyG)",pants_cloud:"#A8C4D8",pants_dino:"#5C8A4A",pants_rainbow:"url(#rainbowG)",pants_aurora:"url(#auroraG)"}[avatar.pants]||"#4A5568";
+  const tC = {shirt_none:"#DC7553",shirt_stripes:"#E6A832",shirt_heart:"#E85D75",shirt_star:"#4A90C4",shirt_cool:"#333",shirt_rainbow:"url(#rainbowG)",shirt_nature:"#5CAB7D",shirt_space:"#1A1A2E",shirt_fire:"url(#fireG)",shirt_ice:"#87CEEB",shirt_gold:"url(#goldG)",shirt_cloud:"#A8C4D8",shirt_dino:"#5C8A4A",shirt_cat:"#F4A460",shirt_galaxy:"url(#galaxyG)",shirt_aurora:"url(#auroraG)"}[avatar.shirt]||"#DC7553";
+  const h = avatar.hair, hat = avatar.hat, acc = avatar.acc;
+  const E = React.createElement, F = React.Fragment;
+
+  return E("svg", {width:120,height:160,viewBox:"0 0 120 160"},
+    E("defs", null,
+      E("linearGradient", {id:"galaxyG",x1:"0%",y1:"0%",x2:"100%",y2:"100%"}, E("stop",{offset:"0%",stopColor:"#2C1654"}), E("stop",{offset:"50%",stopColor:"#4A2578"}), E("stop",{offset:"100%",stopColor:"#1A1A4E"})),
+      E("linearGradient", {id:"auroraG",x1:"0%",y1:"0%",x2:"100%",y2:"100%"}, E("stop",{offset:"0%",stopColor:"#1ABC9C"}), E("stop",{offset:"50%",stopColor:"#9B59B6"}), E("stop",{offset:"100%",stopColor:"#3498DB"})),
+      E("linearGradient", {id:"rainbowG",x1:"0%",y1:"0%",x2:"100%",y2:"0%"}, E("stop",{offset:"0%",stopColor:"#FF6B6B"}), E("stop",{offset:"25%",stopColor:"#FFD93D"}), E("stop",{offset:"50%",stopColor:"#6BCB77"}), E("stop",{offset:"75%",stopColor:"#4D96FF"}), E("stop",{offset:"100%",stopColor:"#9B59B6"})),
+      E("linearGradient", {id:"goldG",x1:"0%",y1:"0%",x2:"100%",y2:"100%"}, E("stop",{offset:"0%",stopColor:"#FFD700"}), E("stop",{offset:"50%",stopColor:"#FFA500"}), E("stop",{offset:"100%",stopColor:"#FFD700"})),
+      E("linearGradient", {id:"fireG",x1:"0%",y1:"100%",x2:"0%",y2:"0%"}, E("stop",{offset:"0%",stopColor:"#FF4500"}), E("stop",{offset:"50%",stopColor:"#FF6347"}), E("stop",{offset:"100%",stopColor:"#FFD700"}))
+    ),
+    E("ellipse", {cx:60,cy:155,rx:25,ry:5,fill:"rgba(0,0,0,0.08)"}),
+    acc==="acc_cape" && E("path", {d:"M38,74 Q25,110 38,140 Q60,130 82,140 Q95,110 82,74",fill:"#C4553A",opacity:0.85}),
+    acc==="acc_wings" && E(F, null, E("ellipse",{cx:14,cy:92,rx:20,ry:30,fill:"#E8D5FF",opacity:0.75}), E("ellipse",{cx:106,cy:92,rx:20,ry:30,fill:"#E8D5FF",opacity:0.75}), E("ellipse",{cx:18,cy:85,rx:12,ry:20,fill:"#F0E6FF",opacity:0.6}), E("ellipse",{cx:102,cy:85,rx:12,ry:20,fill:"#F0E6FF",opacity:0.6})),
+    acc==="acc_dragon_wings" && E(F, null, E("path",{d:"M8,68 Q-2,38 18,28 L28,48 Q16,58 22,72 Z",fill:"url(#fireG)",opacity:0.85}), E("path",{d:"M112,68 Q122,38 102,28 L92,48 Q104,58 98,72 Z",fill:"url(#fireG)",opacity:0.85})),
+    acc==="acc_rainbow_acc" && E("path", {d:"M15,95 Q60,30 105,95",fill:"none",stroke:"url(#rainbowG)",strokeWidth:4,opacity:0.5}),
+    E("ellipse", {cx:45,cy:148,rx:11,ry:6,fill:shC,stroke:"rgba(0,0,0,0.1)",strokeWidth:0.5}),
+    E("ellipse", {cx:75,cy:148,rx:11,ry:6,fill:shC,stroke:"rgba(0,0,0,0.1)",strokeWidth:0.5}),
+    avatar.shoes==="shoes_sneaker" && E(F,null, E("line",{x1:40,y1:147,x2:50,y2:147,stroke:"white",strokeWidth:1,opacity:0.6}), E("line",{x1:70,y1:147,x2:80,y2:147,stroke:"white",strokeWidth:1,opacity:0.6})),
+    avatar.shoes==="shoes_boot" && E(F,null, E("rect",{x:38,y:138,width:14,height:10,rx:3,fill:shC}), E("rect",{x:68,y:138,width:14,height:10,rx:3,fill:shC}), E("rect",{x:42,y:140,width:6,height:2,rx:1,fill:"#DAA520"}), E("rect",{x:72,y:140,width:6,height:2,rx:1,fill:"#DAA520"})),
+    avatar.shoes==="shoes_rocket" && E(F,null, E("path",{d:"M38,150 L42,155 L48,150",fill:"#FF6347"}), E("path",{d:"M68,150 L72,155 L78,150",fill:"#FF6347"})),
+    E("rect", {x:40,y:118,width:12,height:32,rx:5,fill:pC}),
+    E("rect", {x:68,y:118,width:12,height:32,rx:5,fill:pC}),
+    avatar.pants==="pants_star" && E(F,null, E("text",{x:46,y:138,textAnchor:"middle",fontSize:8,fill:"#FFD700"},"\u2605"), E("text",{x:74,y:138,textAnchor:"middle",fontSize:8,fill:"#FFD700"},"\u2605")),
+    E("path", {d:"M35,76 Q35,72 40,72 L80,72 Q85,72 85,76 L85,120 Q85,124 80,124 L40,124 Q35,124 35,120 Z",fill:tC}),
+    avatar.shirt==="shirt_stripes" && E(F,null, [82,90,98,106].map(y=>E("line",{key:y,x1:38,y1:y,x2:82,y2:y,stroke:"white",strokeWidth:2,opacity:0.35}))),
+    avatar.shirt==="shirt_heart" && E("path",{d:"M55,92 Q55,86 60,90 Q65,86 65,92 Q65,98 60,102 Q55,98 55,92Z",fill:"white",opacity:0.8}),
+    avatar.shirt==="shirt_star" && E("polygon",{points:"60,86 62,93 69,93 63,97 65,104 60,100 55,104 57,97 51,93 58,93",fill:"white",opacity:0.8}),
+    avatar.shirt==="shirt_cool" && E("text",{x:60,y:103,textAnchor:"middle",fontSize:12,fontWeight:700,fill:"white",opacity:0.9},"COOL"),
+    avatar.shirt==="shirt_nature" && E("path",{d:"M55,100 Q60,85 65,100 Q60,95 55,100Z",fill:"white",opacity:0.7}),
+    avatar.shirt==="shirt_space" && E(F,null, E("path",{d:"M58,88 L60,82 L62,88 L58,88Z",fill:"#87CEEB"}), E("circle",{cx:60,cy:92,r:4,fill:"#C0C0C0"}), E("path",{d:"M56,96 L58,92 L62,92 L64,96Z",fill:"#FF6347"})),
+    avatar.shirt==="shirt_fire" && E("path",{d:"M55,102 Q58,90 60,95 Q62,88 64,94 Q66,86 65,102Z",fill:"#FFD700",opacity:0.8}),
+    avatar.shirt==="shirt_ice" && E(F,null, E("line",{x1:60,y1:88,x2:60,y2:104,stroke:"white",strokeWidth:1.5,opacity:0.7}), E("line",{x1:52,y1:96,x2:68,y2:96,stroke:"white",strokeWidth:1.5,opacity:0.7}), E("line",{x1:54,y1:90,x2:66,y2:102,stroke:"white",strokeWidth:1,opacity:0.5}), E("line",{x1:66,y1:90,x2:54,y2:102,stroke:"white",strokeWidth:1,opacity:0.5})),
+    avatar.shirt==="shirt_dino" && E("path",{d:"M56,92 Q58,86 60,92 Q62,86 64,92",fill:"none",stroke:"white",strokeWidth:2,opacity:0.7}),
+    avatar.shirt==="shirt_cat" && E(F,null, E("path",{d:"M54,90 L57,84 L60,90Z",fill:"white",opacity:0.6}), E("path",{d:"M60,90 L63,84 L66,90Z",fill:"white",opacity:0.6}), E("circle",{cx:57,cy:94,r:1.5,fill:"white",opacity:0.6}), E("circle",{cx:63,cy:94,r:1.5,fill:"white",opacity:0.6})),
+    avatar.shirt==="shirt_cloud" && E(F,null, E("circle",{cx:55,cy:96,r:5,fill:"white",opacity:0.4}), E("circle",{cx:62,cy:94,r:6,fill:"white",opacity:0.4}), E("circle",{cx:68,cy:97,r:4,fill:"white",opacity:0.4})),
+    E("rect", {x:22,y:78,width:12,height:36,rx:6,fill:sk}),
+    E("rect", {x:86,y:78,width:12,height:36,rx:6,fill:sk}),
+    E("circle", {cx:28,cy:116,r:6,fill:sk}),
+    E("circle", {cx:92,cy:116,r:6,fill:sk}),
+    E("rect", {x:54,y:64,width:12,height:12,rx:4,fill:sk}),
+    E("circle", {cx:60,cy:42,r:28,fill:sk}),
+    (h==="hair_short"||!h||h==="hair_none") && E("path",{d:"M32,38 Q32,12 60,8 Q88,12 88,38 Q88,20 60,16 Q32,20 32,38",fill:hc}),
+    h==="hair_long" && E(F,null, E("path",{d:"M32,38 Q32,12 60,8 Q88,12 88,38 Q88,20 60,16 Q32,20 32,38",fill:hc}), E("path",{d:"M32,38 Q28,55 30,78",fill:"none",stroke:hc,strokeWidth:10,strokeLinecap:"round"}), E("path",{d:"M88,38 Q92,55 90,78",fill:"none",stroke:hc,strokeWidth:10,strokeLinecap:"round"})),
+    h==="hair_curly" && E(F,null, ...[{cx:38,cy:22,r:12},{cx:60,cy:14,r:14},{cx:82,cy:22,r:12},{cx:34,cy:38,r:8},{cx:86,cy:38,r:8}].map((c,i)=>E("circle",{key:i,...c,fill:hc}))),
+    h==="hair_spiky" && E(F,null, E("path",{d:"M32,35 Q35,12 60,8 Q85,12 88,35 Q88,22 60,18 Q32,22 32,35",fill:hc}), ...[{p:"M38,20 Q42,-2 46,20"},{p:"M50,16 Q55,-6 60,16"},{p:"M62,16 Q67,-6 72,16"},{p:"M74,20 Q78,-2 82,20"}].map((s,i)=>E("path",{key:i,d:s.p,fill:hc}))),
+    h==="hair_bun" && E(F,null, E("path",{d:"M32,38 Q32,12 60,8 Q88,12 88,38 Q88,20 60,16 Q32,20 32,38",fill:hc}), E("circle",{cx:60,cy:6,r:12,fill:hc})),
+    h==="hair_mohawk" && E(F,null, E("rect",{x:50,y:2,width:20,height:22,rx:5,fill:hc}), E("rect",{x:52,y:-4,width:16,height:12,rx:4,fill:hc})),
+    h==="hair_pigtails" && E(F,null, E("path",{d:"M32,38 Q32,12 60,8 Q88,12 88,38 Q88,20 60,16 Q32,20 32,38",fill:hc}), E("circle",{cx:28,cy:30,r:10,fill:hc}), E("circle",{cx:92,cy:30,r:10,fill:hc}), E("circle",{cx:28,cy:30,r:3,fill:"#FF85A1"}), E("circle",{cx:92,cy:30,r:3,fill:"#FF85A1"})),
+    h==="hair_afro" && E(F,null, E("circle",{cx:60,cy:28,r:35,fill:hc}), ...[{cx:40,cy:10},{cx:60,cy:2},{cx:80,cy:10},{cx:30,cy:30},{cx:90,cy:30}].map((c,i)=>E("circle",{key:i,cx:c.cx,cy:c.cy,r:8,fill:hc,opacity:0.7}))),
+    h==="hair_ponytail" && E(F,null, E("path",{d:"M32,38 Q32,12 60,8 Q88,12 88,38 Q88,20 60,16 Q32,20 32,38",fill:hc}), E("path",{d:"M85,28 Q95,35 92,55 Q90,70 85,80",fill:"none",stroke:hc,strokeWidth:10,strokeLinecap:"round"}), E("circle",{cx:85,cy:28,r:4,fill:"#DC7553"})),
+    E("circle", {cx:48,cy:42,r:5,fill:"white"}),
+    E("circle", {cx:72,cy:42,r:5,fill:"white"}),
+    E("circle", {cx:49,cy:42,r:2.8,fill:"#333"}),
+    E("circle", {cx:73,cy:42,r:2.8,fill:"#333"}),
+    E("circle", {cx:50,cy:41,r:1.2,fill:"white"}),
+    E("circle", {cx:74,cy:41,r:1.2,fill:"white"}),
+    E("path", {d:"M53,54 Q60,60 67,54",fill:"none",stroke:"#C4553A",strokeWidth:2,strokeLinecap:"round"}),
+    E("circle", {cx:40,cy:52,r:5,fill:"#FFB6B6",opacity:0.35}),
+    E("circle", {cx:80,cy:52,r:5,fill:"#FFB6B6",opacity:0.35}),
+    hat==="hat_cap" && E(F,null, E("ellipse",{cx:60,cy:18,rx:30,ry:12,fill:"#E85D3A"}), E("rect",{x:30,y:16,width:60,height:8,rx:3,fill:"#E85D3A"}), E("circle",{cx:60,cy:10,r:3,fill:"#C44A2A"})),
+    hat==="hat_beanie" && E(F,null, E("ellipse",{cx:60,cy:18,rx:28,ry:18,fill:"#E85D3A"}), E("rect",{x:32,y:18,width:56,height:8,rx:3,fill:"#CC4E30"}), E("circle",{cx:60,cy:4,r:5,fill:"#FFD700"})),
+    hat==="hat_bow" && E(F,null, E("ellipse",{cx:46,cy:14,rx:12,ry:8,fill:"#FF85A1"}), E("ellipse",{cx:74,cy:14,rx:12,ry:8,fill:"#FF85A1"}), E("circle",{cx:60,cy:14,r:6,fill:"#FF69B4"})),
+    hat==="hat_flower" && E(F,null, ...[0,60,120,180,240,300].map((a,i)=>E("circle",{key:i,cx:60+14*Math.cos(a*Math.PI/180),cy:10+14*Math.sin(a*Math.PI/180),r:5,fill:["#FF6B6B","#FFD93D","#6BCB77","#4D96FF","#FF85A1","#E67E22"][i]})), E("circle",{cx:60,cy:10,r:5,fill:"#FFD700"})),
+    hat==="hat_crown" && E(F,null, E("rect",{x:36,y:18,width:48,height:8,rx:2,fill:"#FFD700"}), E("polygon",{points:"36,18 42,2 48,14 54,-2 60,14 66,-2 72,14 78,2 84,18",fill:"#FFD700"}), E("circle",{cx:48,cy:10,r:2.5,fill:"#FF6347"}), E("circle",{cx:60,cy:4,r:2.5,fill:"#4A90C4"}), E("circle",{cx:72,cy:10,r:2.5,fill:"#2ECC71"})),
+    hat==="hat_wizard" && E(F,null, E("path",{d:"M38,24 L60,-14 L82,24Z",fill:"#4A3FA5"}), E("rect",{x:34,y:24,width:52,height:6,rx:2,fill:"#4A3FA5"}), E("circle",{cx:60,cy:-8,r:4,fill:"#FFD700"}), E("circle",{cx:52,cy:8,r:2,fill:"#FFD700",opacity:0.7}), E("circle",{cx:65,cy:14,r:1.5,fill:"#FFD700",opacity:0.5})),
+    hat==="hat_party" && E(F,null, E("path",{d:"M46,22 L60,-8 L74,22Z",fill:"#FF6347"}), E("circle",{cx:60,cy:-8,r:5,fill:"#FFD700"}), E("circle",{cx:53,cy:10,r:2.5,fill:"#4A90C4"}), E("circle",{cx:63,cy:6,r:2,fill:"#2ECC71"}), E("circle",{cx:68,cy:14,r:2.5,fill:"#FFD700"})),
+    hat==="hat_pirate" && E(F,null, E("path",{d:"M32,24 L32,12 Q60,-2 88,12 L88,24Z",fill:"#222"}), E("rect",{x:28,y:24,width:64,height:6,rx:2,fill:"#222"}), E("text",{x:60,y:20,textAnchor:"middle",fontSize:12,fill:"white"},"\u2620")),
+    hat==="hat_astro" && E(F,null, E("ellipse",{cx:60,cy:18,rx:30,ry:22,fill:"#C0C0C0",opacity:0.9}), E("ellipse",{cx:60,cy:20,rx:22,ry:16,fill:"#87CEEB",opacity:0.6}), E("ellipse",{cx:52,cy:16,rx:6,ry:4,fill:"white",opacity:0.3})),
+    hat==="hat_halo" && E(F,null, E("ellipse",{cx:60,cy:6,rx:24,ry:7,fill:"none",stroke:"#FFD700",strokeWidth:3}), E("ellipse",{cx:60,cy:6,rx:24,ry:7,fill:"none",stroke:"#FFF8DC",strokeWidth:1,opacity:0.6})),
+    hat==="hat_bunny" && E(F,null, E("ellipse",{cx:46,cy:4,rx:8,ry:18,fill:"#F0EDE8"}), E("ellipse",{cx:74,cy:4,rx:8,ry:18,fill:"#F0EDE8"}), E("ellipse",{cx:46,cy:4,rx:4,ry:13,fill:"#FFB6B6",opacity:0.6}), E("ellipse",{cx:74,cy:4,rx:4,ry:13,fill:"#FFB6B6",opacity:0.6})),
+    hat==="hat_dino" && E(F,null, E("path",{d:"M44,18 L48,2 L52,18Z",fill:"#5C8A4A"}), E("path",{d:"M56,16 L60,-2 L64,16Z",fill:"#5C8A4A"}), E("path",{d:"M68,18 L72,2 L76,18Z",fill:"#5C8A4A"})),
+    hat==="hat_cloud" && E(F,null, E("circle",{cx:48,cy:12,r:10,fill:"white",opacity:0.9}), E("circle",{cx:60,cy:6,r:12,fill:"white",opacity:0.9}), E("circle",{cx:72,cy:12,r:10,fill:"white",opacity:0.9}), E("circle",{cx:54,cy:8,r:8,fill:"#F0F8FF",opacity:0.7})),
+    hat==="hat_galaxy" && E(F,null, E("ellipse",{cx:60,cy:14,rx:30,ry:14,fill:"url(#galaxyG)"}), E("circle",{cx:48,cy:10,r:1.5,fill:"white",opacity:0.8}), E("circle",{cx:60,cy:6,r:1,fill:"white",opacity:0.9}), E("circle",{cx:72,cy:12,r:1.5,fill:"white",opacity:0.7}), E("circle",{cx:55,cy:16,r:1,fill:"#FFD700"})),
+    hat==="hat_dragon_helm" && E(F,null, E("path",{d:"M34,26 Q34,10 60,6 Q86,10 86,26Z",fill:"#8B2500"}), E("path",{d:"M34,20 L24,0 L42,14Z",fill:"#8B2500"}), E("path",{d:"M86,20 L96,0 L78,14Z",fill:"#8B2500"}), E("rect",{x:34,y:26,width:52,height:4,rx:1,fill:"#DAA520"})),
+    acc==="acc_glasses" && E(F,null, E("circle",{cx:48,cy:42,r:8,fill:"none",stroke:"#333",strokeWidth:1.5}), E("circle",{cx:72,cy:42,r:8,fill:"none",stroke:"#333",strokeWidth:1.5}), E("line",{x1:56,y1:42,x2:64,y2:42,stroke:"#333",strokeWidth:1.5}), E("line",{x1:40,y1:42,x2:36,y2:40,stroke:"#333",strokeWidth:1}), E("line",{x1:80,y1:42,x2:84,y2:40,stroke:"#333",strokeWidth:1})),
+    acc==="acc_sunglasses" && E(F,null, E("rect",{x:40,y:38,width:16,height:10,rx:4,fill:"#222",opacity:0.9}), E("rect",{x:64,y:38,width:16,height:10,rx:4,fill:"#222",opacity:0.9}), E("line",{x1:56,y1:43,x2:64,y2:43,stroke:"#222",strokeWidth:2}), E("rect",{x:42,y:39,width:6,height:2,rx:1,fill:"white",opacity:0.2}), E("rect",{x:66,y:39,width:6,height:2,rx:1,fill:"white",opacity:0.2})),
+    acc==="acc_scarf" && E(F,null, E("path",{d:"M35,68 Q60,80 85,68",fill:"none",stroke:"#E85D3A",strokeWidth:6,strokeLinecap:"round"}), E("rect",{x:36,y:70,width:8,height:18,rx:3,fill:"#E85D3A"})),
+    acc==="acc_necklace" && E(F,null, E("path",{d:"M42,70 Q60,82 78,70",fill:"none",stroke:"#FFD700",strokeWidth:2}), E("circle",{cx:60,cy:80,r:4,fill:"#FFD700"}), E("circle",{cx:60,cy:80,r:2,fill:"#FF6347"})),
+    acc==="acc_crown_acc" && E(F,null, E("rect",{x:44,y:24,width:32,height:5,rx:1,fill:"#FFD700"}), E("polygon",{points:"44,24 48,12 52,24",fill:"#FFD700"}), E("polygon",{points:"56,24 60,8 64,24",fill:"#FFD700"}), E("polygon",{points:"68,24 72,12 76,24",fill:"#FFD700"})),
+    acc==="acc_fairy_wand" && E(F,null, E("line",{x1:94,y1:65,x2:110,y2:35,stroke:"#9B59B6",strokeWidth:2.5,strokeLinecap:"round"}), E("polygon",{points:"110,28 112,35 119,35 113,39 115,46 110,42 105,46 107,39 101,35 108,35",fill:"#FFD700"})),
+    acc==="acc_flower_acc" && E(F,null, ...[0,72,144,216,288].map((a,i)=>E("circle",{key:i,cx:88+6*Math.cos(a*Math.PI/180),cy:26+6*Math.sin(a*Math.PI/180),r:3,fill:["#FF6B6B","#FF85A1","#FF6B6B","#FF85A1","#FF6B6B"][i]})), E("circle",{cx:88,cy:26,r:3,fill:"#FFD700"})),
+    acc==="acc_star_acc" && E("polygon",{points:"92,20 94,26 100,26 95,30 97,36 92,32 87,36 89,30 84,26 90,26",fill:"#FFD700"}),
+    acc==="acc_halo_gold" && E(F,null, E("ellipse",{cx:60,cy:6,rx:24,ry:7,fill:"none",stroke:"#FFD700",strokeWidth:4}), E("ellipse",{cx:60,cy:6,rx:24,ry:7,fill:"none",stroke:"#FFF8DC",strokeWidth:1.5,opacity:0.7})),
+    (avatar.shirt==="shirt_galaxy"||avatar.pants==="pants_galaxy"||avatar.shoes==="shoes_galaxy") && E(F,null, ...[{cx:45,cy:85},{cx:65,cy:95},{cx:55,cy:110},{cx:72,cy:130},{cx:48,cy:140}].map((s,i)=>E("circle",{key:"gs"+i,cx:s.cx,cy:s.cy,r:1,fill:"white",opacity:0.8}))),
+    (avatar.shirt==="shirt_aurora"||avatar.pants==="pants_aurora") && E(F,null, ...[{cx:42,cy:82},{cx:58,cy:90},{cx:75,cy:88},{cx:50,cy:105}].map((s,i)=>E("circle",{key:"as"+i,cx:s.cx,cy:s.cy,r:1.5,fill:"#1ABC9C",opacity:0.5})))
+  );
+})()
       ),
       /*#__PURE__*/React.createElement("div", { style: { flex: 1, minWidth: 0 } },
         (() => {
-          const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" };
+          const PET_EM = { pet_cat: "\uD83D\uDC31", pet_dog: "\uD83D\uDC36", pet_rabbit: "\uD83D\uDC30", pet_dragon: "\uD83D\uDC09", pet_unicorn: "\uD83E\uDD84", pet_phoenix: "\uD83D\uDD25", pet_dino: "\uD83E\uDD95", pet_hamster: "\uD83D\uDC39", pet_fish: "\uD83D\uDC1F", pet_parrot: "\uD83E\uDD9C", pet_turtle: "\uD83D\uDC22", pet_pony: "\uD83D\uDC34" , pet_fox: "\uD83E\uDD8A", pet_owl: "\uD83E\uDD89", pet_bear: "\uD83D\uDC3B", pet_penguin: "\uD83D\uDC27", pet_frog: "\uD83D\uDC38", pet_butterfly: "\uD83E\uDD8B", pet_wolf: "\uD83D\uDC3A", pet_lion: "\uD83E\uDD81", pet_galaxy_cat: "\u2728\uD83D\uDC31", pet_lava_dragon: "\uD83D\uDD25\uD83D\uDC09", pet_aurora_fox: "\uD83C\uDF0C\uD83E\uDD8A", pet_crystal_wolf: "\uD83D\uDC8E\uD83D\uDC3A", pet_rainbow_pony: "\uD83C\uDF08\uD83E\uDD84" };
           const ownedPets = ownedItems.filter(i => i.startsWith("pet_") && i !== "pet_none");
           if (ownedPets.length === 0) return /*#__PURE__*/React.createElement("p", {
             style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "4px 0" }
           }, "Koop een huisdier \uD83D\uDC3E");
+          const buddyEM = buddy && buddy !== "pet_none" ? (PET_EM[buddy] || "\uD83D\uDC3E") : null;
           return /*#__PURE__*/React.createElement("div", null,
-            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.45)", fontSize: 10, fontWeight: 700, margin: "0 0 5px" } },
-              "\uD83D\uDC3E Huisdieren (tik = beste vriend)"
+            buddyEM && /*#__PURE__*/React.createElement("div", {
+              style: { position: "absolute", top: 14, left: 138, fontSize: 38, lineHeight: 1, zIndex: 2 }
+            }, buddyEM),
+            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 10, fontWeight: 700, margin: "0 0 4px" } },
+              "\uD83D\uDC3E Huisdieren"
             ),
-            /*#__PURE__*/React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
+            /*#__PURE__*/React.createElement("div", {
+              style: { maxHeight: 130, overflowY: "auto", display: "flex", flexDirection: "column", gap: 3 }
+            },
               ownedPets.map(petId => {
-              const isHidden = ((avatar && avatar.hiddenPets) || []).includes(petId);
-              const isBuddy = buddy === petId;
-              return /*#__PURE__*/React.createElement("div", {
-                key: petId,
-                style: { display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }
-              },
-                /*#__PURE__*/React.createElement("span", {
-                  style: { fontSize: 28, lineHeight: 1, opacity: isHidden ? 0.25 : 1 }
-                }, PET_EM[petId] || "\uD83D\uDC3E"),
-                /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 3 } },
+                const isBuddy = buddy === petId;
+                return /*#__PURE__*/React.createElement("div", {
+                  key: petId,
+                  style: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 8px", borderRadius: 8, background: isBuddy ? "rgba(220,117,83,0.1)" : "rgba(61,74,88,0.03)", border: isBuddy ? "1px solid rgba(220,117,83,0.35)" : "1px solid transparent" }
+                },
+                  /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6 } },
+                    /*#__PURE__*/React.createElement("span", { style: { fontSize: 18 } }, PET_EM[petId] || "\uD83D\uDC3E"),
+                    /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: "#45545E" } }, petId.replace("pet_","").replace(/_/g," "))
+                  ),
                   /*#__PURE__*/React.createElement("button", {
-                    style: {
-                      fontSize: 9, padding: "2px 5px", borderRadius: 6, border: "none", cursor: "pointer",
-                      background: isBuddy ? "#4CAF7A" : "rgba(76,175,122,0.12)",
-                      color: isBuddy ? "white" : "rgba(61,74,88,0.5)", fontWeight: 600
-                    },
+                    title: isBuddy ? "Vriend verwijderen" : "Maak vriend",
+                    style: { background: "none", border: "none", fontSize: 15, cursor: "pointer", opacity: isBuddy ? 1 : 0.18, transition: "opacity 0.15s", padding: "0 2px" },
                     onClick: () => {
                       const newBuddy = isBuddy ? "pet_none" : petId;
                       setBuddy(newBuddy);
-                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx };
                       try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
                       if (userKey) firebaseSave(userKey, s);
                     }
-                  }, isBuddy ? "\u2B50 Vriend" : "Vriend?"),
-                  /*#__PURE__*/React.createElement("button", {
-                    style: {
-                      fontSize: 9, padding: "2px 5px", borderRadius: 6, border: "none", cursor: "pointer",
-                      background: isHidden ? "rgba(200,80,60,0.12)" : "rgba(61,74,88,0.08)",
-                      color: isHidden ? "#C4553A" : "rgba(61,74,88,0.45)", fontWeight: 600
-                    },
-                    onClick: () => {
-                      const h = (avatar && avatar.hiddenPets) || [];
-                      const newH = isHidden ? h.filter(x => x !== petId) : [...h, petId];
-                      const newAv = { ...avatar, hiddenPets: newH };
-                      setAvatar(newAv);
-                      const s = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, stmoodHistory, petPositions, exPerEx };
-                      try { localStorage.setItem("huxi-profile", JSON.stringify(s)); } catch(e2) {}
-                      if (userKey) firebaseSave(userKey, s);
-                    }
-                  }, isHidden ? "\uD83D\uDC41\uFE0F Tonen" : "\uD83D\uDEAB Verbergen")
-                )
-              );
-            })
-            ),
-            /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.25)", fontSize: 8, margin: "3px 0 0" } },
-              "Tik opnieuw om ster te verwijderen \u2022 Verberg via categorie"
+                  }, "\u2B50")
+                );
+              })
             )
           );
         })()
@@ -4285,8 +3952,8 @@ function HuxiApp() {
         fontSize: 9,
         padding: "5px 8px",
         borderRadius: 8,
-        border: owned ? "2px solid #4CAF7A" : "1px solid rgba(76,175,122,0.2)",
-        background: owned ? "rgba(76,175,122,0.1)" : "white",
+        border: owned ? "2px solid #DC7553" : "1px solid rgba(220,117,83,0.2)",
+        background: owned ? "rgba(220,117,83,0.1)" : "white",
         cursor: owned || canBuy ? "pointer" : "default",
         opacity: owned || canBuy ? 1 : 0.35,
         fontFamily: "inherit",
@@ -4300,7 +3967,7 @@ function HuxiApp() {
             accType, reason, experience, treeName, userName, growth, coins,
             ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood,
             totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
-            dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
+            dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
             lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx
           };
           try { localStorage.setItem("huxi-profile", JSON.stringify(saveEq)); } catch(e) {}
@@ -4311,6 +3978,7 @@ function HuxiApp() {
           const newAvatar = { ...avatar, [grp.k]: item.id };
           setOwnedItems(newOwned);
           setAvatar(newAvatar);
+          if (grp.k === 'pet') setBuddy(item.id);
           const saveNow = {
             accType, reason, experience, treeName, userName, growth,
             coins: item.p > 0 ? coins - item.p : coins,
@@ -4318,7 +3986,7 @@ function HuxiApp() {
             avatar: newAvatar,
             letters, diary, seenEx, lastExId, dailyMood,
             totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
-            dailyBreaths, dailyTasks, tasksGenerated, checkinDone,
+            dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
             lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx
           };
           try { localStorage.setItem("huxi-profile", JSON.stringify(saveNow)); } catch(e) {}
@@ -4326,7 +3994,12 @@ function HuxiApp() {
           showWorldReward("shop");
         }
       }
-    }, item.n, " ", !owned && item.p > 0 && /*#__PURE__*/React.createElement("span", {
+    }, (() => {
+      // Mini color preview for items
+      const previewColors = {skin_medium:"#D4A574",skin_dark:"#8D6E4C",skin_pale:"#FFE8D0",hair_long:"#5C4033",hair_curly:"#5C4033",hair_spiky:"#5C4033",hair_bun:"#5C4033",hair_mohawk:"#5C4033",hair_pigtails:"#5C4033",hair_afro:"#5C4033",hair_ponytail:"#5C4033",hairc_black:"#1A1A2E",hairc_blonde:"#E6C86E",hairc_red:"#C4553A",hairc_blue:"#4A90C4",hairc_pink:"#FF85A1",hairc_green:"#3D9E6A",hairc_purple:"#9B59B6",hairc_rainbow:"linear-gradient(90deg,#FF6B6B,#FFD93D,#6BCB77,#4D96FF)",hairc_silver:"#BDC3C7",hairc_orange:"#E67E22",hairc_teal:"#1ABC9C",hairc_galaxy:"linear-gradient(135deg,#2C1654,#4A2578)",hat_cap:"#E85D3A",hat_beanie:"#E85D3A",hat_bow:"#FF85A1",hat_flower:"#FF6B6B",hat_crown:"#FFD700",hat_wizard:"#4A3FA5",hat_party:"#FF6347",hat_pirate:"#222",hat_astro:"#C0C0C0",hat_halo:"#FFD700",hat_bunny:"#F0EDE8",hat_dino:"#5C8A4A",hat_cloud:"#E8F0FE",hat_galaxy:"linear-gradient(135deg,#2C1654,#4A2578)",hat_dragon_helm:"#8B2500",shirt_stripes:"#E6A832",shirt_heart:"#E85D75",shirt_star:"#4A90C4",shirt_cool:"#333",shirt_rainbow:"linear-gradient(90deg,#FF6B6B,#FFD93D,#6BCB77)",shirt_nature:"#5CAB7D",shirt_space:"#1A1A2E",shirt_fire:"linear-gradient(0deg,#FF4500,#FFD700)",shirt_ice:"#87CEEB",shirt_gold:"linear-gradient(135deg,#FFD700,#FFA500)",shirt_cloud:"#A8C4D8",shirt_dino:"#5C8A4A",shirt_cat:"#F4A460",shirt_galaxy:"linear-gradient(135deg,#2C1654,#4A2578)",shirt_aurora:"linear-gradient(135deg,#1ABC9C,#9B59B6)",pants_jeans:"#4A6FA5",pants_red:"#C4553A",pants_purple:"#7B4DAA",pants_camo:"#4A5E3A",pants_star:"#2D5A87",pants_gold:"#DAA520",pants_galaxy:"linear-gradient(135deg,#2C1654,#4A2578)",pants_cloud:"#A8C4D8",pants_dino:"#5C8A4A",pants_rainbow:"linear-gradient(90deg,#FF6B6B,#FFD93D,#6BCB77)",pants_aurora:"linear-gradient(135deg,#1ABC9C,#9B59B6)",shoes_sneaker:"#E85D3A",shoes_boot:"#4A3020",shoes_sandal:"#C8A870",shoes_rainbow:"#FF69B4",shoes_gold:"#DAA520",shoes_rocket:"#C4553A",shoes_cloud:"#A8C4D8",shoes_star_shoes:"#FFD700",shoes_dragon:"#8B2500",shoes_galaxy:"linear-gradient(135deg,#2C1654,#4A2578)",acc_glasses:"#333",acc_sunglasses:"#222",acc_scarf:"#E85D3A",acc_necklace:"#FFD700",acc_cape:"#C4553A",acc_wings:"#E8D5FF",acc_crown_acc:"#FFD700",acc_fairy_wand:"#9B59B6",acc_flower_acc:"#FF6B6B",acc_star_acc:"#FFD700",acc_rainbow_acc:"linear-gradient(90deg,#FF6B6B,#FFD93D,#6BCB77)",acc_halo_gold:"#FFD700",acc_dragon_wings:"linear-gradient(0deg,#FF4500,#8B2500)"};
+      const bg = previewColors[item.id];
+      return bg ? React.createElement("span", {style:{display:"inline-block",width:10,height:10,borderRadius:item.id.startsWith("hair")||item.id.startsWith("skin")?"50%":2,background:bg,marginRight:3,verticalAlign:"middle",border:"1px solid rgba(0,0,0,0.1)"}}) : null;
+    })(), item.n, " ", !owned && item.p > 0 && /*#__PURE__*/React.createElement("span", {
       style: {
         color: canBuy ? "#E6A832" : "#999"
       }
@@ -4343,7 +4016,7 @@ function HuxiApp() {
     onClick: () => {
       setAvatar(a => ({ ...a, [grp.k]: grp.k + "_none" }));
       const newAvReset = { ...avatar, [grp.k]: grp.k + "_none" };
-      const saveAR = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAvReset, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
+      const saveAR = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAvReset, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx };
       try { localStorage.setItem("huxi-profile", JSON.stringify(saveAR)); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveAR);
     }
@@ -4489,10 +4162,10 @@ function HuxiApp() {
       ),
       /*#__PURE__*/React.createElement("button", {
         style: {
-          background: "linear-gradient(135deg,#4CAF7A,#5BB8A0)", color: "white",
+          background: "linear-gradient(135deg,#DC7553,#70BCBC)", color: "white",
           border: "none", borderRadius: 16, padding: "14px 40px",
           fontSize: accType === "child" ? 16 : 15, fontWeight: 700, cursor: "pointer",
-          boxShadow: "0 4px 20px rgba(76,175,122,0.4)"
+          boxShadow: "0 4px 20px rgba(220,117,83,0.4)"
         },
         onClick: () => setShowWelcome(false)
       },
@@ -4525,20 +4198,20 @@ function HuxiApp() {
           ["\uD83D\uDE0A", "Ingecheckt", wi.checkins || 0, "keer"]
         ].map(([ico, lbl, val, unit]) => /*#__PURE__*/React.createElement("div", {
           key: lbl,
-          style: { background: "rgba(76,175,122,0.08)", borderRadius: 14, padding: "14px 10px", textAlign: "center" }
+          style: { background: "rgba(220,117,83,0.08)", borderRadius: 14, padding: "14px 10px", textAlign: "center" }
         },
           /*#__PURE__*/React.createElement("div", { style: { fontSize: 28, marginBottom: 4 } }, ico),
-          /*#__PURE__*/React.createElement("div", { style: { color: "#4CAF7A", fontSize: 22, fontWeight: 700 } }, val),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#DC7553", fontSize: 22, fontWeight: 700 } }, val),
           /*#__PURE__*/React.createElement("div", { style: { color: "rgba(61,74,88,0.5)", fontSize: 10 } }, lbl)
         ))
       ),
       moodHistory.length > 0 && /*#__PURE__*/React.createElement("div", {
-        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "12px", marginBottom: 12 }
+        style: { background: "rgba(220,117,83,0.06)", borderRadius: 14, padding: "12px", marginBottom: 12 }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 12, fontWeight: 700, margin: "0 0 8px" } }, "\uD83D\uDFE1 Hoe voelde je je de laatste tijd?"),
         /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10, flexWrap: "wrap" } },
           moodHistory.slice(0, 14).map((entry, i) => {
-            const MC = { calm: "#4CAF7A", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
+            const MC = { calm: "#DC7553", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
             const emoji = entry.mood === "calm" ? "\uD83D\uDE0A" : entry.mood === "ok" ? "\uD83D\uDE42" : entry.mood === "restless" ? "\uD83D\uDE10" : entry.mood === "tense" ? "\uD83D\uDE1F" : "\uD83D\uDE22";
             return /*#__PURE__*/React.createElement("div", {
               key: i,
@@ -4552,10 +4225,10 @@ function HuxiApp() {
         )
       ),
       /*#__PURE__*/React.createElement("div", {
-        style: { background: "linear-gradient(135deg,rgba(91,184,160,0.1),rgba(76,175,122,0.1))", borderRadius: 14, padding: "14px", textAlign: "center" }
+        style: { background: "linear-gradient(135deg,rgba(112,188,188,0.1),rgba(220,117,83,0.1))", borderRadius: 14, padding: "14px", textAlign: "center" }
       },
         /*#__PURE__*/React.createElement("div", { style: { fontSize: 36, marginBottom: 6 } }, growth > 0.8 ? "\uD83C\uDF33" : growth > 0.5 ? "\uD83C\uDF32" : growth > 0.3 ? "\uD83C\uDF31" : "\uD83C\uDF30"),
-        /*#__PURE__*/React.createElement("p", { style: { color: "#4CAF7A", fontSize: 14, fontWeight: 700, margin: "0 0 2px" } },
+        /*#__PURE__*/React.createElement("p", { style: { color: "#DC7553", fontSize: 14, fontWeight: 700, margin: "0 0 2px" } },
           growth > 0.8 ? "Jouw boom is een grote boom!" : growth > 0.5 ? "Jouw boom groeit goed!" : growth > 0.3 ? "Jouw boom groeit!" : "Jouw zaadje groeit!"
         ),
         /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.4)", fontSize: 11, margin: 0 } },
@@ -4576,7 +4249,7 @@ function HuxiApp() {
         ),
         /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "flex-end", gap: 10, height: 50, marginBottom: 6 } },
           moodHistory.slice(0, 30).reverse().map((entry, i) => {
-            const MC = { calm: "#4CAF7A", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
+            const MC = { calm: "#DC7553", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
             const h = entry.mood === "calm" ? 50 : entry.mood === "ok" ? 40 : entry.mood === "restless" ? 28 : entry.mood === "tense" ? 18 : 10;
             const c = MC[entry.mood] || "#ccc";
             return /*#__PURE__*/React.createElement("div", {
@@ -4592,7 +4265,7 @@ function HuxiApp() {
         )
       ),
       moodHistory.length < 3 && /*#__PURE__*/React.createElement("div", {
-        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "16px", textAlign: "center", marginBottom: 12 }
+        style: { background: "rgba(220,117,83,0.06)", borderRadius: 14, padding: "16px", textAlign: "center", marginBottom: 12 }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 13 } },
           "Check elke dag in om je stemming bij te houden \uD83D\uDCC8"
@@ -4600,20 +4273,20 @@ function HuxiApp() {
       ),
       /*#__PURE__*/React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, marginBottom: 12 } },
         [
-          ["\uD83D\uDD25", wi.streakDays || 0, "dagen actief"],
+          ["\uD83D\uDD25", wi.checkins || 0, "dagen actief"],
           ["\uD83C\uDF2C\uFE0F", wi.leaves || 0, "oefeningen"],
           ["\uD83D\uDCDD", wi.dagboeken || 0, "dagboeken"]
         ].map(([ico, val, lbl]) => /*#__PURE__*/React.createElement("div", {
           key: lbl,
-          style: { background: "rgba(76,175,122,0.08)", borderRadius: 12, padding: "12px 6px", textAlign: "center" }
+          style: { background: "rgba(220,117,83,0.08)", borderRadius: 12, padding: "12px 6px", textAlign: "center" }
         },
           /*#__PURE__*/React.createElement("div", { style: { fontSize: 22 } }, ico),
-          /*#__PURE__*/React.createElement("div", { style: { color: "#4CAF7A", fontSize: 20, fontWeight: 700 } }, val),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#DC7553", fontSize: 20, fontWeight: 700 } }, val),
           /*#__PURE__*/React.createElement("div", { style: { color: "rgba(61,74,88,0.4)", fontSize: 9 } }, lbl)
         ))
       ),
       moodHistory.length >= 5 && /*#__PURE__*/React.createElement("div", {
-        style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px", marginBottom: 8 }
+        style: { background: "rgba(220,117,83,0.06)", borderRadius: 12, padding: "12px", marginBottom: 8 }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 12, fontWeight: 600, margin: "0 0 4px" } }, "\uD83D\uDCA1 Inzicht"),
         /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.6)", fontSize: 12, margin: 0, lineHeight: 1.5 } }, (() => {
@@ -4632,12 +4305,12 @@ function HuxiApp() {
         style: { background: "rgba(255,255,255,0.8)", borderRadius: 14, padding: "16px", marginBottom: 12 }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 700, margin: "0 0 12px" } },
-          "Stemming \u2014 laatste " + Math.min(moodHistory.length, 30) + " dagen"
+          "Stemming \u2014 laatste " + Math.min(moodHistory.length, 30) + " check-ins"
         ),
         /*#__PURE__*/React.createElement("div", { style: { position: "relative", height: 60, marginBottom: 8 } },
           /*#__PURE__*/React.createElement("div", { style: { display: "flex", alignItems: "flex-end", gap: 5, height: "100%", position: "absolute", inset: 0 } },
             moodHistory.slice(0, 30).reverse().map((entry, i) => {
-              const MC = { calm: "#4CAF7A", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
+              const MC = { calm: "#DC7553", ok: "#6BC5A0", restless: "#E6A832", tense: "#D4842A", overwhelmed: "#C4553A", sad: "#A0A0C0" };
               const h = entry.mood === "calm" ? 100 : entry.mood === "ok" ? 78 : entry.mood === "restless" ? 52 : entry.mood === "tense" ? 32 : 15;
               return /*#__PURE__*/React.createElement("div", {
                 key: i,
@@ -4652,7 +4325,7 @@ function HuxiApp() {
           /*#__PURE__*/React.createElement("span", { style: { color: "rgba(61,74,88,0.35)", fontSize: 10 } }, "vandaag")
         ),
         /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 20, marginTop: 20, flexWrap: "wrap" } },
-          [["#4CAF7A","Rustig"],["#6BC5A0","Oké"],["#E6A832","Onrustig"],["#D4842A","Gespannen"],["#C4553A","Overweldigd"]].map(([c,l]) =>
+          [["#DC7553","Rustig"],["#6BC5A0","Oké"],["#E6A832","Onrustig"],["#D4842A","Gespannen"],["#C4553A","Overweldigd"]].map(([c,l]) =>
             /*#__PURE__*/React.createElement("div", { key: l, style: { display: "flex", alignItems: "center", gap: 10 } },
               /*#__PURE__*/React.createElement("div", { style: { width: 8, height: 8, borderRadius: 2, background: c } }),
               /*#__PURE__*/React.createElement("span", { style: { color: "rgba(61,74,88,0.4)", fontSize: 9 } }, l)
@@ -4661,14 +4334,14 @@ function HuxiApp() {
         )
       ),
       moodHistory.length < 3 && /*#__PURE__*/React.createElement("div", {
-        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "20px", textAlign: "center", marginBottom: 12 }
+        style: { background: "rgba(220,117,83,0.06)", borderRadius: 14, padding: "20px", textAlign: "center", marginBottom: 12 }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.5)", fontSize: 13, lineHeight: 1.5 } },
           "Check elke dag even in om na een paar dagen je stemming als grafiek te zien."
         )
       ),
       moodHistory.length >= 7 && /*#__PURE__*/React.createElement("div", {
-        style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "14px", marginBottom: 12 }
+        style: { background: "rgba(220,117,83,0.06)", borderRadius: 14, padding: "14px", marginBottom: 12 }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 600, margin: "0 0 6px" } }, "\uD83D\uDCA1 Patroon"),
         /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.6)", fontSize: 13, margin: 0, lineHeight: 1.6 } }, (() => {
@@ -4689,15 +4362,15 @@ function HuxiApp() {
           ["\uD83D\uDD25", wi.streakDays || 0, "dagen actief"]
         ].map(([ico, val, lbl]) => /*#__PURE__*/React.createElement("div", {
           key: lbl,
-          style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px", textAlign: "center" }
+          style: { background: "rgba(220,117,83,0.06)", borderRadius: 12, padding: "12px", textAlign: "center" }
         },
           /*#__PURE__*/React.createElement("div", { style: { fontSize: 22 } }, ico),
-          /*#__PURE__*/React.createElement("div", { style: { color: "#4CAF7A", fontSize: 22, fontWeight: 700 } }, val),
+          /*#__PURE__*/React.createElement("div", { style: { color: "#DC7553", fontSize: 22, fontWeight: 700 } }, val),
           /*#__PURE__*/React.createElement("div", { style: { color: "rgba(61,74,88,0.4)", fontSize: 10 } }, lbl)
         ))
       ),
       letters.length > 0 && /*#__PURE__*/React.createElement("div", {
-        style: { background: "rgba(76,175,122,0.06)", borderRadius: 12, padding: "12px" }
+        style: { background: "rgba(220,117,83,0.06)", borderRadius: 12, padding: "12px" }
       },
         /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 12, fontWeight: 600, margin: "0 0 6px" } }, "\u2709\uFE0F Jouw brieven"),
         letters.map((l, i) => {
@@ -4710,7 +4383,7 @@ function HuxiApp() {
           },
             /*#__PURE__*/React.createElement("span", { style: { fontSize: 16 } }, locked ? "\uD83D\uDD12" : "\uD83D\uDCEC"),
             /*#__PURE__*/React.createElement("span", { style: { flex: 1, color: "rgba(61,74,88,0.5)", fontSize: 11 } }, l.date),
-            /*#__PURE__*/React.createElement("span", { style: { color: locked ? "#E6A832" : "#4CAF7A", fontSize: 10, fontWeight: 600 } }, locked ? "Nog " + dl + " dagen" : "Open")
+            /*#__PURE__*/React.createElement("span", { style: { color: locked ? "#E6A832" : "#DC7553", fontSize: 10, fontWeight: 600 } }, locked ? "Nog " + dl + " dagen" : "Open")
           );
         })
       )
@@ -4764,8 +4437,8 @@ function HuxiApp() {
               onClick: () => setPeriod(p.days),
               style: {
                 padding: "10px 6px", borderRadius: 12, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                border: period === p.days ? "2px solid #4CAF7A" : "2px solid rgba(76,175,122,0.2)",
-                background: period === p.days ? "rgba(76,175,122,0.1)" : "white",
+                border: period === p.days ? "2px solid #DC7553" : "2px solid rgba(220,117,83,0.2)",
+                background: period === p.days ? "rgba(220,117,83,0.1)" : "white",
                 color: g
               }
             }, p.label))
@@ -4787,7 +4460,7 @@ function HuxiApp() {
               const newGoals = [newGoal, ...goals];
               setGoals(newGoals);
               setDraft("");
-              const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx };
+              const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx };
               try { localStorage.setItem("huxi-profile", JSON.stringify(saveG)); } catch(e2) {}
               if (userKey) firebaseSave(userKey, saveG);
             }
@@ -4823,7 +4496,7 @@ function HuxiApp() {
           /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, fontWeight: 700, margin: "0 0 8px" } }, "\uD83D\uDCEC Geopend"),
           openGoals.map(goal => /*#__PURE__*/React.createElement("div", {
             key: goal.id,
-            style: { background: "rgba(76,175,122,0.06)", borderRadius: 14, padding: "12px 14px", marginBottom: 8, border: "1px solid rgba(76,175,122,0.15)" }
+            style: { background: "rgba(220,117,83,0.06)", borderRadius: 14, padding: "12px 14px", marginBottom: 8, border: "1px solid rgba(220,117,83,0.15)" }
           },
             /*#__PURE__*/React.createElement("p", { style: { color: "rgba(61,74,88,0.35)", fontSize: 10, margin: "0 0 4px" } }, goal.date),
             /*#__PURE__*/React.createElement("p", { style: { color: g, fontSize: 13, margin: "0 0 6px", lineHeight: 1.5 } }, goal.text),
@@ -4832,7 +4505,7 @@ function HuxiApp() {
               onClick: () => {
                 const newGoals = goals.filter(x => x.id !== goal.id);
                 setGoals(newGoals);
-                const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx };
+                const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx };
                 try { localStorage.setItem("huxi-profile", JSON.stringify(saveG)); } catch(e2) {}
                 if (userKey) firebaseSave(userKey, saveG);
               }
@@ -4868,7 +4541,7 @@ function HuxiApp() {
         style: { flex: 1, background: "#E07850", border: "none", borderRadius: 12, padding: "12px 0", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" },
         onClick: async () => {
           if (userKey) {
-            try { await fetch("https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
+            try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
           }
           try { localStorage.removeItem("huxi-profile"); } catch(e) {}
           setShowDeleteConfirm(false); setShowSett(false);
