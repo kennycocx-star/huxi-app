@@ -288,6 +288,14 @@ function HuxiApp() {
   const [linkInput, setLinkInput] = useState("");
   const [linkMsg, setLinkMsg] = useState("");
   const [showTherapistPanel, setShowTherapistPanel] = useState(false);
+  // ═══ DASHBOARD STATE ═══
+  const [dashLoading, setDashLoading] = useState(false);
+  const [dashClients, setDashClients] = useState([]);
+  const [dashView, setDashView] = useState("overview");
+  const [dashSelClient, setDashSelClient] = useState(null);
+  const [dashMsg, setDashMsg] = useState("");
+  const [msgInput, setMsgInput] = useState("");
+  const [assignClient, setAssignClient] = useState(null);
   // ═══ SOS ═══
   const [sosActive, setSosActive] = useState(false);
   const [sosStep, setSosStep] = useState(0);
@@ -1618,27 +1626,19 @@ function HuxiApp() {
   }
 
   // THERAPIST DASHBOARD
+  // Laad dashboard cliënten als therapeut
+  const loadDashClients = async () => {
+    if (!therapistCode) return;
+    setDashLoading(true);
+    try {
+      var cls = await therapistLoadClients(therapistCode);
+      setDashClients(Array.isArray(cls) ? cls : []);
+    } catch(e) { setDashClients([]); }
+    setDashLoading(false);
+  };
+  useEffect(() => { if (phase === "therapist_dash") loadDashClients(); }, [therapistCode, phase]);
+
   if (phase === "therapist_dash") {
-    // Laad echte cliënten bij openen
-    const [dashLoading, setDashLoading] = useState(false);
-    const [dashClients, setDashClients] = useState([]);
-    const [dashView, setDashView] = useState("overview"); // overview | client
-    const [dashSelClient, setDashSelClient] = useState(null);
-    const [dashMsg, setDashMsg] = useState("");
-    const [msgInput, setMsgInput] = useState("");
-    const [assignClient, setAssignClient] = useState(null);
-
-    const loadDashClients = async () => {
-      if (!therapistCode) return;
-      setDashLoading(true);
-      try {
-        var cls = await therapistLoadClients(therapistCode);
-        setDashClients(Array.isArray(cls) ? cls : []);
-      } catch(e) { setDashClients([]); }
-      setDashLoading(false);
-    };
-
-    useEffect(() => { loadDashClients(); }, [therapistCode]);
 
     // Genereer code als die er nog niet is
     const generateCode = async () => {
