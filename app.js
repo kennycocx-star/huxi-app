@@ -1908,7 +1908,10 @@ function HuxiApp() {
             E("div", { style: { display:"flex", gap:4 } },
               E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 8px", fontSize:9, color:g, cursor:"pointer", fontFamily:"inherit" },
                 onClick: () => setAssignClient(cl)
-              }, "+ Oefening")
+              }, "+ Oefening"),
+              E("button", { style: { background:"rgba(112,188,188,0.1)", border:"1px solid rgba(112,188,188,0.3)", borderRadius:8, padding:"4px 8px", fontSize:9, color:g, cursor:"pointer", fontFamily:"inherit" },
+                onClick: () => { setDashSelClient(cl); setMsgInput(""); }
+              }, "\uD83D\uDCAC Bericht")
             )
           ),
           // Stemmingstrend (laatste 7 dagen als bolletjes)
@@ -1982,9 +1985,35 @@ function HuxiApp() {
         EX.map(ex => E("button", { key:ex.id, className:"rb", style: { background:"rgba(220,117,83,0.05)", borderColor:"rgba(220,117,83,0.15)" },
           onClick: async () => { await therapistAssignExercise(therapistCode, assignClient.key, { name: ex.name, id: ex.id }); setAssignClient(null); setDashMsg("\u2705 " + ex.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
         }, E("span", null, "\uD83C\uDF2C\uFE0F"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ex.name))),
-        custExList.map(ce => E("button", { key:ce.id, className:"rb", style: { background:"rgba(220,117,83,0.05)", borderColor:"rgba(220,117,83,0.15)" },
-          onClick: async () => { await therapistAssignExercise(therapistCode, assignClient.key, { name: ce.name, id: ce.id }); setAssignClient(null); setDashMsg("\u2705 " + ce.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
-        }, E("span", null, "\uD83D\uDCCB"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ce.name)))
+        custExList.length > 0 && E("p", { style: { fontSize:10, color:g5, marginTop:8, marginBottom:4, fontWeight:600 } }, "Eigen oefeningen:"),
+        custExList.map(ce => E("button", { key:ce.id, className:"rb", style: { background:"rgba(112,188,188,0.05)", borderColor:"rgba(112,188,188,0.15)" },
+          onClick: async () => { await therapistAssignExercise(therapistCode, assignClient.key, { name: ce.name + (ce.desc ? " \u2014 " + ce.desc : ""), id: "custom_" + ce.id }); setAssignClient(null); setDashMsg("\u2705 " + ce.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
+        }, E("span", null, "\uD83D\uDCCB"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ce.name, ce.desc && E("span", { style: { fontSize:10, fontWeight:400, color:g5, marginLeft:6 } }, ce.desc))))
+      )
+    ),
+
+    // --- BERICHT STUREN OVERLAY ---
+    dashSelClient && E("div", { style: overlay(), onClick: () => setDashSelClient(null) },
+      E("div", { className:"fadeIn", style: modal, onClick: e => e.stopPropagation() },
+        E("h3", { style: { color:g, fontSize:16, fontWeight:700, textAlign:"center", marginBottom:6 } }, "\uD83D\uDCAC Bericht aan " + (dashSelClient.name || "Cli\xEBnt")),
+        E("p", { style: { fontSize:11, color:g5, textAlign:"center", marginBottom:14 } }, "Dit bericht verschijnt bij je cli\xEBnt onder \u201CMijn Therapeut\u201D"),
+        E("textarea", {
+          className:"ta",
+          placeholder:"Schrijf een bericht, motivatie of opdracht...",
+          value: msgInput,
+          onChange: e => setMsgInput(e.target.value),
+          rows: 4,
+          style: { width:"100%", padding:"10px 14px", borderRadius:12, border:"2px solid rgba(112,188,188,0.2)", background:"rgba(112,188,188,0.04)", color:g, fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:10, boxSizing:"border-box", resize:"vertical" }
+        }),
+        E("div", { style: { display:"flex", gap:10 } },
+          E("button", { style: { flex:1, background:"none", border:"1px solid " + g3, borderRadius:14, padding:"10px 0", color:g, fontSize:13, cursor:"pointer" }, onClick: () => setDashSelClient(null) }, "Annuleren"),
+          E("button", { className:"mb", style: { flex:1, padding:"10px 0" }, onClick: async () => {
+            if (!msgInput.trim()) return;
+            await therapistSendMessage(dashSelClient.key, msgInput.trim(), userName || treeName || "Therapeut");
+            setDashSelClient(null); setMsgInput("");
+            setDashMsg("\u2709\uFE0F Bericht verstuurd!"); setTimeout(() => setDashMsg(""), 3000);
+          } }, "Versturen \u2709\uFE0F")
+        )
       )
     ),
 
@@ -4718,22 +4747,36 @@ function HuxiApp() {
     // Opdrachten
     /*#__PURE__*/React.createElement("h3", { style: { fontSize: 13, fontWeight: 700, color: g, margin: "0 0 8px" } }, "\uD83D\uDCCB Opdrachten"),
     myAssignments.length === 0 && /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g5, margin: "0 0 12px" } }, "Geen opdrachten op dit moment."),
-    myAssignments.map(a => /*#__PURE__*/React.createElement("div", {
-      key: a.fbKey,
-      style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", marginBottom: 6, borderRadius: 10, background: a.done ? "rgba(76,175,80,0.08)" : "rgba(220,117,83,0.06)", border: a.done ? "1px solid rgba(76,175,80,0.2)" : "1px solid rgba(220,117,83,0.2)" }
-    },
-      /*#__PURE__*/React.createElement("div", null,
-        /*#__PURE__*/React.createElement("p", { style: { fontSize: 13, fontWeight: 600, color: g, margin: 0, textDecoration: a.done ? "line-through" : "none" } }, a.name),
-        /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: "2px 0 0" } }, a.done ? "\u2705 Afgerond" : "Van je therapeut")
-      ),
-      !a.done && /*#__PURE__*/React.createElement("button", {
-        style: { background: "rgba(76,175,80,0.15)", border: "1px solid rgba(76,175,80,0.3)", borderRadius: 8, padding: "4px 10px", fontSize: 10, color: g, cursor: "pointer", fontFamily: "inherit" },
-        onClick: async () => {
-          await clientCompleteAssignment(userKey, a.fbKey);
-          setMyAssignments(p => p.map(x => x.fbKey === a.fbKey ? { ...x, done: true } : x));
-        }
-      }, "\u2713 Klaar")
-    )),
+    myAssignments.map(a => {
+      var matchedEx = EX.find(e => e.id === a.id);
+      return /*#__PURE__*/React.createElement("div", {
+        key: a.fbKey,
+        style: { padding: "8px 10px", marginBottom: 6, borderRadius: 10, background: a.done ? "rgba(76,175,80,0.08)" : "rgba(220,117,83,0.06)", border: a.done ? "1px solid rgba(76,175,80,0.2)" : "1px solid rgba(220,117,83,0.2)" }
+      },
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+          /*#__PURE__*/React.createElement("div", null,
+            /*#__PURE__*/React.createElement("p", { style: { fontSize: 13, fontWeight: 600, color: g, margin: 0, textDecoration: a.done ? "line-through" : "none" } }, a.name),
+            /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: "2px 0 0" } }, a.done ? "\u2705 Afgerond" : matchedEx ? matchedEx.desc : "Opdracht van je therapeut")
+          ),
+          !a.done && /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 4 } },
+            matchedEx && /*#__PURE__*/React.createElement("button", {
+              style: { background: "linear-gradient(135deg,#DC7553,#70BCBC)", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: "white", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 },
+              onClick: () => {
+                setShowTherapistBox(false);
+                launchEx(matchedEx, null);
+              }
+            }, "\u25B6 Start"),
+            /*#__PURE__*/React.createElement("button", {
+              style: { background: "rgba(76,175,80,0.15)", border: "1px solid rgba(76,175,80,0.3)", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: g, cursor: "pointer", fontFamily: "inherit" },
+              onClick: async () => {
+                await clientCompleteAssignment(userKey, a.fbKey);
+                setMyAssignments(p => p.map(x => x.fbKey === a.fbKey ? { ...x, done: true } : x));
+              }
+            }, "\u2713 Klaar")
+          )
+        )
+      );
+    }),
 
     // Berichten
     /*#__PURE__*/React.createElement("h3", { style: { fontSize: 13, fontWeight: 700, color: g, margin: "16px 0 8px" } }, "\u2709\uFE0F Berichten"),
