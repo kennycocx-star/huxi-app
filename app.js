@@ -197,6 +197,8 @@ function HuxiApp() {
   const [showGoals, setShowGoals] = useState(false);
   const [showJourney, setShowJourney] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
+  const [welcomeBackMsg, setWelcomeBackMsg] = useState(null);
   const [warnAcknowledged, setWarnAcknowledged] = useState(false);
   const [postMood, setPostMood] = useState(null);
   const [showPostMood, setShowPostMood] = useState(false);
@@ -715,6 +717,15 @@ function HuxiApp() {
           if (Array.isArray(d.moodHistory)) setMoodHistory(d.moodHistory);
           if (d.petPositions && typeof d.petPositions === "object") setPetPositions(d.petPositions);
           if (d.exPerEx && typeof d.exPerEx === "object") setExPerEx(d.exPerEx);
+          if (d.accType !== "therapist") {
+            // Welkom terug + mini groei bij terugkomst
+            var wb = getWelcomeBack(d.accType, d.userName, d.growth || 0.01, d.totalSessions || 0, d.wi ? d.wi.streakDays || 0 : 0);
+            setWelcomeBackMsg(wb);
+            setShowWelcomeBack(true);
+            // Mini groei bij inloggen
+            var loginGrowth = Math.min(1, (d.growth || 0.01) + 0.0005);
+            setGrowth(loginGrowth);
+          }
           setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
         }
       }
@@ -732,6 +743,128 @@ function HuxiApp() {
       window.removeEventListener("online", goOnline);
     };
   }, []);
+
+  // ═══ WELCOME BACK SYSTEM ═══
+  var WELCOME_MSGS = {
+    child: [
+      "Hoi {name}! Wat fijn dat je er bent! 🌟",
+      "Hé {name}! Jouw boom zwaait naar je! 🌳",
+      "Welkom terug, {name}! Klaar voor een nieuw avontuur? 🌈",
+      "{name}! Super dat je er bent! 🎉",
+      "Daar ben je weer, {name}! Je wereld is blij! 🌻",
+      "Hoi {name}! Tijd voor iets leuks! ✨",
+      "Welkom {name}! Je boom staat op je te wachten! 🌱",
+      "{name}! Goed dat je er bent! 🌼",
+      "Hoi! Fijn om je te zien, {name}! 🦋",
+      "Hey {name}! Klaar om te groeien? 🌟"
+    ],
+    junior: [
+      "Hey {name}, goed dat je er bent 🌿",
+      "Welkom terug, {name} ✨",
+      "Fijn dat je er bent, {name} 🌱",
+      "{name}! Neem even de tijd voor jezelf 🌊",
+      "Hey {name}, je boom groeit mooi verder 🌳",
+      "Welkom, {name} — dit moment is voor jou 🍃",
+      "{name}! Je plek, jouw tempo 🌿",
+      "Goed om je te zien, {name} 🌙",
+      "{name}, even rustig beginnen? 🌸",
+      "Hey {name} — fijn dat je er weer bent 💚"
+    ],
+    adult: [
+      "Welkom terug, {name} 🌿",
+      "Fijn dat je er bent, {name} 🍃",
+      "Neem even de tijd voor jezelf, {name} ✨",
+      "{name}, goed dat je er bent 🌳",
+      "Een moment van rust, {name} 🌊",
+      "Welkom, {name} — jouw tempo, jouw weg 🌱",
+      "{name}, dit moment is voor jou 🍂",
+      "Goed om je te zien, {name} 🌸",
+      "Welkom terug — even stilstaan, {name} 🌙",
+      "{name}, fijn dat je er weer bent 💚",
+      "Adem even rustig in, {name} 🌬️",
+      "Dit is jouw plek, {name} 🌿",
+      "Even tot rust komen, {name} ☁️",
+      "{name} — goed bezig, stap voor stap 🌻",
+      "Welkom terug in je eigen ruimte, {name} 🍃"
+    ]
+  };
+  var PROGRESS_MSGS = {
+    child: [
+      "Je boom is al {pct}% gegroeid! 🌳",
+      "Je hebt al {sess} keer geoefend! 🌟",
+      "Je streak is {streak} dagen — super! 🔥",
+      "Je boom wordt steeds groter! 🌱",
+      "Elke keer dat je er bent, groeit je wereld! 🌈"
+    ],
+    junior: [
+      "Je boom staat er mooi bij — {pct}% gegroeid 🌿",
+      "{sess} oefeningen gedaan — dat is echt iets 💪",
+      "Je bent al {streak} dagen op rij bezig 🔥",
+      "Je wereld groeit rustig met je mee 🌱",
+      "Stap voor stap, je doet het goed 🌊"
+    ],
+    adult: [
+      "Je boom is {pct}% gegroeid — rustig en gestaag 🌳",
+      "Al {sess} ademhalingssessies — elk moment telt 🍃",
+      "{streak} dagen op rij — consistentie is kracht 🌿",
+      "Je wereld weerspiegelt je inzet 🌱",
+      "Elke sessie draagt bij aan je welzijn 🌊",
+      "Je pad groeit met elke stap die je zet 🌸"
+    ]
+  };
+  var getWelcomeBack = (type, name, growth, sessions, streak) => {
+    var t = type || "adult";
+    var msgs = WELCOME_MSGS[t] || WELCOME_MSGS.adult;
+    var progMsgs = PROGRESS_MSGS[t] || PROGRESS_MSGS.adult;
+    var main = msgs[Math.floor(Math.random() * msgs.length)].replace("{name}", name || "");
+    var pct = Math.round(growth * 100);
+    var prog = null;
+    if (sessions > 0 || streak > 1) {
+      prog = progMsgs[Math.floor(Math.random() * progMsgs.length)]
+        .replace("{pct}", pct).replace("{sess}", sessions).replace("{streak}", streak || 0);
+    }
+    return { main: main, progress: prog };
+  };
+
+  // ═══ MICRO GROWTH — kleine groei bij elke actie ═══
+  var microGrow = (amount) => {
+    var ng = Math.min(1, growth + amount);
+    setGrowth(ng);
+    return ng;
+  };
+
+  // ═══ PROGRESSIVE BREATH ROUNDS ═══
+  // Geeft het aangepaste aantal rondes terug op basis van ervaring
+  var getProgressiveRounds = (ex) => {
+    var base = ex.r;
+    var childMult = accType === "child" ? 0.5 : 1;
+    var baseRounds = Math.round(base * childMult);
+    // Geleidelijke toename: na 10 sessies +5%, na 25 +10%, na 50 +20%, na 100 +35%
+    var bonus = 0;
+    if (totalSessions >= 100) bonus = 0.35;
+    else if (totalSessions >= 50) bonus = 0.20;
+    else if (totalSessions >= 25) bonus = 0.10;
+    else if (totalSessions >= 10) bonus = 0.05;
+    return Math.round(baseRounds * (1 + bonus));
+  };
+  // Beschikbare ronde-opties voor de picker (afhankelijk van ervaring)
+  var getAvailableRounds = (ex) => {
+    var base = ex.r;
+    var childMult = accType === "child" ? 0.5 : 1;
+    var baseR = Math.round(base * childMult);
+    var opts = [baseR]; // altijd standaard
+    // Na 10 sessies: +3 rondes optie
+    if (totalSessions >= 10) opts.push(baseR + 3);
+    // Na 25 sessies: +6 rondes
+    if (totalSessions >= 25) opts.push(baseR + 6);
+    // Na 50 sessies: +10 rondes
+    if (totalSessions >= 50) opts.push(baseR + 10);
+    // Na 80 sessies: +15 rondes (kan ~15 min worden)
+    if (totalSessions >= 80) opts.push(baseR + 15);
+    // Na 120 sessies: +20 rondes
+    if (totalSessions >= 120) opts.push(baseR + 20);
+    return opts;
+  };
 
   // ═══ FUNCTIONS (no hooks) ═══
   // Smart exercise unlocking based on mood, experience, reason, sessions
@@ -890,7 +1023,11 @@ function HuxiApp() {
       setSeenEx(p => [...p, ex.id].slice(-200)); // FIX H2: max 200 geziene oefeningen
     } else setShowSci(false);
   };
-  const startAuto = () => launchEx(pickEx(), null);
+  const startAuto = () => {
+    var ex = pickEx();
+    var progRounds = getProgressiveRounds(ex);
+    launchEx(ex, progRounds);
+  };
   const getSeasonalName = (ex) => {
     if (accType !== "child") return null;
     const m = new Date().getMonth(); // 0-11
@@ -965,11 +1102,12 @@ function HuxiApp() {
     setLetterDraft("");
     setShowLetter(false);
     showWorldReward("letter");
+    const newGrowthL2 = microGrow(0.002);
     const newWi = { ...wi, flowers: wi.flowers + 1, brieven: wi.brieven + 1 };
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 8 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveL = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+    const saveL = { accType, reason, experience, treeName, userName, growth: newGrowthL2, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveL)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveL);
   };
@@ -981,11 +1119,12 @@ function HuxiApp() {
     setDiaryDraft("");
     setShowDiary(false);
     showWorldReward("diary");
+    const newGrowthD2 = microGrow(0.0015);
     const newWi = { ...wi, grass: wi.grass + 1, dagboeken: wi.dagboeken + 1 };
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveD = { accType, reason, experience, treeName, userName, growth, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+    const saveD = { accType, reason, experience, treeName, userName, growth: newGrowthD2, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
     try { localStorage.setItem("huxi-profile", JSON.stringify(saveD)); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveD);
   };
@@ -1268,6 +1407,13 @@ function HuxiApp() {
                 setDailyMood(null);
               }
               if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
+              if (data.accType !== "therapist") {
+                var wb2 = getWelcomeBack(data.accType, data.userName, data.growth || 0.01, data.totalSessions || 0, data.wi ? data.wi.streakDays || 0 : 0);
+                setWelcomeBackMsg(wb2);
+                setShowWelcomeBack(true);
+                var loginGrowth2 = Math.min(1, (data.growth || 0.01) + 0.0005);
+                setGrowth(loginGrowth2);
+              }
               setPhase(data.accType === "therapist" ? "therapist_dash" : "world");
             } else {
               setUserKey(key); setPhase("onboarding");
@@ -1858,7 +2004,98 @@ function HuxiApp() {
         )
       )
     )
-  )));
+  )),
+
+  // ═══ DELETE CONFIRM OVERLAY (DASHBOARD) ═══
+  showDeleteConfirm && E("div", {
+    style: { ...overlay(), background: "rgba(0,0,0,0.6)" },
+    onClick: () => setShowDeleteConfirm(false)
+  }, E("div", {
+    className: "fadeIn",
+    style: { ...modal, textAlign: "center" },
+    onClick: e => e.stopPropagation()
+  },
+    E("div", { style: { fontSize: 40, marginBottom: 12 } }, "\uD83D\uDDD1\uFE0F"),
+    E("h3", { style: { color: "#E07850", fontSize: 18, fontWeight: 700, margin: "0 0 8px" } }, "Account verwijderen"),
+    E("p", { style: { color: g, fontSize: 13, margin: "0 0 20px", lineHeight: 1.5 } },
+      "Ben je zeker? Je account en alle therapeutdata wordt definitief verwijderd."
+    ),
+    E("div", { style: { display: "flex", gap: 25 } },
+      E("button", {
+        style: { flex: 1, background: "none", border: "1px solid rgba(61,74,88,0.2)", borderRadius: 12, padding: "12px 0", color: g, fontSize: 13, cursor: "pointer" },
+        onClick: () => setShowDeleteConfirm(false)
+      }, "Annuleren"),
+      E("button", {
+        style: { flex: 1, background: "#E07850", border: "none", borderRadius: 12, padding: "12px 0", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+        onClick: async () => {
+          if (userKey) {
+            try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
+          }
+          try { localStorage.removeItem("huxi-profile"); } catch(e) {}
+          setShowDeleteConfirm(false); setShowSett(false);
+          setPhase("login"); setAccType(null); setUserKey(""); setLoginName(""); setLoginPin("");
+          setGrowth(0.01); setCoins(0); setLetters([]); setDiary([]);
+          setWi({ leaves:0,flowers:0,grass:0,stones:0,shrooms:0,bushes:0,streakDays:0,brieven:0,dagboeken:0,tools:0,checkins:0,tasks:0 });
+        }
+      }, "Ja, verwijder alles")
+    )
+  )),
+
+  // ═══ SETTINGS OVERLAY (DASHBOARD) ═══
+  showSett && E("div", {
+    style: overlay(),
+    onClick: () => setShowSett(false)
+  }, E("div", {
+    className: "fadeIn",
+    style: { ...modal, width: 270 },
+    onClick: e => e.stopPropagation()
+  }, E("h3", {
+    style: { color: g, fontSize: 18, fontWeight: 700, marginBottom: 16, textAlign: "center" }
+  }, "Instellingen"), [
+    ["Geluid", E("button", {
+      key: "so", className: "tb",
+      onClick: () => setSoundOn(s => !s)
+    }, soundOn ? "\uD83D\uDD0A Aan" : "\uD83D\uDD07 Uit")],
+    ["Account", E("button", {
+      key: "a", className: "tb",
+      onClick: () => {
+        try { localStorage.removeItem("huxi-profile"); } catch(e) {}
+        setPhase("login"); setAccType(null); setCheckinDone(false);
+        setUserKey(""); setLoginName(""); setLoginPin("");
+        setBuddy("pet_none"); setGoals([]); setStreakShields(0); setLastCheckinDate("");
+        setOwnedItems(["hat_none","shirt_none","pants_none","shoes_none","skin_light","hair_short","hairc_brown","acc_none","pet_none"]);
+        setAvatar({ hat:"hat_none", shirt:"shirt_none", pants:"pants_none", shoes:"shoes_none", skin:"skin_light", hair:"hair_short", hairc:"hairc_brown", acc:"acc_none", pet:"pet_none" });
+        setLetters([]); setDiary([]); setGrowth(0.01); setCoins(0);
+        setWi({ leaves:0,flowers:0,grass:0,stones:0,shrooms:0,bushes:0,streakDays:0,brieven:0,dagboeken:0,tools:0,checkins:0,tasks:0 });
+        setTotalSessions(0); setSeenEx([]); setLastTaskTexts([]);
+      }
+    }, "Uitloggen")],
+    ["Mijn koppelcode", E("button", {
+      key: "tc", className: "tb",
+      onClick: async () => {
+        if (therapistCode) { setLinkMsg("Je code: " + therapistCode); return; }
+        setLinkMsg("Code aanmaken...");
+        var code = await therapistRegister(userKey, userName);
+        if (code) { setTherapistCode(code); setLinkMsg("Je code: " + code); saveData(); }
+        else setLinkMsg("Fout bij aanmaken");
+      }
+    }, therapistCode ? "\uD83D\uDD11 " + therapistCode : "\uD83D\uDD11 Code aanmaken")],
+    linkMsg ? ["", E("span", { key: "lm", style: { fontSize: 11, color: "#70BCBC" } }, linkMsg)] : null,
+    ["Nieuw begin", E("button", {
+      key: "del", className: "tb", style: { color: "#E07850" },
+      onClick: () => setShowDeleteConfirm(true)
+    }, "\uD83D\uDDD1\uFE0F Verwijderen")]
+  ].filter(Boolean).map(([l, ctrl], i) => E("div", {
+    key: i,
+    style: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid rgba(61,74,88,0.08)" }
+  }, E("span", { style: { color: g, fontSize: 13 } }, l), ctrl)),
+  E("button", {
+    className: "mb",
+    style: { width: "100%", marginTop: 45, padding: "11px 0" },
+    onClick: () => setShowSett(false)
+  }, "Sluiten")))
+
+  );
   }
 
 
@@ -2722,7 +2959,7 @@ function HuxiApp() {
         color: g5,
         fontSize: 10
       }
-    }, ex.desc)), unlocked && experience === "experienced" && /*#__PURE__*/React.createElement("select", {
+    }, ex.desc)), unlocked && getAvailableRounds(ex).length > 1 && /*#__PURE__*/React.createElement("select", {
       onClick: e => e.stopPropagation(),
       onChange: e => {
         if (e.target.value) launchEx(ex, parseInt(e.target.value));
@@ -2735,15 +2972,7 @@ function HuxiApp() {
         color: g,
         fontSize: 10
       }
-    }, /*#__PURE__*/React.createElement("option", {
-      value: ""
-    }, "x", ex.r), /*#__PURE__*/React.createElement("option", {
-      value: ex.r + 3
-    }, "x", ex.r + 3), /*#__PURE__*/React.createElement("option", {
-      value: ex.r + 6
-    }, "x", ex.r + 6), /*#__PURE__*/React.createElement("option", {
-      value: ex.r + 10
-    }, "x", ex.r + 10)));
+    }, getAvailableRounds(ex).map((rr, ri) => /*#__PURE__*/React.createElement("option", { key: ri, value: ri === 0 ? "" : rr }, "x" + rr))));
   }))), showLetter && /*#__PURE__*/React.createElement("div", {
     style: overlay(),
     onClick: () => setShowLetter(false)
@@ -3743,8 +3972,9 @@ function HuxiApp() {
           setOwnedItems(newOwned);
           if (grp.k !== 'pet') setAvatar(newAvatar);
           if (grp.k === 'pet') setBuddy(item.id);
+          var newGrowthShop = microGrow(0.0008);
           const saveNow = {
-            accType, reason, experience, treeName, userName, growth,
+            accType, reason, experience, treeName, userName, growth: newGrowthShop,
             coins: item.p > 0 ? coins - item.p : coins,
             ownedItems: newOwned,
             avatar: newAvatar,
@@ -3878,7 +4108,46 @@ function HuxiApp() {
   }, /*#__PURE__*/React.createElement("button", {
     className: "sb",
     onClick: () => setShowSett(true)
-  }, "\u2699\uFE0F")), showWelcome && /*#__PURE__*/React.createElement("div", {
+  }, "\u2699\uFE0F")),
+
+  // ═══ WELKOM TERUG OVERLAY ═══
+  showWelcomeBack && welcomeBackMsg && /*#__PURE__*/React.createElement("div", {
+    style: {
+      position: "fixed", inset: 0, zIndex: 105,
+      background: "linear-gradient(160deg, #1a3a2a 0%, #0d2418 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexDirection: "column", cursor: "pointer"
+    },
+    onClick: () => setShowWelcomeBack(false)
+  },
+    /*#__PURE__*/React.createElement("div", {
+      className: "fadeUp",
+      style: { textAlign: "center", padding: "0 30px", maxWidth: 360 }
+    },
+      /*#__PURE__*/React.createElement("div", {
+        style: { fontSize: 56, marginBottom: 20, animation: "treeGrow 1.2s ease-out" }
+      }, growth < 0.15 ? "\uD83C\uDF31" : growth < 0.4 ? "\uD83C\uDF3F" : growth < 0.7 ? "\uD83C\uDF33" : "\uD83C\uDF43"),
+      /*#__PURE__*/React.createElement("h1", {
+        style: { color: "#7ED4A0", fontSize: accType === "child" ? 24 : 21, fontWeight: 700, marginBottom: 10, lineHeight: 1.4 }
+      }, welcomeBackMsg.main),
+      welcomeBackMsg.progress && /*#__PURE__*/React.createElement("p", {
+        style: { color: "rgba(180,230,200,0.6)", fontSize: 13, lineHeight: 1.6, marginBottom: 20 }
+      }, welcomeBackMsg.progress),
+      /*#__PURE__*/React.createElement("div", {
+        style: { width: 120, height: 4, borderRadius: 2, background: "rgba(126,212,160,0.15)", margin: "20px auto 8px", overflow: "hidden" }
+      }, /*#__PURE__*/React.createElement("div", {
+        style: { width: Math.round(growth * 100) + "%", height: "100%", borderRadius: 2, background: "linear-gradient(90deg,#DC7553,#70BCBC)", transition: "width 1.5s ease-out" }
+      })),
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: "rgba(180,230,200,0.35)", fontSize: 10, marginBottom: 24 }
+      }, Math.round(growth * 100) + "% gegroeid"),
+      /*#__PURE__*/React.createElement("p", {
+        style: { color: "rgba(180,230,200,0.3)", fontSize: 11, fontStyle: "italic" }
+      }, "Tik om verder te gaan")
+    )
+  ),
+
+  showWelcome && /*#__PURE__*/React.createElement("div", {
     style: {
       position: "fixed", inset: 0, zIndex: 100,
       background: "linear-gradient(160deg, #1a3a2a 0%, #0d2418 100%)",
@@ -4224,7 +4493,8 @@ function HuxiApp() {
               const newGoals = [newGoal, ...goals];
               setGoals(newGoals);
               setDraft("");
-              const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+              var newGrowthGoal = microGrow(0.001);
+              const saveG = { accType, reason, experience, treeName, userName, growth: newGrowthGoal, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
               try { localStorage.setItem("huxi-profile", JSON.stringify(saveG)); } catch(e2) {}
               if (userKey) firebaseSave(userKey, saveG);
             }
