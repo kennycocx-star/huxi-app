@@ -125,6 +125,38 @@ var clientLoadMessages = async (clientKey) => {
   } catch(e) { console.warn("Berichten laden fout:", e); return []; }
 };
 
+// Volledige account verwijdering — ruimt ALLES op (user, assignments, messages, link)
+var firebaseDeleteAccount = async (clientKey, linkedTherapist) => {
+  try {
+    // 1. Verwijder gebruikersdata
+    await fetch(FIREBASE_URL + "/users/" + clientKey + ".json", { method: "DELETE" });
+    // 2. Verwijder alle opdrachten
+    await fetch(FIREBASE_URL + "/assignments/" + clientKey + ".json", { method: "DELETE" });
+    // 3. Verwijder alle berichten
+    await fetch(FIREBASE_URL + "/messages/" + clientKey + ".json", { method: "DELETE" });
+    // 4. Verwijder de koppellink (als er een therapeut gekoppeld was)
+    if (linkedTherapist) {
+      await fetch(FIREBASE_URL + "/links/" + linkedTherapist + "/" + clientKey + ".json", { method: "DELETE" });
+    }
+    return true;
+  } catch(e) { console.warn("Account verwijderen fout:", e); return false; }
+};
+
+// Therapeut account verwijderen — ruimt ook therapeut-registratie en alle links op
+var firebaseDeleteTherapist = async (therapistKey, therapistCode) => {
+  try {
+    // 1. Verwijder gebruikersdata
+    await fetch(FIREBASE_URL + "/users/" + therapistKey + ".json", { method: "DELETE" });
+    // 2. Verwijder therapeut registratie
+    if (therapistCode) {
+      await fetch(FIREBASE_URL + "/therapists/" + therapistCode + ".json", { method: "DELETE" });
+      // 3. Verwijder alle links (cliënten worden automatisch ontkoppeld)
+      await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json", { method: "DELETE" });
+    }
+    return true;
+  } catch(e) { console.warn("Therapeut verwijderen fout:", e); return false; }
+};
+
 // Therapeut laadt al zijn gekoppelde cliënten + hun opdrachtstatus
 var therapistLoadClients = async (therapistCode) => {
   try {
