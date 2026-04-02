@@ -1689,7 +1689,10 @@ function HuxiApp() {
         E("h1", { style: { fontSize:22, fontWeight:700, color:g, margin:0 } }, treeName),
         E("p", { style: { fontSize:12, color:g5, margin:0 } }, "Therapeut Dashboard")
       ),
-      E("button", { className:"tb", onClick: switchAcc }, "\uD83D\uDD04 Wissel")
+      E("div", { style: { display:"flex", gap:8 } },
+        E("button", { className:"tb", onClick: () => setShowSett(true) }, "\u2699\uFE0F"),
+        E("button", { className:"tb", onClick: switchAcc }, "\uD83D\uDD04 Wissel")
+      )
     ),
 
     // --- KOPPELCODE ---
