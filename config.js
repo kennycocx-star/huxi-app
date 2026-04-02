@@ -70,6 +70,61 @@ var clientUnlinkTherapist = async (clientKey, therapistCode) => {
   } catch(e) { console.warn("Ontkoppeling fout:", e); return false; }
 };
 
+// Therapeut wijst oefening toe aan cliënt
+var therapistAssignExercise = async (therapistCode, clientKey, exercise) => {
+  try {
+    var id = Date.now();
+    await fetch(FIREBASE_URL + "/assignments/" + clientKey + "/" + id + ".json", {
+      method: "PUT",
+      body: JSON.stringify({ name: exercise.name, id: exercise.id || id, assignedBy: therapistCode, assignedAt: id, done: false })
+    });
+    return true;
+  } catch(e) { console.warn("Toewijzing fout:", e); return false; }
+};
+
+// Cliënt laadt zijn toegewezen oefeningen
+var clientLoadAssignments = async (clientKey) => {
+  try {
+    var res = await fetch(FIREBASE_URL + "/assignments/" + clientKey + ".json");
+    var data = await res.json();
+    if (!data) return [];
+    return Object.keys(data).map(k => ({ ...data[k], fbKey: k }));
+  } catch(e) { console.warn("Opdrachten laden fout:", e); return []; }
+};
+
+// Cliënt markeert oefening als gedaan
+var clientCompleteAssignment = async (clientKey, fbKey) => {
+  try {
+    await fetch(FIREBASE_URL + "/assignments/" + clientKey + "/" + fbKey + ".json", {
+      method: "PATCH",
+      body: JSON.stringify({ done: true, completedAt: Date.now() })
+    });
+    return true;
+  } catch(e) { console.warn("Opdracht afronden fout:", e); return false; }
+};
+
+// Therapeut stuurt motivatiebericht naar cliënt
+var therapistSendMessage = async (clientKey, message, therapistName) => {
+  try {
+    var id = Date.now();
+    await fetch(FIREBASE_URL + "/messages/" + clientKey + "/" + id + ".json", {
+      method: "PUT",
+      body: JSON.stringify({ text: message, from: therapistName, sentAt: id, read: false })
+    });
+    return true;
+  } catch(e) { console.warn("Bericht sturen fout:", e); return false; }
+};
+
+// Cliënt laadt berichten van therapeut
+var clientLoadMessages = async (clientKey) => {
+  try {
+    var res = await fetch(FIREBASE_URL + "/messages/" + clientKey + ".json");
+    var data = await res.json();
+    if (!data) return [];
+    return Object.keys(data).map(k => ({ ...data[k], fbKey: k })).sort((a,b) => b.sentAt - a.sentAt);
+  } catch(e) { console.warn("Berichten laden fout:", e); return []; }
+};
+
 // Therapeut laadt al zijn gekoppelde cliënten
 var therapistLoadClients = async (therapistCode) => {
   try {
