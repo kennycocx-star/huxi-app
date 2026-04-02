@@ -2008,7 +2008,7 @@ function HuxiApp() {
 
   // ═══ DELETE CONFIRM OVERLAY (DASHBOARD) ═══
   showDeleteConfirm && E("div", {
-    style: { ...overlay(), background: "rgba(0,0,0,0.6)" },
+    style: { position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:999, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center" },
     onClick: () => setShowDeleteConfirm(false)
   }, E("div", {
     className: "fadeIn",
@@ -2043,7 +2043,7 @@ function HuxiApp() {
 
   // ═══ SETTINGS OVERLAY (DASHBOARD) ═══
   showSett && E("div", {
-    style: overlay(),
+    style: { position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:998, background:"rgba(0,0,0,0.4)", backdropFilter:"blur(5px)", display:"flex", alignItems:"center", justifyContent:"center" },
     onClick: () => setShowSett(false)
   }, E("div", {
     className: "fadeIn",
