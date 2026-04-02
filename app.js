@@ -1993,7 +1993,10 @@ function HuxiApp() {
           E("div", { style: { display:"flex", gap:25 } },
             E("button", { style: { flex:1, background:"none", border:"1px solid rgba(61,74,88,0.2)", borderRadius:12, padding:"12px 0", color:g, fontSize:13, cursor:"pointer" }, onClick: () => setShowDeleteConfirm(false) }, "Annuleren"),
             E("button", { style: { flex:1, background:"#E07850", border:"none", borderRadius:12, padding:"12px 0", color:"white", fontSize:13, fontWeight:700, cursor:"pointer" }, onClick: async () => {
-              if (userKey) { try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method:"DELETE" }); } catch(e) {} }
+              if (userKey) {
+                if (accType === "therapist") { await firebaseDeleteTherapist(userKey, therapistCode); }
+                else { await firebaseDeleteAccount(userKey, linkedTherapist); }
+              }
               try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
               resetAllState();
             } }, "Ja, verwijder alles")
@@ -2157,7 +2160,8 @@ function HuxiApp() {
         style: { flex: 1, background: "#E07850", border: "none", borderRadius: 12, padding: "12px 0", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" },
         onClick: async () => {
           if (userKey) {
-            try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
+            if (accType === "therapist") { await firebaseDeleteTherapist(userKey, therapistCode); }
+            else { await firebaseDeleteAccount(userKey, linkedTherapist); }
           }
           try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
           resetAllState();
@@ -4693,7 +4697,8 @@ function HuxiApp() {
         style: { flex: 1, background: "#E07850", border: "none", borderRadius: 12, padding: "12px 0", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" },
         onClick: async () => {
           if (userKey) {
-            try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
+            if (accType === "therapist") { await firebaseDeleteTherapist(userKey, therapistCode); }
+            else { await firebaseDeleteAccount(userKey, linkedTherapist); }
           }
           try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
           resetAllState();
