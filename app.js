@@ -703,7 +703,7 @@ function HuxiApp() {
           if (Array.isArray(d.moodHistory)) setMoodHistory(d.moodHistory);
           if (d.petPositions && typeof d.petPositions === "object") setPetPositions(d.petPositions);
           if (d.exPerEx && typeof d.exPerEx === "object") setExPerEx(d.exPerEx);
-          setPhase("world");
+          setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
         }
       }
     } catch (e) {}
@@ -1251,7 +1251,7 @@ function HuxiApp() {
                 setDailyMood(null);
               }
               if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
-              setPhase("world");
+              setPhase(data.accType === "therapist" ? "therapist_dash" : "world");
             } else {
               setUserKey(key); setPhase("onboarding");
             }
