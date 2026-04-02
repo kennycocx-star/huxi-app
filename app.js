@@ -4804,7 +4804,7 @@ function HuxiApp() {
         style: { padding: "10px 12px", marginBottom: 6, borderRadius: 10, background: expandedMsg === m.fbKey ? "rgba(112,188,188,0.12)" : "rgba(112,188,188,0.06)", border: "1px solid rgba(112,188,188,0.15)", cursor: "pointer" },
         onClick: () => setExpandedMsg(expandedMsg === m.fbKey ? null : m.fbKey)
       },
-        /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g, margin: 0, whiteSpace: expandedMsg === m.fbKey ? "pre-wrap" : "nowrap", overflow: expandedMsg === m.fbKey ? "visible" : "hidden", textOverflow: expandedMsg === m.fbKey ? "unset" : "ellipsis", lineHeight: 1.5 } }, m.text),
+        /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g, margin: 0, whiteSpace: expandedMsg === m.fbKey ? "pre-wrap" : "nowrap", wordBreak: "break-word", overflowWrap: "break-word", overflow: expandedMsg === m.fbKey ? "visible" : "hidden", textOverflow: expandedMsg === m.fbKey ? "unset" : "ellipsis", lineHeight: 1.5 } }, m.text),
         /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 } },
           /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: 0 } }, m.from + " \u2022 " + new Date(m.sentAt).toLocaleDateString("nl")),
           expandedMsg !== m.fbKey && /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: "#70BCBC" } }, "Tik om te lezen")
