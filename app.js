@@ -302,6 +302,8 @@ function HuxiApp() {
   const [myAssignments, setMyAssignments] = useState([]);
   const [myMessages, setMyMessages] = useState([]);
   const [showTherapistBox, setShowTherapistBox] = useState(false);
+  const [expandedMsg, setExpandedMsg] = useState(null);
+  const [showDoneTasks, setShowDoneTasks] = useState(false);
   // ═══ SOS ═══
   const [sosActive, setSosActive] = useState(false);
   const [sosStep, setSosStep] = useState(0);
@@ -4733,68 +4735,89 @@ function HuxiApp() {
   }, "Sluiten"))),
 
   // ═══ CLIËNT: OPDRACHTEN VAN THERAPEUT ═══
-  showTherapistBox && /*#__PURE__*/React.createElement("div", {
-    style: { ...F, background: "rgba(0,0,0,0.5)", zIndex: 800, display: "flex", alignItems: "center", justifyContent: "center" },
-    onClick: () => setShowTherapistBox(false)
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "fadeIn",
-    style: { background: "rgba(255,255,255,0.97)", borderRadius: 24, padding: 20, width: "85%", maxWidth: 380, maxHeight: "75vh", overflowY: "auto" },
-    onClick: e => e.stopPropagation()
-  },
-    /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: g, textAlign: "center", margin: "0 0 4px" } }, "\uD83E\uDE7A Mijn Therapeut"),
-    /*#__PURE__*/React.createElement("p", { style: { fontSize: 11, color: g5, textAlign: "center", margin: "0 0 16px" } }, "Opdrachten en berichten van je therapeut"),
-
-    // Opdrachten
-    /*#__PURE__*/React.createElement("h3", { style: { fontSize: 13, fontWeight: 700, color: g, margin: "0 0 8px" } }, "\uD83D\uDCCB Opdrachten"),
-    myAssignments.length === 0 && /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g5, margin: "0 0 12px" } }, "Geen opdrachten op dit moment."),
-    myAssignments.map(a => {
-      var matchedEx = EX.find(e => e.id === a.id);
-      return /*#__PURE__*/React.createElement("div", {
-        key: a.fbKey,
-        style: { padding: "8px 10px", marginBottom: 6, borderRadius: 10, background: a.done ? "rgba(76,175,80,0.08)" : "rgba(220,117,83,0.06)", border: a.done ? "1px solid rgba(76,175,80,0.2)" : "1px solid rgba(220,117,83,0.2)" }
-      },
-        /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
-          /*#__PURE__*/React.createElement("div", null,
-            /*#__PURE__*/React.createElement("p", { style: { fontSize: 13, fontWeight: 600, color: g, margin: 0, textDecoration: a.done ? "line-through" : "none" } }, a.name),
-            /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: "2px 0 0" } }, a.done ? "\u2705 Afgerond" : matchedEx ? matchedEx.desc : "Opdracht van je therapeut")
-          ),
-          !a.done && /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 4 } },
-            matchedEx && /*#__PURE__*/React.createElement("button", {
-              style: { background: "linear-gradient(135deg,#DC7553,#70BCBC)", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: "white", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 },
-              onClick: () => {
-                setShowTherapistBox(false);
-                launchEx(matchedEx, null);
-              }
-            }, "\u25B6 Start"),
-            /*#__PURE__*/React.createElement("button", {
-              style: { background: "rgba(76,175,80,0.15)", border: "1px solid rgba(76,175,80,0.3)", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: g, cursor: "pointer", fontFamily: "inherit" },
-              onClick: async () => {
-                await clientCompleteAssignment(userKey, a.fbKey);
-                setMyAssignments(p => p.map(x => x.fbKey === a.fbKey ? { ...x, done: true } : x));
-              }
-            }, "\u2713 Klaar")
-          )
-        )
-      );
-    }),
-
-    // Berichten
-    /*#__PURE__*/React.createElement("h3", { style: { fontSize: 13, fontWeight: 700, color: g, margin: "16px 0 8px" } }, "\u2709\uFE0F Berichten"),
-    myMessages.length === 0 && /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g5, margin: 0 } }, "Geen berichten van je therapeut."),
-    myMessages.slice(0, 10).map(m => /*#__PURE__*/React.createElement("div", {
-      key: m.fbKey,
-      style: { padding: "8px 10px", marginBottom: 6, borderRadius: 10, background: "rgba(112,188,188,0.06)", border: "1px solid rgba(112,188,188,0.15)" }
+  showTherapistBox && (() => {
+    var openTasks = myAssignments.filter(a => !a.done);
+    var doneTasks = myAssignments.filter(a => a.done);
+    return /*#__PURE__*/React.createElement("div", {
+      style: { ...F, background: "rgba(0,0,0,0.5)", zIndex: 800, display: "flex", alignItems: "center", justifyContent: "center" },
+      onClick: () => { setShowTherapistBox(false); setExpandedMsg(null); setShowDoneTasks(false); }
+    }, /*#__PURE__*/React.createElement("div", {
+      className: "fadeIn",
+      style: { background: "rgba(255,255,255,0.97)", borderRadius: 24, padding: 20, width: "85%", maxWidth: 380, maxHeight: "80vh", overflowY: "auto" },
+      onClick: e => e.stopPropagation()
     },
-      /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g, margin: 0 } }, m.text),
-      /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: "4px 0 0" } }, m.from + " \u2022 " + new Date(m.sentAt).toLocaleDateString("nl"))
-    )),
+      /*#__PURE__*/React.createElement("h2", { style: { fontSize: 18, fontWeight: 700, color: g, textAlign: "center", margin: "0 0 4px" } }, "\uD83E\uDE7A Mijn Therapeut"),
+      /*#__PURE__*/React.createElement("p", { style: { fontSize: 11, color: g5, textAlign: "center", margin: "0 0 16px" } }, "Opdrachten en berichten van je therapeut"),
 
-    // Sluiten
-    /*#__PURE__*/React.createElement("button", {
-      className: "mb", style: { width: "100%", marginTop: 16, padding: "12px 0" },
-      onClick: () => setShowTherapistBox(false)
-    }, "Sluiten")
-  )),
+      // --- Open opdrachten ---
+      /*#__PURE__*/React.createElement("h3", { style: { fontSize: 13, fontWeight: 700, color: g, margin: "0 0 8px" } }, "\uD83D\uDCCB Opdrachten", openTasks.length > 0 && /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, fontWeight: 400, color: g5, marginLeft: 6 } }, openTasks.length + " open")),
+      openTasks.length === 0 && /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g5, margin: "0 0 12px" } }, "Alles afgerond — goed bezig! \uD83C\uDF1F"),
+      openTasks.map(a => {
+        var matchedEx = EX.find(e => e.id === a.id);
+        return /*#__PURE__*/React.createElement("div", {
+          key: a.fbKey,
+          style: { padding: "8px 10px", marginBottom: 6, borderRadius: 10, background: "rgba(220,117,83,0.06)", border: "1px solid rgba(220,117,83,0.2)" }
+        },
+          /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center" } },
+            /*#__PURE__*/React.createElement("div", { style: { flex: 1, marginRight: 8 } },
+              /*#__PURE__*/React.createElement("p", { style: { fontSize: 13, fontWeight: 600, color: g, margin: 0 } }, a.name),
+              /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: "2px 0 0" } }, matchedEx ? matchedEx.desc : "Opdracht van je therapeut")
+            ),
+            /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 4, flexShrink: 0 } },
+              matchedEx && /*#__PURE__*/React.createElement("button", {
+                style: { background: "linear-gradient(135deg,#DC7553,#70BCBC)", border: "none", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: "white", cursor: "pointer", fontFamily: "inherit", fontWeight: 700 },
+                onClick: () => {
+                  setShowTherapistBox(false);
+                  launchEx(matchedEx, null);
+                }
+              }, "\u25B6 Start"),
+              /*#__PURE__*/React.createElement("button", {
+                style: { background: "rgba(76,175,80,0.15)", border: "1px solid rgba(76,175,80,0.3)", borderRadius: 8, padding: "5px 10px", fontSize: 10, color: g, cursor: "pointer", fontFamily: "inherit" },
+                onClick: async () => {
+                  await clientCompleteAssignment(userKey, a.fbKey);
+                  setMyAssignments(p => p.map(x => x.fbKey === a.fbKey ? { ...x, done: true } : x));
+                }
+              }, "\u2713 Klaar")
+            )
+          )
+        );
+      }),
+
+      // --- Afgeronde opdrachten (inklapbaar) ---
+      doneTasks.length > 0 && /*#__PURE__*/React.createElement("button", {
+        style: { background: "none", border: "none", fontSize: 11, color: g5, cursor: "pointer", padding: "6px 0", marginBottom: 4, fontFamily: "inherit" },
+        onClick: () => setShowDoneTasks(p => !p)
+      }, showDoneTasks ? "\u25BC Verberg afgeronde (" + doneTasks.length + ")" : "\u25B6 Toon afgeronde (" + doneTasks.length + ")"),
+      showDoneTasks && doneTasks.map(a => /*#__PURE__*/React.createElement("div", {
+        key: a.fbKey,
+        style: { padding: "6px 10px", marginBottom: 4, borderRadius: 8, background: "rgba(76,175,80,0.06)", border: "1px solid rgba(76,175,80,0.15)" }
+      },
+        /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g5, margin: 0, textDecoration: "line-through" } }, a.name),
+        /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: "2px 0 0" } }, "\u2705 Afgerond" + (a.completedAt ? " \u2022 " + new Date(a.completedAt).toLocaleDateString("nl") : ""))
+      )),
+
+      // --- Berichten ---
+      /*#__PURE__*/React.createElement("h3", { style: { fontSize: 13, fontWeight: 700, color: g, margin: "16px 0 8px" } }, "\u2709\uFE0F Berichten"),
+      myMessages.length === 0 && /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g5, margin: 0 } }, "Geen berichten van je therapeut."),
+      myMessages.slice(0, 20).map(m => /*#__PURE__*/React.createElement("div", {
+        key: m.fbKey,
+        style: { padding: "10px 12px", marginBottom: 6, borderRadius: 10, background: expandedMsg === m.fbKey ? "rgba(112,188,188,0.12)" : "rgba(112,188,188,0.06)", border: "1px solid rgba(112,188,188,0.15)", cursor: "pointer" },
+        onClick: () => setExpandedMsg(expandedMsg === m.fbKey ? null : m.fbKey)
+      },
+        /*#__PURE__*/React.createElement("p", { style: { fontSize: 12, color: g, margin: 0, whiteSpace: expandedMsg === m.fbKey ? "pre-wrap" : "nowrap", overflow: expandedMsg === m.fbKey ? "visible" : "hidden", textOverflow: expandedMsg === m.fbKey ? "unset" : "ellipsis", lineHeight: 1.5 } }, m.text),
+        /*#__PURE__*/React.createElement("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 } },
+          /*#__PURE__*/React.createElement("p", { style: { fontSize: 9, color: g5, margin: 0 } }, m.from + " \u2022 " + new Date(m.sentAt).toLocaleDateString("nl")),
+          expandedMsg !== m.fbKey && /*#__PURE__*/React.createElement("span", { style: { fontSize: 9, color: "#70BCBC" } }, "Tik om te lezen")
+        )
+      )),
+
+      // Sluiten
+      /*#__PURE__*/React.createElement("button", {
+        className: "mb", style: { width: "100%", marginTop: 16, padding: "12px 0" },
+        onClick: () => setShowTherapistBox(false)
+      }, "Sluiten")
+    ));
+  })(),
 
   // ═══ THERAPEUT DASHBOARD ═══
   showTherapistPanel && /*#__PURE__*/React.createElement("div", {
