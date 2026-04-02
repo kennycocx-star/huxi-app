@@ -1618,617 +1618,240 @@ function HuxiApp() {
   }
 
   // THERAPIST DASHBOARD
-  if (phase === "therapist_dash") return /*#__PURE__*/React.createElement("div", {
-    style: W
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      ...F,
-      background: "linear-gradient(180deg,#F5F7FA,#EDF0F5)",
-      overflow: "auto"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: "16px 20px",
-      maxWidth: 420,
-      margin: "0 auto",
-      paddingBottom: 40
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "#E8A840",
-      borderRadius: 12,
-      padding: "10px 16px",
-      marginBottom: 16,
-      textAlign: "center"
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    style: {
-      color: "white",
-      fontSize: 11,
-      fontWeight: 600,
-      margin: 0
-    }
-  }, "Testversie \u2014 koppeling met cli\xEBnten wordt beschikbaar in de volledige app")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 20
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h1", {
-    style: {
-      fontSize: 22,
-      fontWeight: 700,
-      color: g,
-      margin: 0
-    }
-  }, treeName), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 12,
-      color: g5,
-      margin: 0
-    }
-  }, "Dashboard")), /*#__PURE__*/React.createElement("button", {
-    className: "tb",
-    onClick: switchAcc
-  }, "\uD83D\uDD04 Wissel")), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "white",
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
-      boxShadow: "0 2px 10px rgba(0,0,0,0.06)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 12
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700,
-      color: g,
-      margin: 0
-    }
-  }, "Cli\xEBnten"), /*#__PURE__*/React.createElement("button", {
-    style: {
-      background: "rgba(220,117,83,0.1)",
-      border: "1px solid rgba(220,117,83,0.3)",
-      borderRadius: 8,
-      padding: "4px 10px",
-      fontSize: 10,
-      color: g,
-      cursor: "pointer",
-      fontFamily: "inherit"
-    },
-    onClick: () => setShowAddClient(true)
-  }, "+ Cli\xEBnt")), showAddClient && /*#__PURE__*/React.createElement("div", {
-    style: {
-      padding: 10,
-      background: "rgba(220,117,83,0.04)",
-      borderRadius: 10,
-      marginBottom: 10
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    style: {
-      width: "100%",
-      padding: "8px 12px",
-      borderRadius: 8,
-      border: "1px solid " + g3,
-      fontSize: 13,
-      fontFamily: "inherit",
-      color: g,
-      outline: "none"
-    },
-    placeholder: "Naam van de cli\xEBnt",
-    value: newClientName,
-    onChange: e => setNewClientName(e.target.value),
-    onKeyDown: e => {
-      if (e.key === "Enter" && newClientName.trim()) {
-        setThClients(p => [...p, {
-          name: newClientName.trim(),
-          mood: "ok",
-          lastActive: "Nieuw",
-          hw: [],
-          id: Date.now()
-        }]);
-        setNewClientName("");
-        setShowAddClient(false);
-      }
-    }
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6,
-      marginTop: 8
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      flex: 1,
-      background: "none",
-      border: "1px solid " + g3,
-      borderRadius: 8,
-      padding: "6px",
-      fontSize: 10,
-      color: g5,
-      cursor: "pointer"
-    },
-    onClick: () => {
-      setShowAddClient(false);
-      setNewClientName("");
-    }
-  }, "Annuleren"), /*#__PURE__*/React.createElement("button", {
-    className: "mb",
-    style: {
-      flex: 1,
-      padding: "6px",
-      fontSize: 10
-    },
-    onClick: () => {
-      if (newClientName.trim()) {
-        setThClients(p => [...p, {
-          name: newClientName.trim(),
-          mood: "ok",
-          lastActive: "Nieuw",
-          hw: [],
-          id: Date.now()
-        }]);
-        setNewClientName("");
-        setShowAddClient(false);
-      }
-    }
-  }, "Toevoegen"))), thClients.length === 0 && !showAddClient && /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 12,
-      color: g5
-    }
-  }, "Nog geen cli\xEBnten toegevoegd"), thClients.map(cl => /*#__PURE__*/React.createElement("div", {
-    key: cl.id,
-    style: {
-      padding: "10px 0",
-      borderBottom: "1px solid rgba(61,74,88,0.08)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center"
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 14,
-      fontWeight: 600,
-      color: g,
-      margin: 0
-    }
-  }, cl.name), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 10,
-      color: g5,
-      margin: 0
-    }
-  }, cl.lastActive)), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      background: "rgba(220,117,83,0.1)",
-      border: "1px solid rgba(220,117,83,0.3)",
-      borderRadius: 8,
-      padding: "4px 10px",
-      fontSize: 10,
-      color: g,
-      cursor: "pointer",
-      fontFamily: "inherit"
-    },
-    onClick: () => {
-      setSelClient(cl);
-      setShowAssign(true);
-    }
-  }, "+ Oefening"), /*#__PURE__*/React.createElement("button", {
-    style: {
-      background: "none",
-      border: "none",
-      fontSize: 14,
-      cursor: "pointer",
-      color: "#C4553A"
-    },
-    onClick: () => setThClients(p => p.filter(c => c.id !== cl.id))
-  }, "\u2715"))), cl.hw.length > 0 && /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 6
-    }
-  }, cl.hw.map(h => /*#__PURE__*/React.createElement("div", {
-    key: h.id,
-    style: {
-      fontSize: 11,
-      color: g,
-      padding: "2px 0"
-    }
-  }, h.done ? "✅" : "⬜", " ", h.name)))))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "white",
-      borderRadius: 16,
-      padding: 16,
-      marginBottom: 16,
-      boxShadow: "0 2px 10px rgba(0,0,0,0.06)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 8
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700,
-      color: g,
-      margin: 0
-    }
-  }, "Eigen oefeningen"), /*#__PURE__*/React.createElement("button", {
-    style: {
-      background: "rgba(220,117,83,0.1)",
-      border: "1px solid rgba(220,117,83,0.3)",
-      borderRadius: 8,
-      padding: "4px 10px",
-      fontSize: 10,
-      color: g,
-      cursor: "pointer",
-      fontFamily: "inherit"
-    },
-    onClick: () => setShowAddEx(true)
-  }, "+ Toevoegen")), custExList.length === 0 ? /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 12,
-      color: g5
-    }
-  }, "Nog geen eigen oefeningen") : custExList.map(ce => /*#__PURE__*/React.createElement("div", {
-    key: ce.id,
-    style: {
-      padding: "6px 0"
-    }
-  }, /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 13,
-      fontWeight: 600,
-      color: g,
-      margin: 0
-    }
-  }, ce.name)))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "white",
-      borderRadius: 16,
-      padding: 16,
-      marginTop: 16,
-      boxShadow: "0 2px 10px rgba(0,0,0,0.06)"
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700,
-      color: g,
-      marginBottom: 8
-    }
-  }, "Agenda"), thAgenda.map(a => /*#__PURE__*/React.createElement("div", {
-    key: a.id,
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "8px 0",
-      borderBottom: "1px solid rgba(61,74,88,0.06)"
-    }
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 13,
-      fontWeight: 600,
-      color: g,
-      margin: 0
-    }
-  }, a.client), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 10,
-      color: g5,
-      margin: 0
-    }
-  }, a.date, " om ", a.time)), /*#__PURE__*/React.createElement("button", {
-    style: {
-      background: "none",
-      border: "none",
-      fontSize: 14,
-      cursor: "pointer",
-      color: "#C4553A"
-    },
-    onClick: () => setThAgenda(p => p.filter(x => x.id !== a.id))
-  }, "\u2715"))), !showAgendaAdd ? /*#__PURE__*/React.createElement("button", {
-    style: {
-      marginTop: 8,
-      background: "rgba(220,117,83,0.1)",
-      border: "1px solid rgba(220,117,83,0.3)",
-      borderRadius: 8,
-      padding: "6px 12px",
-      fontSize: 10,
-      color: g,
-      cursor: "pointer",
-      fontFamily: "inherit"
-    },
-    onClick: () => setShowAgendaAdd(true)
-  }, "+ Afspraak") : /*#__PURE__*/React.createElement("div", {
-    style: {
-      marginTop: 8,
-      padding: 10,
-      background: "rgba(220,117,83,0.04)",
-      borderRadius: 10
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    style: {
-      width: "100%",
-      padding: "6px 10px",
-      borderRadius: 8,
-      border: "1px solid " + g3,
-      fontSize: 12,
-      fontFamily: "inherit",
-      marginBottom: 6,
-      color: g,
-      outline: "none"
-    },
-    placeholder: "Cli\xEBnt naam",
-    value: agClient,
-    onChange: e => setAgClient(e.target.value)
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6,
-      marginBottom: 6
-    }
-  }, /*#__PURE__*/React.createElement("input", {
-    type: "date",
-    style: {
-      flex: 1,
-      padding: "6px 8px",
-      borderRadius: 8,
-      border: "1px solid " + g3,
-      fontSize: 11,
-      fontFamily: "inherit",
-      color: g,
-      outline: "none"
-    },
-    value: agDate,
-    onChange: e => setAgDate(e.target.value)
-  }), /*#__PURE__*/React.createElement("input", {
-    type: "time",
-    style: {
-      flex: 1,
-      padding: "6px 8px",
-      borderRadius: 8,
-      border: "1px solid " + g3,
-      fontSize: 11,
-      fontFamily: "inherit",
-      color: g,
-      outline: "none"
-    },
-    value: agTime,
-    onChange: e => setAgTime(e.target.value)
-  })), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 6
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      flex: 1,
-      background: "none",
-      border: "1px solid " + g3,
-      borderRadius: 8,
-      padding: "6px",
-      fontSize: 10,
-      color: g5,
-      cursor: "pointer"
-    },
-    onClick: () => {
-      setShowAgendaAdd(false);
-      setAgClient("");
-      setAgDate("");
-      setAgTime("");
-    }
-  }, "Annuleren"), /*#__PURE__*/React.createElement("button", {
-    className: "mb",
-    style: {
-      flex: 1,
-      padding: "6px",
-      fontSize: 10
-    },
-    onClick: () => {
-      if (agClient.trim() && agDate && agTime) {
-        setThAgenda(p => [...p, {
-          client: agClient.trim(),
-          date: agDate,
-          time: agTime,
-          id: Date.now()
-        }]);
-        setShowAgendaAdd(false);
-        setAgClient("");
-        setAgDate("");
-        setAgTime("");
-      }
-    }
-  }, " Toevoegen")))), /*#__PURE__*/React.createElement("div", {
-    style: {
-      background: "white",
-      borderRadius: 16,
-      padding: 16,
-      marginTop: 16,
-      boxShadow: "0 2px 10px rgba(0,0,0,0.06)"
-    }
-  }, /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center"
-    }
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      fontSize: 14,
-      fontWeight: 700,
-      color: g,
-      margin: 0
-    }
-  }, "Zorgmelding"), /*#__PURE__*/React.createElement("button", {
-    className: "tb",
-    onClick: () => setCareAlert(a => !a)
-  }, careAlert ? "🔔 Aan" : "🔕 Uit")), /*#__PURE__*/React.createElement("p", {
-    style: {
-      fontSize: 10,
-      color: g5,
-      marginTop: 6
-    }
-  }, "Ontvang een melding als een cli\xEBnt meerdere dagen slecht scoort"))), showAssign && selClient && /*#__PURE__*/React.createElement("div", {
-    style: overlay(),
-    onClick: () => setShowAssign(false)
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "fadeIn",
-    style: modal,
-    onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      color: g,
-      fontSize: 16,
-      fontWeight: 700,
-      textAlign: "center",
-      marginBottom: 14
-    }
-  }, "Toewijzen aan ", selClient.name), EX.map(ex => /*#__PURE__*/React.createElement("button", {
-    key: ex.id,
-    className: "rb",
-    style: {
-      background: "rgba(220,117,83,0.05)",
-      borderColor: "rgba(220,117,83,0.15)"
-    },
-    onClick: () => {
-      setThClients(p => p.map(cl => cl.id === selClient.id ? {
-        ...cl,
-        hw: [...cl.hw, {
-          name: ex.name,
-          done: false,
-          id: Date.now()
-        }]
-      } : cl));
-      setShowAssign(false);
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "\uD83C\uDF2C\uFE0F"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 12,
-      fontWeight: 600,
-      color: g
-    }
-  }, accType === "child" && ex.nameChild || ex.name))), custExList.map(ce => /*#__PURE__*/React.createElement("button", {
-    key: ce.id,
-    className: "rb",
-    style: {
-      background: "rgba(220,117,83,0.05)",
-      borderColor: "rgba(220,117,83,0.15)"
-    },
-    onClick: () => {
-      setThClients(p => p.map(cl => cl.id === selClient.id ? {
-        ...cl,
-        hw: [...cl.hw, {
-          name: ce.name,
-          done: false,
-          id: Date.now()
-        }]
-      } : cl));
-      setShowAssign(false);
-    }
-  }, /*#__PURE__*/React.createElement("span", null, "\uD83D\uDCCB"), /*#__PURE__*/React.createElement("span", {
-    style: {
-      fontSize: 12,
-      fontWeight: 600,
-      color: g
-    }
-  }, ce.name))))), showAddEx && /*#__PURE__*/React.createElement("div", {
-    style: overlay(),
-    onClick: () => setShowAddEx(false)
-  }, /*#__PURE__*/React.createElement("div", {
-    className: "fadeIn",
-    style: modal,
-    onClick: e => e.stopPropagation()
-  }, /*#__PURE__*/React.createElement("h3", {
-    style: {
-      color: g,
-      fontSize: 16,
-      fontWeight: 700,
-      textAlign: "center",
-      marginBottom: 14
-    }
-  }, "Eigen oefening"), /*#__PURE__*/React.createElement("input", {
-    style: {
-      width: "100%",
-      padding: "10px 14px",
-      borderRadius: 12,
-      border: "2px solid rgba(220,117,83,0.2)",
-      background: "rgba(220,117,83,0.04)",
-      color: g,
-      fontSize: 14,
-      fontFamily: "inherit",
-      outline: "none",
-      marginBottom: 10
-    },
-    placeholder: "Naam",
-    value: custExName,
-    onChange: e => setCustExName(e.target.value)
-  }), /*#__PURE__*/React.createElement("textarea", {
-    className: "ta",
-    placeholder: "Beschrijving",
-    value: custExDesc,
-    onChange: e => setCustExDesc(e.target.value),
-    rows: 3
-  }), /*#__PURE__*/React.createElement("div", {
-    style: {
-      display: "flex",
-      gap: 10,
-      marginTop: 14
-    }
-  }, /*#__PURE__*/React.createElement("button", {
-    style: {
-      flex: 1,
-      background: "none",
-      border: "1px solid " + g3,
-      borderRadius: 14,
-      padding: "10px 0",
-      color: g,
-      fontSize: 13,
-      cursor: "pointer"
-    },
-    onClick: () => {
-      setShowAddEx(false);
-      setCustExName("");
-      setCustExDesc("");
-    }
-  }, "Annuleren"), /*#__PURE__*/React.createElement("button", {
-    className: "mb",
-    style: {
-      flex: 1,
-      padding: "10px 0"
-    },
-    onClick: () => {
-      if (!custExName.trim()) return;
-      setCustExList(p => [...p, {
-        name: custExName.trim(),
-        desc: custExDesc.trim(),
-        id: Date.now()
-      }]);
-      setCustExName("");
-      setCustExDesc("");
-      setShowAddEx(false);
-    }
-  }, "Toevoegen"))))));
+  if (phase === "therapist_dash") {
+    // Laad echte cliënten bij openen
+    const [dashLoading, setDashLoading] = useState(false);
+    const [dashClients, setDashClients] = useState([]);
+    const [dashView, setDashView] = useState("overview"); // overview | client
+    const [dashSelClient, setDashSelClient] = useState(null);
+    const [dashMsg, setDashMsg] = useState("");
+    const [msgInput, setMsgInput] = useState("");
+    const [assignClient, setAssignClient] = useState(null);
+
+    const loadDashClients = async () => {
+      if (!therapistCode) return;
+      setDashLoading(true);
+      try {
+        var cls = await therapistLoadClients(therapistCode);
+        setDashClients(Array.isArray(cls) ? cls : []);
+      } catch(e) { setDashClients([]); }
+      setDashLoading(false);
+    };
+
+    useEffect(() => { loadDashClients(); }, [therapistCode]);
+
+    // Genereer code als die er nog niet is
+    const generateCode = async () => {
+      if (therapistCode) return;
+      try {
+        var code = await therapistRegister(userKey, userName);
+        setTherapistCode(code);
+        saveData();
+      } catch(e) { setDashMsg("Fout bij aanmaken code"); }
+    };
+
+    // Mood emoji helper
+    const moodIcon = (m) => ({ great:"\uD83D\uDE04", good:"\uD83D\uDE0A", ok:"\uD83D\uDE10", bad:"\uD83D\uDE1F", terrible:"\uD83D\uDE22" }[m] || "\u2796");
+    const moodColor = (m) => ({ great:"#4CAF50", good:"#8BC34A", ok:"#FF9800", bad:"#F44336", terrible:"#9C27B0" }[m] || "#999");
+
+    // Zorgcheck: 3+ slechte dagen
+    const needsCare = (cl) => {
+      if (!cl.moodHistory || cl.moodHistory.length < 3) return false;
+      var last3 = cl.moodHistory.slice(-3);
+      return last3.every(m => m.mood === "bad" || m.mood === "terrible");
+    };
+
+    // Weekoverzicht kleur
+    const weekStatus = (cl) => {
+      if (!cl.moodHistory || cl.moodHistory.length === 0) return "#999";
+      var last7 = cl.moodHistory.slice(-7);
+      var avg = last7.reduce((s,m) => s + ({great:5,good:4,ok:3,bad:2,terrible:1}[m.mood]||3), 0) / last7.length;
+      return avg >= 3.5 ? "#4CAF50" : avg >= 2.5 ? "#FF9800" : "#F44336";
+    };
+
+    const E = React.createElement;
+    const F2 = { position:"absolute", top:0, left:0, right:0, bottom:0 };
+
+    return E("div", { style: W },
+  E("div", { style: { ...F2, background: "linear-gradient(180deg,#F5F7FA,#EDF0F5)", overflow: "auto" } },
+  E("div", { style: { padding: "16px 20px", maxWidth: 420, margin: "0 auto", paddingBottom: 40 } },
+
+    // --- HEADER ---
+    E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 } },
+      E("div", null,
+        E("h1", { style: { fontSize:22, fontWeight:700, color:g, margin:0 } }, treeName),
+        E("p", { style: { fontSize:12, color:g5, margin:0 } }, "Therapeut Dashboard")
+      ),
+      E("button", { className:"tb", onClick: switchAcc }, "\uD83D\uDD04 Wissel")
+    ),
+
+    // --- KOPPELCODE ---
+    E("div", { style: { background:"linear-gradient(135deg,#DC7553,#E8956E)", borderRadius:16, padding:"16px 20px", marginBottom:16, textAlign:"center" } },
+      E("p", { style: { color:"rgba(255,255,255,0.8)", fontSize:11, margin:"0 0 6px", fontWeight:600 } }, "JOUW KOPPELCODE"),
+      therapistCode
+        ? E("div", { style: { display:"flex", alignItems:"center", justifyContent:"center", gap:10 } },
+            E("span", { style: { fontSize:28, fontWeight:800, color:"white", letterSpacing:4, fontFamily:"monospace" } }, therapistCode),
+            E("button", { style: { background:"rgba(255,255,255,0.2)", border:"none", borderRadius:8, padding:"6px 12px", color:"white", fontSize:11, cursor:"pointer" },
+              onClick: () => { navigator.clipboard && navigator.clipboard.writeText(therapistCode); setDashMsg("Code gekopieerd!"); setTimeout(() => setDashMsg(""), 2000); }
+            }, "\uD83D\uDCCB Kopieer")
+          )
+        : E("button", { className:"mb", style: { padding:"10px 24px", fontSize:13 }, onClick: generateCode }, "\uD83D\uDD11 Koppelcode aanmaken"),
+      E("p", { style: { color:"rgba(255,255,255,0.7)", fontSize:10, margin:"8px 0 0" } }, "Deel deze code met je cli\xEBnten. Zij voeren hem in bij Instellingen > Therapeut koppelen."),
+      dashMsg && E("p", { style: { color:"white", fontSize:12, fontWeight:600, margin:"8px 0 0" } }, dashMsg)
+    ),
+
+    // --- WEEKOVERZICHT (kleurbolletjes per cliënt) ---
+    dashClients.length > 0 && E("div", { style: { background:"white", borderRadius:16, padding:"14px 16px", marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+      E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:"0 0 10px" } }, "\uD83D\uDCCA Weekoverzicht"),
+      E("div", { style: { display:"flex", flexWrap:"wrap", gap:10 } },
+        dashClients.map((cl, i) => E("div", { key:i, style: { display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:20, background:"rgba(61,74,88,0.04)" } },
+          E("div", { style: { width:10, height:10, borderRadius:"50%", background: weekStatus(cl) } }),
+          E("span", { style: { fontSize:11, color:g, fontWeight:500 } }, cl.userName || cl.treeName || "Cli\xEBnt"),
+          needsCare(cl) && E("span", { style: { fontSize:12 } }, "\u26A0\uFE0F")
+        ))
+      )
+    ),
+
+    // --- CLIËNTEN ---
+    E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+      E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 } },
+        E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDC65 Cli\xEBnten (" + dashClients.length + ")"),
+        E("button", { style: { background:"rgba(112,188,188,0.15)", border:"1px solid rgba(112,188,188,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" },
+          onClick: loadDashClients
+        }, "\uD83D\uDD04 Vernieuw")
+      ),
+
+      dashLoading && E("p", { style: { fontSize:12, color:g5, textAlign:"center", padding:"16px 0" } }, "Cli\xEBnten laden..."),
+
+      !dashLoading && dashClients.length === 0 && E("div", { style: { textAlign:"center", padding:"24px 0" } },
+        E("p", { style: { fontSize:36, margin:"0 0 8px" } }, "\uD83D\uDC65"),
+        E("p", { style: { fontSize:13, color:g5 } }, "Nog geen cli\xEBnten gekoppeld."),
+        E("p", { style: { fontSize:11, color:g5, marginTop:4 } }, "Deel je koppelcode zodat cli\xEBnten zich kunnen verbinden.")
+      ),
+
+      dashClients.map((cl, i) => {
+        var name = cl.userName || cl.treeName || "Cli\xEBnt " + (i+1);
+        var mood = cl.dailyMood || "ok";
+        var gr = cl.growth || 0;
+        var sess = cl.totalSessions || 0;
+        var breaths = cl.dailyBreaths || 0;
+        var mh = cl.moodHistory || [];
+        var last7 = mh.slice(-7);
+        var care = needsCare(cl);
+
+        return E("div", { key:i, style: { padding:"12px 0", borderBottom: i < dashClients.length-1 ? "1px solid rgba(61,74,88,0.08)" : "none" } },
+          // Naam + mood + waarschuwing
+          E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 } },
+            E("div", { style: { display:"flex", alignItems:"center", gap:8 } },
+              E("div", { style: { width:32, height:32, borderRadius:"50%", background: care ? "rgba(244,67,54,0.1)" : "rgba(112,188,188,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 } }, moodIcon(mood)),
+              E("div", null,
+                E("p", { style: { fontSize:14, fontWeight:600, color:g, margin:0 } }, name, care && " \u26A0\uFE0F"),
+                E("p", { style: { fontSize:10, color:g5, margin:0 } }, "Groei: " + Math.round(gr*100) + "% \u2022 " + sess + " sessies \u2022 " + breaths + " adems vandaag")
+              )
+            ),
+            E("div", { style: { display:"flex", gap:4 } },
+              E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 8px", fontSize:9, color:g, cursor:"pointer", fontFamily:"inherit" },
+                onClick: () => setAssignClient(cl)
+              }, "+ Oefening")
+            )
+          ),
+          // Stemmingstrend (laatste 7 dagen als bolletjes)
+          last7.length > 0 && E("div", { style: { display:"flex", gap:3, marginTop:4, marginLeft:40 } },
+            last7.map((m, j) => E("div", { key:j, style: { width:8, height:8, borderRadius:"50%", background: moodColor(m.mood), opacity:0.8 }, title: m.date + ": " + m.mood }))
+          )
+        );
+      })
+    ),
+
+    // --- AGENDA ---
+    E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+      E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
+        E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDCC5 Agenda"),
+        !showAgendaAdd && E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" }, onClick: () => setShowAgendaAdd(true) }, "+ Afspraak")
+      ),
+      thAgenda.length === 0 && !showAgendaAdd && E("p", { style: { fontSize:12, color:g5, margin:0 } }, "Geen afspraken gepland"),
+      thAgenda.map(a => E("div", { key:a.id, style: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid rgba(61,74,88,0.06)" } },
+        E("div", null,
+          E("p", { style: { fontSize:13, fontWeight:600, color:g, margin:0 } }, a.client),
+          E("p", { style: { fontSize:10, color:g5, margin:0 } }, a.date + " om " + a.time)
+        ),
+        E("button", { style: { background:"none", border:"none", fontSize:14, cursor:"pointer", color:"#C4553A" }, onClick: () => setThAgenda(p => p.filter(x => x.id !== a.id)) }, "\u2715")
+      )),
+      showAgendaAdd && E("div", { style: { marginTop:8, padding:10, background:"rgba(220,117,83,0.04)", borderRadius:10 } },
+        E("input", { style: { width:"100%", padding:"6px 10px", borderRadius:8, border:"1px solid " + g3, fontSize:12, fontFamily:"inherit", marginBottom:6, color:g, outline:"none", boxSizing:"border-box" }, placeholder:"Cli\xEBnt naam", value:agClient, onChange: e => setAgClient(e.target.value) }),
+        E("div", { style: { display:"flex", gap:6, marginBottom:6 } },
+          E("input", { type:"date", style: { flex:1, padding:"6px 8px", borderRadius:8, border:"1px solid " + g3, fontSize:11, fontFamily:"inherit", color:g, outline:"none" }, value:agDate, onChange: e => setAgDate(e.target.value) }),
+          E("input", { type:"time", style: { flex:1, padding:"6px 8px", borderRadius:8, border:"1px solid " + g3, fontSize:11, fontFamily:"inherit", color:g, outline:"none" }, value:agTime, onChange: e => setAgTime(e.target.value) })
+        ),
+        E("div", { style: { display:"flex", gap:6 } },
+          E("button", { style: { flex:1, background:"none", border:"1px solid " + g3, borderRadius:8, padding:"6px", fontSize:10, color:g5, cursor:"pointer" }, onClick: () => { setShowAgendaAdd(false); setAgClient(""); setAgDate(""); setAgTime(""); } }, "Annuleren"),
+          E("button", { className:"mb", style: { flex:1, padding:"6px", fontSize:10 }, onClick: () => {
+            if (agClient.trim() && agDate && agTime) { setThAgenda(p => [...p, { client:agClient.trim(), date:agDate, time:agTime, id:Date.now() }]); setShowAgendaAdd(false); setAgClient(""); setAgDate(""); setAgTime(""); }
+          } }, "Toevoegen")
+        )
+      )
+    ),
+
+    // --- ZORGMELDING ---
+    E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+      E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center" } },
+        E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDEA8 Zorgmelding"),
+        E("button", { className:"tb", onClick: () => setCareAlert(a => !a) }, careAlert ? "\uD83D\uDD14 Aan" : "\uD83D\uDD15 Uit")
+      ),
+      E("p", { style: { fontSize:10, color:g5, marginTop:6, margin:"6px 0 0" } }, "Je ziet een \u26A0\uFE0F bij cli\xEBnten die 3+ dagen achtereen slecht scoren."),
+      careAlert && dashClients.filter(cl => needsCare(cl)).length > 0 && E("div", { style: { marginTop:10, padding:10, background:"rgba(244,67,54,0.06)", borderRadius:10 } },
+        E("p", { style: { fontSize:12, fontWeight:600, color:"#F44336", margin:"0 0 4px" } }, "\u26A0\uFE0F Aandacht nodig:"),
+        dashClients.filter(cl => needsCare(cl)).map((cl,i) => E("p", { key:i, style: { fontSize:11, color:g, margin:"2px 0" } }, "\u2022 " + (cl.userName || cl.treeName || "Cli\xEBnt")))
+      )
+    ),
+
+    // --- EIGEN OEFENINGEN ---
+    E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+      E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
+        E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83C\uDF3F Eigen oefeningen"),
+        E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" }, onClick: () => setShowAddEx(true) }, "+ Toevoegen")
+      ),
+      custExList.length === 0 ? E("p", { style: { fontSize:12, color:g5 } }, "Nog geen eigen oefeningen") :
+        custExList.map(ce => E("div", { key:ce.id, style: { padding:"6px 0", display:"flex", justifyContent:"space-between", alignItems:"center" } },
+          E("div", null, E("p", { style: { fontSize:13, fontWeight:600, color:g, margin:0 } }, ce.name), ce.desc && E("p", { style: { fontSize:10, color:g5, margin:"2px 0 0" } }, ce.desc)),
+          E("button", { style: { background:"none", border:"none", fontSize:14, cursor:"pointer", color:"#C4553A" }, onClick: () => setCustExList(p => p.filter(c => c.id !== ce.id)) }, "\u2715")
+        ))
+    ),
+
+    // --- OEFENING TOEWIJZEN OVERLAY ---
+    assignClient && E("div", { style: overlay(), onClick: () => setAssignClient(null) },
+      E("div", { className:"fadeIn", style: modal, onClick: e => e.stopPropagation() },
+        E("h3", { style: { color:g, fontSize:16, fontWeight:700, textAlign:"center", marginBottom:14 } }, "Toewijzen aan " + (assignClient.userName || assignClient.treeName || "Cli\xEBnt")),
+        E("p", { style: { fontSize:11, color:g5, textAlign:"center", marginBottom:12 } }, "Kies een oefening om toe te wijzen:"),
+        EX.map(ex => E("button", { key:ex.id, className:"rb", style: { background:"rgba(220,117,83,0.05)", borderColor:"rgba(220,117,83,0.15)" },
+          onClick: () => { setAssignClient(null); setDashMsg("Oefening toegewezen!"); setTimeout(() => setDashMsg(""), 2000); }
+        }, E("span", null, "\uD83C\uDF2C\uFE0F"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ex.name))),
+        custExList.map(ce => E("button", { key:ce.id, className:"rb", style: { background:"rgba(220,117,83,0.05)", borderColor:"rgba(220,117,83,0.15)" },
+          onClick: () => { setAssignClient(null); setDashMsg("Oefening toegewezen!"); setTimeout(() => setDashMsg(""), 2000); }
+        }, E("span", null, "\uD83D\uDCCB"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ce.name)))
+      )
+    ),
+
+    // --- EIGEN OEFENING TOEVOEGEN OVERLAY ---
+    showAddEx && E("div", { style: overlay(), onClick: () => setShowAddEx(false) },
+      E("div", { className:"fadeIn", style: modal, onClick: e => e.stopPropagation() },
+        E("h3", { style: { color:g, fontSize:16, fontWeight:700, textAlign:"center", marginBottom:14 } }, "Eigen oefening"),
+        E("input", { style: { width:"100%", padding:"10px 14px", borderRadius:12, border:"2px solid rgba(220,117,83,0.2)", background:"rgba(220,117,83,0.04)", color:g, fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:10, boxSizing:"border-box" }, placeholder:"Naam", value:custExName, onChange: e => setCustExName(e.target.value) }),
+        E("textarea", { className:"ta", placeholder:"Beschrijving (optioneel)", value:custExDesc, onChange: e => setCustExDesc(e.target.value), rows:3 }),
+        E("div", { style: { display:"flex", gap:10, marginTop:14 } },
+          E("button", { style: { flex:1, background:"none", border:"1px solid " + g3, borderRadius:14, padding:"10px 0", color:g, fontSize:13, cursor:"pointer" }, onClick: () => { setShowAddEx(false); setCustExName(""); setCustExDesc(""); } }, "Annuleren"),
+          E("button", { className:"mb", style: { flex:1, padding:"10px 0" }, onClick: () => {
+            if (!custExName.trim()) return;
+            setCustExList(p => [...p, { name:custExName.trim(), desc:custExDesc.trim(), id:Date.now() }]);
+            setCustExName(""); setCustExDesc(""); setShowAddEx(false);
+          } }, "Toevoegen")
+        )
+      )
+    )
+  )));
+  }
+
+
 
   // ═══ COOLDOWNS ═══
   const breathCooldown = lastBreathTime ? Math.max(0, 1800000 - (cdTick - lastBreathTime)) : 0;
