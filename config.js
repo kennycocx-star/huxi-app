@@ -125,7 +125,7 @@ var clientLoadMessages = async (clientKey) => {
   } catch(e) { console.warn("Berichten laden fout:", e); return []; }
 };
 
-// Therapeut laadt al zijn gekoppelde cliënten
+// Therapeut laadt al zijn gekoppelde cliënten + hun opdrachtstatus
 var therapistLoadClients = async (therapistCode) => {
   try {
     var res = await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json");
@@ -136,17 +136,26 @@ var therapistLoadClients = async (therapistCode) => {
       if (!links[clientKey].consent) continue;
       var clientData = await firebaseLoad(clientKey);
       if (clientData) {
+        // Laad ook opdrachten van deze cliënt
+        var assignments = [];
+        try {
+          var aRes = await fetch(FIREBASE_URL + "/assignments/" + clientKey + ".json");
+          var aData = await aRes.json();
+          if (aData) assignments = Object.keys(aData).map(k => ({ ...aData[k], fbKey: k }));
+        } catch(e2) {}
         clients.push({
           key: clientKey,
-          name: clientData.userName || "Onbekend",
-          mood: clientData.dailyMood,
+          userName: clientData.userName || "Onbekend",
+          treeName: clientData.treeName || "",
+          dailyMood: clientData.dailyMood,
           moodHistory: clientData.moodHistory || [],
-          sessions: clientData.totalSessions || 0,
+          totalSessions: clientData.totalSessions || 0,
           growth: clientData.growth || 0,
           streakShields: clientData.streakShields || 0,
           lastDay: clientData.lastDay,
           dailyBreaths: clientData.dailyBreaths || 0,
-          reason: clientData.reason
+          reason: clientData.reason,
+          assignments: assignments
         });
       }
     }
