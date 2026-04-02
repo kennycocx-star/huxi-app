@@ -1896,6 +1896,9 @@ function HuxiApp() {
         var mh = cl.moodHistory || [];
         var last7 = mh.slice(-7);
         var care = needsCare(cl);
+        var asgn = cl.assignments || [];
+        var asgnOpen = asgn.filter(a => !a.done);
+        var asgnDone = asgn.filter(a => a.done);
 
         return E("div", { key:i, style: { padding:"12px 0", borderBottom: i < dashClients.length-1 ? "1px solid rgba(61,74,88,0.08)" : "none" } },
           // Naam + mood + waarschuwing
@@ -1904,7 +1907,7 @@ function HuxiApp() {
               E("div", { style: { width:32, height:32, borderRadius:"50%", background: care ? "rgba(244,67,54,0.1)" : "rgba(112,188,188,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 } }, moodIcon(mood)),
               E("div", null,
                 E("p", { style: { fontSize:14, fontWeight:600, color:g, margin:0 } }, name, care && " \u26A0\uFE0F"),
-                E("p", { style: { fontSize:10, color:g5, margin:0 } }, "Groei: " + Math.round(gr*100) + "% \u2022 " + sess + " sessies \u2022 " + breaths + " adems vandaag")
+                E("p", { style: { fontSize:10, color:g5, margin:0 } }, "Groei: " + Math.round(gr*100) + "% \u2022 " + sess + " sessies \u2022 " + breaths + "x geademd vandaag")
               )
             ),
             E("div", { style: { display:"flex", gap:4 } },
@@ -1915,6 +1918,12 @@ function HuxiApp() {
                 onClick: () => { setDashSelClient(cl); setMsgInput(""); }
               }, "\uD83D\uDCAC Bericht")
             )
+          ),
+          // Opdrachtstatus
+          asgn.length > 0 && E("div", { style: { display:"flex", gap:6, flexWrap:"wrap", marginTop:4, marginLeft:40 } },
+            asgnDone.length > 0 && E("span", { style: { fontSize:9, color:"#4CAF50", background:"rgba(76,175,80,0.08)", borderRadius:6, padding:"2px 6px" } }, "\u2705 " + asgnDone.length + " afgerond"),
+            asgnOpen.length > 0 && E("span", { style: { fontSize:9, color:"#E07850", background:"rgba(220,117,83,0.08)", borderRadius:6, padding:"2px 6px" } }, "\u23F3 " + asgnOpen.length + " open"),
+            asgnOpen.length === 0 && asgnDone.length > 0 && E("span", { style: { fontSize:9, color:"#4CAF50" } }, "\u2014 alles af!")
           ),
           // Stemmingstrend (laatste 7 dagen als bolletjes)
           last7.length > 0 && E("div", { style: { display:"flex", gap:3, marginTop:4, marginLeft:40 } },
