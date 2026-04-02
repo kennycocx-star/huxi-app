@@ -385,6 +385,56 @@ function HuxiApp() {
   const [agClient, setAgClient] = useState("");
   const [agDate, setAgDate] = useState("");
   const [agTime, setAgTime] = useState("");
+
+  // ═══ CENTRALE RESET — wordt aangeroepen bij ELKE uitlog/verwijder actie ═══
+  var resetAllState = () => {
+    setPhase("login"); setAccType(null); setUserKey("");
+    setLoginName(""); setLoginPin(""); setLoginError(""); setLoginLoading(false); setLoginMode("login");
+    setSecretQ(0); setSecretA("");
+    setReason(null); setSelectedReasons([]); setExperience(null);
+    setTreeName(""); setUserName(""); setNameIn(""); setUserNameIn("");
+    setGrowth(0.01); setCoins(0);
+    setWi({ leaves:0, flowers:0, grass:0, stones:0, shrooms:0, bushes:0, streakDays:0, brieven:0, dagboeken:0, tools:0, checkins:0, tasks:0 });
+    setDailyMood(null); setCheckinDone(false); setLastCheckinDate("");
+    setShowEx(false); setCurEx(null); setExPhase("idle"); setExRound(0); setExCountdown(0);
+    setShowSci(false); setSeenEx([]); setLastExId(null);
+    setShowOffer(false); setExDone(false); setShowPicker(false); setCustRounds(null);
+    setShowMem(false); setMemTxt("");
+    setShowSett(false); setShowGuide(false); setShowDeleteConfirm(false);
+    setShowLetter(false); setLetterDraft(""); setLetters([]); setShowLetters(false);
+    setLetterPeriod(30); setLetterStep(0); setLetterAnswers(["","","",""]);
+    setShowDiary(false); setDiaryDraft(""); setDiary([]);
+    setWMsg(""); setAnimalMsg("");
+    setShowTools(false); setActiveTool(null); setToolStep(0); setGratItems(["","",""]);
+    setDailyTasks([]); setLastTaskTexts([]); setTasksGenerated(false);
+    setDailyBreaths(0); setLastBreathTime(null); setLastTaskTime(null);
+    setCurTask(null); setTaskInput(""); setTaskTimer(0); setDailyActions(0);
+    setTotalSessions(0); setLastDay(new Date().toDateString());
+    setGoals([]); setGoalDraft(""); setGoalDraftText(""); setGoalPeriod(180);
+    setPlantSecQ(0); setPlantSecA("");
+    setBuddy("pet_none"); setMoodHistory([]); setStreakShields(0);
+    setPetPositions({}); setExPerEx({});
+    setOwnedItems(["hat_none","shirt_none","pants_none","shoes_none","skin_light","hair_short","hairc_brown","acc_none","pet_none"]);
+    setAvatar({ hat:"hat_none", shirt:"shirt_none", pants:"pants_none", shoes:"shoes_none", skin:"skin_light", hair:"hair_short", hairc:"hairc_brown", acc:"acc_none", pet:"pet_none" });
+    setShowAvatar(false); setShowShop(false);
+    setSoundOn(true); setReminder("");
+    setShowStreak(false); setShowGoals(false); setShowJourney(false);
+    setShowWelcome(false); setShowWelcomeBack(false); setWelcomeBackMsg(null);
+    setWarnAcknowledged(false); setPostMood(null); setShowPostMood(false);
+    setWorldReward(null); setBonusEx(null); setSosActive(false); setSosStep(0);
+    // Therapeut-specifiek
+    setTherapistCode(null); setTherapistClients([]); setTherapistLoading(false);
+    setDashLoading(false); setDashClients([]); setDashView("overview"); setDashSelClient(null); setDashMsg(""); setMsgInput(""); setAssignClient(null);
+    setThClients([]); setSelClient(null); setShowAssign(false);
+    setShowAddEx(false); setCustExName(""); setCustExDesc(""); setCustExList([]);
+    setCareAlert(true); setThAgenda([]); setShowAgendaAdd(false); setAgClient(""); setAgDate(""); setAgTime("");
+    setShowAddClient(false); setNewClientName("");
+    // Cliënt-therapeut koppeling
+    setLinkedTherapist(null); setLinkInput(""); setLinkMsg("");
+    setShowTherapistPanel(false); setShowTherapistBox(false);
+    setMyAssignments([]); setMyMessages([]); setExpandedMsg(null); setShowDoneTasks(false);
+  };
+
   const countRef = useRef(null);
   const exRef = useRef(null);
   const c = SC[season];
@@ -449,7 +499,7 @@ function HuxiApp() {
       setDailyBreaths(0);
       setDailyMood(null); // FIX C1: reset mood bij nieuwe dag
       const resetData = { ...saveDataRef.current, lastDay: today, dailyActions: 0, checkinDone: false, dailyTasks: [], tasksGenerated: false, dailyBreaths: 0, dailyMood: null, wi: saveDataRef.current.wi, lastBreathTime: null, lastTaskTime: null };
-      try { localStorage.setItem("huxi-profile", JSON.stringify(resetData)); } catch(e) {}
+      try { saveToLocal(resetData); } catch(e) {}
       if (saveDataRef.current.userKey) firebaseSave(saveDataRef.current.userKey, resetData);
     }
   }, [lastDay]);
@@ -518,7 +568,7 @@ function HuxiApp() {
       setTasksGenerated(true);
       // FIX C2: directe save zodat taken niet verloren gaan bij sluiten
       const saveTaskGen = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts: newLastTaskTexts, dailyBreaths, dailyTasks: newTasks, tasksGenerated: true, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-      try { localStorage.setItem("huxi-profile", JSON.stringify(saveTaskGen)); } catch(e) {}
+      try { saveToLocal(saveTaskGen); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveTaskGen);
     }
   }, [checkinDone, tasksGenerated]);
@@ -582,7 +632,7 @@ function HuxiApp() {
       showWorldReward("breath");
       // DIRECTE SAVE - geen delay
       const saveF = { accType, reason, experience, treeName, userName, growth: newGrowthF, coins: newCoinsF, ownedItems, avatar, letters, diary, seenEx, lastExId: ex.id, dailyMood, totalSessions: newSessions, wi: newWiF, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: newBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx: newExPerEx, therapistCode, linkedTherapist };
-      try { localStorage.setItem("huxi-profile", JSON.stringify(saveF)); } catch(e) {}
+      try { saveToLocal(saveF); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveF);
     };
     const cyc = () => {
@@ -637,6 +687,16 @@ function HuxiApp() {
   }, []);
 
   // Persistent storage
+  // Helper: sla op met per-account key
+  var saveToLocal = (data) => {
+    try {
+      var k = data.userKey || userKey;
+      if (k) {
+        localStorage.setItem("huxi-profile-" + k, JSON.stringify({ ...data, userKey: k }));
+        localStorage.setItem("huxi-last-key", k);
+      }
+    } catch(e) {}
+  };
   // saveDataRef houdt altijd de MEEST RECENTE state bij - geen stale closure
   const saveDataRef = useRef({});
   useEffect(() => {
@@ -650,18 +710,27 @@ function HuxiApp() {
       therapistCode, linkedTherapist
     };
   });
-  const saveData = () => {
-    const data = saveDataRef.current;
-    if (!data.accType) return;
-    try { localStorage.setItem("huxi-profile", JSON.stringify(data)); } catch(e) {}
-    if (data.userKey) firebaseSave(data.userKey, data);
-  };
-  const loadData = () => {
+  var saveData = () => {
+    var data = saveDataRef.current;
+    if (!data.accType || !data.userKey) return;
+    // Per-account localStorage: huxi-profile-{userKey}
     try {
-      const raw = localStorage.getItem("huxi-profile");
+      localStorage.setItem("huxi-profile-" + data.userKey, JSON.stringify(data));
+      localStorage.setItem("huxi-last-key", data.userKey);
+    } catch(e) {}
+    firebaseSave(data.userKey, data);
+  };
+  var loadData = () => {
+    try {
+      // Probeer per-account key, fallback naar oude "huxi-profile"
+      var lastKey = localStorage.getItem("huxi-last-key");
+      var raw = lastKey ? localStorage.getItem("huxi-profile-" + lastKey) : null;
+      if (!raw) raw = localStorage.getItem("huxi-profile"); // oude migratie
       if (raw) {
-        const d = JSON.parse(raw);
+        var d = JSON.parse(raw);
         if (d.accType) {
+          // FIX: userKey herstellen — dit ontbrak!
+          if (d.userKey) setUserKey(d.userKey);
           setAccType(d.accType);
           setReason(d.reason);
           setExperience(d.experience);
@@ -672,7 +741,7 @@ function HuxiApp() {
           setDailyMood(d.dailyMood || null);
           setTotalSessions(d.totalSessions || 0);
           if (d.wi) setWi(d.wi);
-          const today = new Date().toDateString();
+          var today = new Date().toDateString();
           if (d.lastDay === today) {
             setLastDay(today);
             setDailyActions(d.dailyActions || 0);
@@ -687,19 +756,12 @@ function HuxiApp() {
             setDailyTasks([]);
             setTasksGenerated(false);
             setCheckinDone(false);
-            setDailyMood(null); // FIX C1b: reset mood bij nieuwe dag
+            setDailyMood(null);
           }
           setOwnedItems(d.ownedItems || ["hat_none", "shirt_none", "pants_none", "shoes_none", "skin_light", "hair_short", "hairc_brown", "acc_none", "pet_none"]);
           setAvatar(d.avatar || {
-            hat: "hat_none",
-            shirt: "shirt_none",
-            pants: "pants_none",
-            shoes: "shoes_none",
-            skin: "skin_light",
-            hair: "hair_short",
-            hairc: "hairc_brown",
-            acc: "acc_none",
-            pet: "pet_none"
+            hat: "hat_none", shirt: "shirt_none", pants: "pants_none", shoes: "shoes_none",
+            skin: "skin_light", hair: "hair_short", hairc: "hairc_brown", acc: "acc_none", pet: "pet_none"
           });
           setLetters(d.letters || []);
           setDiary(d.diary || []);
@@ -708,8 +770,8 @@ function HuxiApp() {
           if (d.lastTaskTexts) setLastTaskTexts(d.lastTaskTexts);
           if (d.lastCheckinDate) setLastCheckinDate(d.lastCheckinDate);
           if (d.streakShields !== undefined) setStreakShields(d.streakShields);
-          if (d.goalPeriod !== undefined) setGoalPeriod(d.goalPeriod); // FIX M2
-          if (d.reminder) setReminder(d.reminder); // FIX M3
+          if (d.goalPeriod !== undefined) setGoalPeriod(d.goalPeriod);
+          if (d.reminder) setReminder(d.reminder);
           if (d.lastBreathTime) setLastBreathTime(d.lastBreathTime);
           if (d.lastTaskTime) setLastTaskTime(d.lastTaskTime);
           if (d.secretQ !== undefined) setSecretQ(d.secretQ);
@@ -719,12 +781,24 @@ function HuxiApp() {
           if (Array.isArray(d.moodHistory)) setMoodHistory(d.moodHistory);
           if (d.petPositions && typeof d.petPositions === "object") setPetPositions(d.petPositions);
           if (d.exPerEx && typeof d.exPerEx === "object") setExPerEx(d.exPerEx);
+          // FIX: therapistCode/linkedTherapist ALLEEN herstellen als het klopt met accType
+          if (d.accType === "therapist") {
+            if (d.therapistCode) setTherapistCode(d.therapistCode);
+            setLinkedTherapist(null); // therapeut heeft NOOIT een linkedTherapist
+          } else {
+            setTherapistCode(null); // cliënt heeft NOOIT een therapistCode
+            if (d.linkedTherapist) {
+              setLinkedTherapist(d.linkedTherapist);
+              if (d.userKey) {
+                clientLoadAssignments(d.userKey).then(a => setMyAssignments(a || []));
+                clientLoadMessages(d.userKey).then(m => setMyMessages(m || []));
+              }
+            }
+          }
           if (d.accType !== "therapist") {
-            // Welkom terug + mini groei bij terugkomst
             var wb = getWelcomeBack(d.accType, d.userName, d.growth || 0.01, d.totalSessions || 0, d.wi ? d.wi.streakDays || 0 : 0);
             setWelcomeBackMsg(wb);
             setShowWelcomeBack(true);
-            // Mini groei bij inloggen
             var loginGrowth = Math.min(1, (d.growth || 0.01) + 0.0005);
             setGrowth(loginGrowth);
           }
@@ -1084,7 +1158,7 @@ function HuxiApp() {
     if (accType === "child" || accType === "junior") setCoins(newCoinsC);
     // Inline save met nieuwe waarden (geen stale closure probleem)
     const saveCI = { accType, reason, experience, treeName, userName, growth: newGrowthC, coins: newCoinsC, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood: id, totalSessions, wi: newWiC, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone: true, lastCheckinDate: today, streakShields: newShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx, therapistCode, linkedTherapist };
-    try { localStorage.setItem("huxi-profile", JSON.stringify(saveCI)); } catch(e) {}
+    try { saveToLocal(saveCI); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveCI);
   };
   const saveLetter = () => {
@@ -1110,7 +1184,7 @@ function HuxiApp() {
     const newCoins = (accType === "child" || accType === "junior") ? coins + 8 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
     const saveL = { accType, reason, experience, treeName, userName, growth: newGrowthL2, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-    try { localStorage.setItem("huxi-profile", JSON.stringify(saveL)); } catch(e) {}
+    try { saveToLocal(saveL); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveL);
   };
   const saveDiary = () => {
@@ -1127,76 +1201,17 @@ function HuxiApp() {
     const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
     const saveD = { accType, reason, experience, treeName, userName, growth: newGrowthD2, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-    try { localStorage.setItem("huxi-profile", JSON.stringify(saveD)); } catch(e) {}
+    try { saveToLocal(saveD); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveD);
   };
-  const switchAcc = () => {
+  var switchAcc = () => {
     try {
+      var lk = localStorage.getItem("huxi-last-key");
+      if (lk) localStorage.removeItem("huxi-profile-" + lk);
       localStorage.removeItem("huxi-profile");
+      localStorage.removeItem("huxi-last-key");
     } catch (e) {}
-    setShowSett(false);
-    setUserKey("");
-    setLoginName("");
-    setLoginPin("");
-    setBuddy("pet_none");
-    setGoals([]);
-    setStreakShields(0);
-    setLastCheckinDate("");
-    setPhase("login");
-    setAccType(null);
-    setReason(null);
-    setExperience(null);
-    setTreeName("");
-    setUserName("");
-    setNameIn("");
-    setUserNameIn("");
-    setGrowth(0.01);
-    setWi({
-      leaves: 0,
-      flowers: 0,
-      grass: 0,
-      stones: 0,
-      shrooms: 0,
-      bushes: 0,
-      streakDays: 0,
-      brieven: 0,
-      dagboeken: 0,
-      tools: 0,
-      checkins: 0,
-      tasks: 0
-    });
-    setTotalSessions(0);
-    setCheckinDone(false);
-    setExDone(false);
-    setCoins(0);
-    setOwnedItems(["hat_none", "shirt_none", "pants_none", "shoes_none", "skin_light", "hair_short", "hairc_brown", "acc_none", "pet_none"]);
-    setAvatar({
-      hat: "hat_none",
-      shirt: "shirt_none",
-      pants: "pants_none",
-      shoes: "shoes_none",
-      skin: "skin_light",
-      hair: "hair_short",
-      hairc: "hairc_brown",
-      acc: "acc_none",
-      pet: "pet_none"
-    });
-    setLetters([]);
-    setDiary([]);
-    setSeenEx([]);
-    setLastExId(null);
-    setDailyMood(null);
-    setLastTaskTexts([]);
-    setDailyActions(0);
-    setDailyBreaths(0);
-    setDailyTasks([]);
-    setTasksGenerated(false);
-    setCheckinDone(false);
-    setLastDay("");
-    setLastCheckinDate("");
-    setStreakShields(0);
-    setBuddy("pet_none");
-    setGoals([]);
+    resetAllState();
   };
   const tapA = msg => {
     setAnimalMsg(msg);
@@ -1222,7 +1237,7 @@ function HuxiApp() {
     setTotalSessions(newSessionsT);
     if (accType === "child" || accType === "junior") setCoins(newCoinsT);
     const saveTL = { accType, reason, experience, treeName, userName, growth: newGrowthT, coins: newCoinsT, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessionsT, wi: newWiT, lastDay, dailyActions: newActionsT, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-    try { localStorage.setItem("huxi-profile", JSON.stringify(saveTL)); } catch(e) {}
+    try { saveToLocal(saveTL); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveTL);
   };
   const nextStep = steps => {
@@ -1269,7 +1284,7 @@ function HuxiApp() {
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
     showWorldReward("task");
     const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-    try { localStorage.setItem("huxi-profile", JSON.stringify(saveT)); } catch(e) {}
+    try { saveToLocal(saveT); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveT);
   };
   const finishTask = () => {
@@ -1390,12 +1405,19 @@ function HuxiApp() {
               if (Array.isArray(data.moodHistory)) setMoodHistory(data.moodHistory);
               if (data.petPositions && typeof data.petPositions === "object") setPetPositions(data.petPositions);
               if (data.exPerEx && typeof data.exPerEx === "object") setExPerEx(data.exPerEx);
-              if (data.therapistCode) setTherapistCode(data.therapistCode);
-              if (data.linkedTherapist) {
-                setLinkedTherapist(data.linkedTherapist);
-                // Laad opdrachten en berichten van therapeut
-                clientLoadAssignments(key).then(a => setMyAssignments(a || []));
-                clientLoadMessages(key).then(m => setMyMessages(m || []));
+              // FIX: therapistCode/linkedTherapist NOOIT mengen
+              if (data.accType === "therapist") {
+                if (data.therapistCode) setTherapistCode(data.therapistCode);
+                setLinkedTherapist(null); // therapeut is NOOIT cliënt
+              } else {
+                setTherapistCode(null); // cliënt is NOOIT therapeut
+                if (data.linkedTherapist) {
+                  setLinkedTherapist(data.linkedTherapist);
+                  clientLoadAssignments(key).then(a => setMyAssignments(a || []));
+                  clientLoadMessages(key).then(m => setMyMessages(m || []));
+                } else {
+                  setLinkedTherapist(null);
+                }
               }
               setLastTaskTexts(Array.isArray(data.lastTaskTexts) ? data.lastTaskTexts : []);
               const today = new Date().toDateString();
@@ -1416,6 +1438,11 @@ function HuxiApp() {
                 var loginGrowth2 = Math.min(1, (data.growth || 0.01) + 0.0005);
                 setGrowth(loginGrowth2);
               }
+              // Sla per-account op in localStorage
+              try {
+                localStorage.setItem("huxi-last-key", key);
+                localStorage.setItem("huxi-profile-" + key, JSON.stringify({ ...data, userKey: key }));
+              } catch(e) {}
               setPhase(data.accType === "therapist" ? "therapist_dash" : "world");
             } else {
               setUserKey(key); setPhase("onboarding");
@@ -1698,7 +1725,7 @@ function HuxiApp() {
       setGrowth(0.01);
       if (!isT) setShowWelcome(true);
       const saveOB = { accType, reason, experience, treeName: nameIn.trim() || (accType === "child" ? "Sprout" : "Mijn Boom"), userName: userNameIn.trim() || "", growth: 0.01, coins, ownedItems, avatar, letters: [], diary: [], seenEx: [], lastExId: null, dailyMood: null, totalSessions: 0, wi, lastDay, dailyActions: 0, lastTaskTexts: [], dailyBreaths: 0, dailyTasks: [], tasksGenerated: false, checkinDone: false, lastCheckinDate: null, streakShields: 0, secretQ: plantSecQ, secretA: plantSecA.trim().toLowerCase(), goals: [], buddy: "pet_none", moodHistory: [], petPositions: {}, exPerEx: {} };
-      try { localStorage.setItem("huxi-profile", JSON.stringify(saveOB)); } catch(e) {}
+      try { saveToLocal(saveOB); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveOB);
     };
     return /*#__PURE__*/React.createElement("div", {
@@ -1827,6 +1854,166 @@ function HuxiApp() {
     const E = React.createElement;
     const F2 = { position:"absolute", top:0, left:0, right:0, bottom:0 };
 
+    // ═══ CLIËNT DETAIL PAGINA ═══
+    if (dashSelClient) {
+      var sc = dashSelClient;
+      var scName = sc.userName || sc.treeName || "Cli\xEBnt";
+      var scMood = sc.dailyMood || null;
+      var scMh = sc.moodHistory || [];
+      var scLast14 = scMh.slice(-14);
+      var scAsgn = sc.assignments || [];
+      var scOpen = scAsgn.filter(a => !a.done);
+      var scDone = scAsgn.filter(a => a.done);
+      var scSess = sc.totalSessions || 0;
+      var scGr = sc.growth || 0;
+      var scBreaths = sc.dailyBreaths || 0;
+      var scActive = sc.lastDay === new Date().toDateString();
+
+      return E("div", { style: W },
+        E("div", { style: { ...F2, background:"linear-gradient(180deg,#F5F7FA,#EDF0F5)", overflow:"auto" } },
+          E("div", { style: { padding:"16px 20px", maxWidth:420, margin:"0 auto", paddingBottom:40 } },
+
+            // Header met terug-knop
+            E("div", { style: { display:"flex", alignItems:"center", gap:10, marginBottom:16 } },
+              E("button", { style: { background:"none", border:"none", fontSize:20, cursor:"pointer", padding:0 }, onClick: () => setDashSelClient(null) }, "\u2190"),
+              E("div", null,
+                E("h1", { style: { fontSize:20, fontWeight:700, color:g, margin:0 } }, scName),
+                E("p", { style: { fontSize:11, color: scActive ? "#4CAF50" : g5, margin:0 } }, scActive ? "\u2705 Vandaag actief" : "\u23F0 Laatst actief: " + (sc.lastDay || "Onbekend"))
+              )
+            ),
+
+            // Statistieken
+            E("div", { style: { display:"flex", gap:8, marginBottom:16 } },
+              [
+                ["\uD83C\uDF31", Math.round(scGr * 100) + "%", "Groei"],
+                ["\uD83C\uDF2C\uFE0F", String(scSess), "Sessies"],
+                ["\uD83D\uDCA7", String(scBreaths), "Vandaag"],
+                [moodIcon(scMood || "ok"), scMood ? ({calm:"Kalm",ok:"Ok\xE9",restless:"Onrustig",tense:"Gespannen",overwhelmed:"Overweldigd"}[scMood] || scMood) : "Geen", "Stemming"]
+              ].map((s, si) => E("div", { key:si, style: { flex:1, background:"white", borderRadius:12, padding:"10px 6px", textAlign:"center", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" } },
+                E("div", { style: { fontSize:20, marginBottom:2 } }, s[0]),
+                E("p", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, s[1]),
+                E("p", { style: { fontSize:9, color:g5, margin:0 } }, s[2])
+              ))
+            ),
+
+            // Stemmingsverloop (14 dagen)
+            scLast14.length > 0 && E("div", { style: { background:"white", borderRadius:16, padding:14, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+              E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:"0 0 8px" } }, "\uD83D\uDCCA Stemmingsverloop"),
+              E("div", { style: { display:"flex", gap:4, alignItems:"flex-end", height:60 } },
+                scLast14.map((m, j) => {
+                  var val = {calm:5,ok:4,restless:3,tense:2,overwhelmed:1,great:5,good:4,bad:2,terrible:1}[m.mood] || 3;
+                  return E("div", { key:j, style: { flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:2 } },
+                    E("div", { style: { width:"100%", height: val * 10, borderRadius:4, background: moodColor(m.mood), opacity:0.8, minHeight:6 } }),
+                    E("span", { style: { fontSize:7, color:g5 } }, new Date(m.ts || m.date).toLocaleDateString("nl", { day:"numeric" }))
+                  );
+                })
+              )
+            ),
+
+            // Opdrachten
+            E("div", { style: { background:"white", borderRadius:16, padding:14, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+              E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 } },
+                E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDCCB Opdrachten"),
+                E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" },
+                  onClick: () => setAssignClient(sc)
+                }, "+ Toewijzen")
+              ),
+              scOpen.length === 0 && scDone.length === 0 && E("p", { style: { fontSize:12, color:g5 } }, "Nog geen opdrachten toegewezen."),
+              scOpen.map(a => E("div", { key:a.fbKey, style: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:"1px solid rgba(61,74,88,0.06)" } },
+                E("div", null,
+                  E("p", { style: { fontSize:12, fontWeight:600, color:g, margin:0 } }, a.name),
+                  E("p", { style: { fontSize:9, color:"#E07850", margin:"1px 0 0" } }, "\u23F3 Open")
+                ),
+                E("span", { style: { fontSize:16 } }, "\u23F3")
+              )),
+              scDone.length > 0 && E("div", { style: { marginTop:8, paddingTop:8, borderTop:"1px solid rgba(61,74,88,0.06)" } },
+                E("p", { style: { fontSize:10, fontWeight:600, color:g5, marginBottom:4 } }, "\u2705 Afgerond (" + scDone.length + ")"),
+                scDone.map(a => E("p", { key:a.fbKey, style: { fontSize:11, color:g5, margin:"2px 0", textDecoration:"line-through" } }, a.name))
+              )
+            ),
+
+            // Bericht sturen
+            E("div", { style: { background:"white", borderRadius:16, padding:14, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+              E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:"0 0 10px" } }, "\uD83D\uDCAC Bericht sturen"),
+              E("textarea", {
+                className:"ta",
+                placeholder:"Schrijf een bericht naar " + scName + "...",
+                value: msgInput,
+                onChange: e => setMsgInput(e.target.value),
+                rows: 3,
+                style: { width:"100%", padding:"10px 14px", borderRadius:12, border:"2px solid rgba(112,188,188,0.2)", background:"rgba(112,188,188,0.04)", color:g, fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:8, boxSizing:"border-box", resize:"vertical" }
+              }),
+              E("button", { className:"mb", style: { width:"100%", padding:"10px 0", fontSize:13 }, onClick: async () => {
+                if (!msgInput.trim()) return;
+                await therapistSendMessage(sc.key, msgInput.trim(), userName || treeName || "Therapeut");
+                setMsgInput("");
+                setDashMsg("\u2709\uFE0F Bericht verstuurd aan " + scName + "!"); setTimeout(() => setDashMsg(""), 3000);
+              } }, "Versturen \u2709\uFE0F"),
+              dashMsg && E("p", { style: { fontSize:11, color:"#70BCBC", textAlign:"center", marginTop:6 } }, dashMsg)
+            ),
+
+            // Info kaart
+            E("div", { style: { background:"white", borderRadius:16, padding:14, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+              E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:"0 0 8px" } }, "\uD83D\uDCCB Info"),
+              [
+                ["Reden", sc.reason || "Niet opgegeven"],
+                ["Streak shields", String(sc.streakShields || 0)],
+                needsCare(sc) ? ["\u26A0\uFE0F Zorgmelding", "3+ slechte dagen op rij"] : null
+              ].filter(Boolean).map((row, ri) => E("div", { key:ri, style: { display:"flex", justifyContent:"space-between", padding:"4px 0", borderBottom:"1px solid rgba(61,74,88,0.04)" } },
+                E("span", { style: { fontSize:11, color:g5 } }, row[0]),
+                E("span", { style: { fontSize:11, fontWeight:600, color:g } }, row[1])
+              ))
+            )
+          )
+        ),
+
+        // Overlays voor assign
+        assignClient && E("div", { style: { position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:998, background:"rgba(0,0,0,0.4)", backdropFilter:"blur(5px)", display:"flex", alignItems:"center", justifyContent:"center" }, onClick: () => setAssignClient(null) },
+          E("div", { className:"fadeIn", style: modal, onClick: e => e.stopPropagation() },
+            E("h3", { style: { color:g, fontSize:16, fontWeight:700, textAlign:"center", marginBottom:14 } }, "Toewijzen aan " + scName),
+            E("p", { style: { fontSize:11, color:g5, textAlign:"center", marginBottom:12 } }, "Kies een oefening:"),
+            EX.map(ex => E("button", { key:ex.id, className:"rb", style: { background:"rgba(220,117,83,0.05)", borderColor:"rgba(220,117,83,0.15)" },
+              onClick: async () => { await therapistAssignExercise(therapistCode, sc.key, { name: ex.name, id: ex.id }); setAssignClient(null); sc.assignments = [...(sc.assignments||[]), {name:ex.name, id:ex.id, done:false, fbKey:"new_"+Date.now()}]; setDashSelClient({...sc}); setDashMsg("\u2705 " + ex.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
+            }, E("span", null, "\uD83C\uDF2C\uFE0F"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ex.name))),
+            custExList.length > 0 && E("p", { style: { fontSize:10, color:g5, marginTop:8, marginBottom:4, fontWeight:600 } }, "Eigen oefeningen:"),
+            custExList.map(ce => E("button", { key:ce.id, className:"rb", style: { background:"rgba(112,188,188,0.05)", borderColor:"rgba(112,188,188,0.15)" },
+              onClick: async () => { await therapistAssignExercise(therapistCode, sc.key, { name: ce.name + (ce.desc ? " \u2014 " + ce.desc : ""), id: "custom_" + ce.id }); setAssignClient(null); sc.assignments = [...(sc.assignments||[]), {name:ce.name, done:false, fbKey:"new_"+Date.now()}]; setDashSelClient({...sc}); setDashMsg("\u2705 " + ce.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
+            }, E("span", null, "\uD83D\uDCCB"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ce.name)))
+          )
+        ),
+
+        // Settings + delete overlays (same as overview)
+        showDeleteConfirm && E("div", {
+          style: { position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:999, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center" },
+          onClick: () => setShowDeleteConfirm(false)
+        }, E("div", { className:"fadeIn", style: { ...modal, textAlign:"center" }, onClick: e => e.stopPropagation() },
+          E("div", { style: { fontSize:40, marginBottom:12 } }, "\uD83D\uDDD1\uFE0F"),
+          E("h3", { style: { color:"#E07850", fontSize:18, fontWeight:700, margin:"0 0 8px" } }, "Account verwijderen"),
+          E("p", { style: { color:g, fontSize:13, margin:"0 0 20px", lineHeight:1.5 } }, "Ben je zeker? Dit kan niet ongedaan worden."),
+          E("div", { style: { display:"flex", gap:25 } },
+            E("button", { style: { flex:1, background:"none", border:"1px solid rgba(61,74,88,0.2)", borderRadius:12, padding:"12px 0", color:g, fontSize:13, cursor:"pointer" }, onClick: () => setShowDeleteConfirm(false) }, "Annuleren"),
+            E("button", { style: { flex:1, background:"#E07850", border:"none", borderRadius:12, padding:"12px 0", color:"white", fontSize:13, fontWeight:700, cursor:"pointer" }, onClick: async () => {
+              if (userKey) { try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method:"DELETE" }); } catch(e) {} }
+              try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
+              resetAllState();
+            } }, "Ja, verwijder alles")
+          )
+        )),
+        showSett && E("div", {
+          style: { position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:998, background:"rgba(0,0,0,0.4)", backdropFilter:"blur(5px)", display:"flex", alignItems:"center", justifyContent:"center" },
+          onClick: () => setShowSett(false)
+        }, E("div", { className:"fadeIn", style: { ...modal, width:270 }, onClick: e => e.stopPropagation() },
+          E("h3", { style: { color:g, fontSize:18, fontWeight:700, marginBottom:16, textAlign:"center" } }, "Instellingen"),
+          [["Account", E("button", { key:"a", className:"tb", onClick: () => { try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {} resetAllState(); } }, "Uitloggen")],
+          ["Nieuw begin", E("button", { key:"del", className:"tb", style: { color:"#E07850" }, onClick: () => setShowDeleteConfirm(true) }, "\uD83D\uDDD1\uFE0F Verwijderen")]
+          ].map(([l, ctrl], ii) => E("div", { key:ii, style: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid rgba(61,74,88,0.08)" } },
+            E("span", { style: { color:g, fontSize:13 } }, l), ctrl)),
+          E("button", { className:"mb", style: { width:"100%", marginTop:45, padding:"11px 0" }, onClick: () => setShowSett(false) }, "Sluiten")
+        ))
+      );
+    }
+
+    // ═══ OVERZICHT (CLIËNTENLIJST) ═══
     return E("div", { style: W },
   E("div", { style: { ...F2, background: "linear-gradient(180deg,#F5F7FA,#EDF0F5)", overflow: "auto" } },
   E("div", { style: { padding: "16px 20px", maxWidth: 420, margin: "0 auto", paddingBottom: 40 } },
@@ -1854,23 +2041,11 @@ function HuxiApp() {
             }, "\uD83D\uDCCB Kopieer")
           )
         : E("button", { className:"mb", style: { padding:"10px 24px", fontSize:13 }, onClick: generateCode }, "\uD83D\uDD11 Koppelcode aanmaken"),
-      E("p", { style: { color:"rgba(255,255,255,0.7)", fontSize:10, margin:"8px 0 0" } }, "Deel deze code met je cli\xEBnten. Zij voeren hem in bij Instellingen > Therapeut koppelen."),
+      E("p", { style: { color:"rgba(255,255,255,0.7)", fontSize:10, margin:"8px 0 0" } }, "Deel deze code met je cli\xEBnten."),
       dashMsg && E("p", { style: { color:"white", fontSize:12, fontWeight:600, margin:"8px 0 0" } }, dashMsg)
     ),
 
-    // --- WEEKOVERZICHT (kleurbolletjes per cliënt) ---
-    dashClients.length > 0 && E("div", { style: { background:"white", borderRadius:16, padding:"14px 16px", marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
-      E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:"0 0 10px" } }, "\uD83D\uDCCA Weekoverzicht"),
-      E("div", { style: { display:"flex", flexWrap:"wrap", gap:10 } },
-        dashClients.map((cl, i) => E("div", { key:i, style: { display:"flex", alignItems:"center", gap:6, padding:"4px 10px", borderRadius:20, background:"rgba(61,74,88,0.04)" } },
-          E("div", { style: { width:10, height:10, borderRadius:"50%", background: weekStatus(cl) } }),
-          E("span", { style: { fontSize:11, color:g, fontWeight:500 } }, cl.userName || cl.treeName || "Cli\xEBnt"),
-          needsCare(cl) && E("span", { style: { fontSize:12 } }, "\u26A0\uFE0F")
-        ))
-      )
-    ),
-
-    // --- CLIËNTEN ---
+    // --- CLIËNTENLIJST ---
     E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
       E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 } },
         E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDC65 Cli\xEBnten (" + dashClients.length + ")"),
@@ -1879,7 +2054,7 @@ function HuxiApp() {
         }, "\uD83D\uDD04 Vernieuw")
       ),
 
-      dashLoading && E("p", { style: { fontSize:12, color:g5, textAlign:"center", padding:"16px 0" } }, "Cli\xEBnten laden..."),
+      dashLoading && E("p", { style: { fontSize:12, color:g5, textAlign:"center", padding:"16px 0" } }, "Laden..."),
 
       !dashLoading && dashClients.length === 0 && E("div", { style: { textAlign:"center", padding:"24px 0" } },
         E("p", { style: { fontSize:36, margin:"0 0 8px" } }, "\uD83D\uDC65"),
@@ -1888,91 +2063,44 @@ function HuxiApp() {
       ),
 
       dashClients.map((cl, i) => {
-        var name = cl.userName || cl.treeName || "Cli\xEBnt " + (i+1);
-        var mood = cl.dailyMood || "ok";
-        var gr = cl.growth || 0;
-        var sess = cl.totalSessions || 0;
-        var breaths = cl.dailyBreaths || 0;
-        var mh = cl.moodHistory || [];
-        var last7 = mh.slice(-7);
-        var care = needsCare(cl);
-        var asgn = cl.assignments || [];
-        var asgnOpen = asgn.filter(a => !a.done);
-        var asgnDone = asgn.filter(a => a.done);
+        var clName = cl.userName || cl.treeName || "Cli\xEBnt " + (i+1);
+        var clMood = cl.dailyMood;
+        var clActive = cl.lastDay === new Date().toDateString();
+        var clCare = needsCare(cl);
+        var clAsgn = cl.assignments || [];
+        var clOpen = clAsgn.filter(a => !a.done).length;
+        var clDone = clAsgn.filter(a => a.done).length;
 
-        return E("div", { key:i, style: { padding:"12px 0", borderBottom: i < dashClients.length-1 ? "1px solid rgba(61,74,88,0.08)" : "none" } },
-          // Naam + mood + waarschuwing
-          E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 } },
-            E("div", { style: { display:"flex", alignItems:"center", gap:8 } },
-              E("div", { style: { width:32, height:32, borderRadius:"50%", background: care ? "rgba(244,67,54,0.1)" : "rgba(112,188,188,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 } }, moodIcon(mood)),
-              E("div", null,
-                E("p", { style: { fontSize:14, fontWeight:600, color:g, margin:0 } }, name, care && " \u26A0\uFE0F"),
-                E("p", { style: { fontSize:10, color:g5, margin:0 } }, "Groei: " + Math.round(gr*100) + "% \u2022 " + sess + " sessies \u2022 " + breaths + "x geademd vandaag")
-              )
-            ),
-            E("div", { style: { display:"flex", gap:4 } },
-              E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 8px", fontSize:9, color:g, cursor:"pointer", fontFamily:"inherit" },
-                onClick: () => setAssignClient(cl)
-              }, "+ Oefening"),
-              E("button", { style: { background:"rgba(112,188,188,0.1)", border:"1px solid rgba(112,188,188,0.3)", borderRadius:8, padding:"4px 8px", fontSize:9, color:g, cursor:"pointer", fontFamily:"inherit" },
-                onClick: () => { setDashSelClient(cl); setMsgInput(""); }
-              }, "\uD83D\uDCAC Bericht")
+        return E("button", { key:i, style: {
+          display:"flex", alignItems:"center", gap:10, width:"100%", padding:"12px 10px",
+          background: clCare ? "rgba(244,67,54,0.04)" : "transparent",
+          border:"none", borderBottom: i < dashClients.length-1 ? "1px solid rgba(61,74,88,0.08)" : "none",
+          cursor:"pointer", textAlign:"left", fontFamily:"inherit"
+        }, onClick: () => { setDashSelClient(cl); setMsgInput(""); } },
+          // Mood bol
+          E("div", { style: { width:36, height:36, borderRadius:"50%", background: clCare ? "rgba(244,67,54,0.1)" : "rgba(112,188,188,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 } }, moodIcon(clMood || "ok")),
+          // Naam + info
+          E("div", { style: { flex:1, minWidth:0 } },
+            E("p", { style: { fontSize:14, fontWeight:600, color:g, margin:0 } }, clName, clCare && " \u26A0\uFE0F"),
+            E("div", { style: { display:"flex", gap:6, flexWrap:"wrap", marginTop:2 } },
+              E("span", { style: { fontSize:9, color: clActive ? "#4CAF50" : g5 } }, clActive ? "\u2705 Actief" : "\u23F0 Niet actief"),
+              clOpen > 0 && E("span", { style: { fontSize:9, color:"#E07850" } }, "\u23F3 " + clOpen + " open"),
+              clDone > 0 && E("span", { style: { fontSize:9, color:"#4CAF50" } }, "\u2705 " + clDone + " af"),
+              E("span", { style: { fontSize:9, color:g5 } }, "\uD83C\uDF31 " + Math.round((cl.growth||0)*100) + "%")
             )
           ),
-          // Opdrachtstatus
-          asgn.length > 0 && E("div", { style: { display:"flex", gap:6, flexWrap:"wrap", marginTop:4, marginLeft:40 } },
-            asgnDone.length > 0 && E("span", { style: { fontSize:9, color:"#4CAF50", background:"rgba(76,175,80,0.08)", borderRadius:6, padding:"2px 6px" } }, "\u2705 " + asgnDone.length + " afgerond"),
-            asgnOpen.length > 0 && E("span", { style: { fontSize:9, color:"#E07850", background:"rgba(220,117,83,0.08)", borderRadius:6, padding:"2px 6px" } }, "\u23F3 " + asgnOpen.length + " open"),
-            asgnOpen.length === 0 && asgnDone.length > 0 && E("span", { style: { fontSize:9, color:"#4CAF50" } }, "\u2014 alles af!")
-          ),
-          // Stemmingstrend (laatste 7 dagen als bolletjes)
-          last7.length > 0 && E("div", { style: { display:"flex", gap:3, marginTop:4, marginLeft:40 } },
-            last7.map((m, j) => E("div", { key:j, style: { width:8, height:8, borderRadius:"50%", background: moodColor(m.mood), opacity:0.8 }, title: m.date + ": " + m.mood }))
-          )
+          // Pijl
+          E("span", { style: { fontSize:16, color:g5, flexShrink:0 } }, "\u203A")
         );
       })
     ),
 
-    // --- AGENDA ---
-    E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
-      E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
-        E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDCC5 Agenda"),
-        !showAgendaAdd && E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" }, onClick: () => setShowAgendaAdd(true) }, "+ Afspraak")
-      ),
-      thAgenda.length === 0 && !showAgendaAdd && E("p", { style: { fontSize:12, color:g5, margin:0 } }, "Geen afspraken gepland"),
-      thAgenda.map(a => E("div", { key:a.id, style: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 0", borderBottom:"1px solid rgba(61,74,88,0.06)" } },
-        E("div", null,
-          E("p", { style: { fontSize:13, fontWeight:600, color:g, margin:0 } }, a.client),
-          E("p", { style: { fontSize:10, color:g5, margin:0 } }, a.date + " om " + a.time)
-        ),
-        E("button", { style: { background:"none", border:"none", fontSize:14, cursor:"pointer", color:"#C4553A" }, onClick: () => setThAgenda(p => p.filter(x => x.id !== a.id)) }, "\u2715")
-      )),
-      showAgendaAdd && E("div", { style: { marginTop:8, padding:10, background:"rgba(220,117,83,0.04)", borderRadius:10 } },
-        E("input", { style: { width:"100%", padding:"6px 10px", borderRadius:8, border:"1px solid " + g3, fontSize:12, fontFamily:"inherit", marginBottom:6, color:g, outline:"none", boxSizing:"border-box" }, placeholder:"Cli\xEBnt naam", value:agClient, onChange: e => setAgClient(e.target.value) }),
-        E("div", { style: { display:"flex", gap:6, marginBottom:6 } },
-          E("input", { type:"date", style: { flex:1, padding:"6px 8px", borderRadius:8, border:"1px solid " + g3, fontSize:11, fontFamily:"inherit", color:g, outline:"none" }, value:agDate, onChange: e => setAgDate(e.target.value) }),
-          E("input", { type:"time", style: { flex:1, padding:"6px 8px", borderRadius:8, border:"1px solid " + g3, fontSize:11, fontFamily:"inherit", color:g, outline:"none" }, value:agTime, onChange: e => setAgTime(e.target.value) })
-        ),
-        E("div", { style: { display:"flex", gap:6 } },
-          E("button", { style: { flex:1, background:"none", border:"1px solid " + g3, borderRadius:8, padding:"6px", fontSize:10, color:g5, cursor:"pointer" }, onClick: () => { setShowAgendaAdd(false); setAgClient(""); setAgDate(""); setAgTime(""); } }, "Annuleren"),
-          E("button", { className:"mb", style: { flex:1, padding:"6px", fontSize:10 }, onClick: () => {
-            if (agClient.trim() && agDate && agTime) { setThAgenda(p => [...p, { client:agClient.trim(), date:agDate, time:agTime, id:Date.now() }]); setShowAgendaAdd(false); setAgClient(""); setAgDate(""); setAgTime(""); }
-          } }, "Toevoegen")
-        )
-      )
-    ),
-
-    // --- ZORGMELDING ---
-    E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
-      E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center" } },
-        E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDEA8 Zorgmelding"),
-        E("button", { className:"tb", onClick: () => setCareAlert(a => !a) }, careAlert ? "\uD83D\uDD14 Aan" : "\uD83D\uDD15 Uit")
-      ),
-      E("p", { style: { fontSize:10, color:g5, marginTop:6, margin:"6px 0 0" } }, "Je ziet een \u26A0\uFE0F bij cli\xEBnten die 3+ dagen achtereen slecht scoren."),
-      careAlert && dashClients.filter(cl => needsCare(cl)).length > 0 && E("div", { style: { marginTop:10, padding:10, background:"rgba(244,67,54,0.06)", borderRadius:10 } },
-        E("p", { style: { fontSize:12, fontWeight:600, color:"#F44336", margin:"0 0 4px" } }, "\u26A0\uFE0F Aandacht nodig:"),
-        dashClients.filter(cl => needsCare(cl)).map((cl,i) => E("p", { key:i, style: { fontSize:11, color:g, margin:"2px 0" } }, "\u2022 " + (cl.userName || cl.treeName || "Cli\xEBnt")))
-      )
+    // --- ZORGMELDING (compact) ---
+    dashClients.filter(cl => needsCare(cl)).length > 0 && E("div", { style: { background:"rgba(244,67,54,0.06)", borderRadius:16, padding:14, marginBottom:16, border:"1px solid rgba(244,67,54,0.15)" } },
+      E("h3", { style: { fontSize:13, fontWeight:700, color:"#F44336", margin:"0 0 6px" } }, "\u26A0\uFE0F Aandacht nodig"),
+      dashClients.filter(cl => needsCare(cl)).map((cl,i) => E("button", { key:i, style: { display:"block", background:"none", border:"none", fontSize:12, color:g, padding:"2px 0", cursor:"pointer", fontFamily:"inherit" },
+        onClick: () => { setDashSelClient(cl); setMsgInput(""); }
+      }, "\u2022 " + (cl.userName || cl.treeName || "Cli\xEBnt") + " \u2014 3+ slechte dagen"))
     ),
 
     // --- EIGEN OEFENINGEN ---
@@ -1986,46 +2114,6 @@ function HuxiApp() {
           E("div", null, E("p", { style: { fontSize:13, fontWeight:600, color:g, margin:0 } }, ce.name), ce.desc && E("p", { style: { fontSize:10, color:g5, margin:"2px 0 0" } }, ce.desc)),
           E("button", { style: { background:"none", border:"none", fontSize:14, cursor:"pointer", color:"#C4553A" }, onClick: () => setCustExList(p => p.filter(c => c.id !== ce.id)) }, "\u2715")
         ))
-    ),
-
-    // --- OEFENING TOEWIJZEN OVERLAY ---
-    assignClient && E("div", { style: overlay(), onClick: () => setAssignClient(null) },
-      E("div", { className:"fadeIn", style: modal, onClick: e => e.stopPropagation() },
-        E("h3", { style: { color:g, fontSize:16, fontWeight:700, textAlign:"center", marginBottom:14 } }, "Toewijzen aan " + (assignClient.userName || assignClient.treeName || "Cli\xEBnt")),
-        E("p", { style: { fontSize:11, color:g5, textAlign:"center", marginBottom:12 } }, "Kies een oefening om toe te wijzen:"),
-        EX.map(ex => E("button", { key:ex.id, className:"rb", style: { background:"rgba(220,117,83,0.05)", borderColor:"rgba(220,117,83,0.15)" },
-          onClick: async () => { await therapistAssignExercise(therapistCode, assignClient.key, { name: ex.name, id: ex.id }); setAssignClient(null); setDashMsg("\u2705 " + ex.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
-        }, E("span", null, "\uD83C\uDF2C\uFE0F"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ex.name))),
-        custExList.length > 0 && E("p", { style: { fontSize:10, color:g5, marginTop:8, marginBottom:4, fontWeight:600 } }, "Eigen oefeningen:"),
-        custExList.map(ce => E("button", { key:ce.id, className:"rb", style: { background:"rgba(112,188,188,0.05)", borderColor:"rgba(112,188,188,0.15)" },
-          onClick: async () => { await therapistAssignExercise(therapistCode, assignClient.key, { name: ce.name + (ce.desc ? " \u2014 " + ce.desc : ""), id: "custom_" + ce.id }); setAssignClient(null); setDashMsg("\u2705 " + ce.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
-        }, E("span", null, "\uD83D\uDCCB"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ce.name, ce.desc && E("span", { style: { fontSize:10, fontWeight:400, color:g5, marginLeft:6 } }, ce.desc))))
-      )
-    ),
-
-    // --- BERICHT STUREN OVERLAY ---
-    dashSelClient && E("div", { style: overlay(), onClick: () => setDashSelClient(null) },
-      E("div", { className:"fadeIn", style: modal, onClick: e => e.stopPropagation() },
-        E("h3", { style: { color:g, fontSize:16, fontWeight:700, textAlign:"center", marginBottom:6 } }, "\uD83D\uDCAC Bericht aan " + (dashSelClient.name || "Cli\xEBnt")),
-        E("p", { style: { fontSize:11, color:g5, textAlign:"center", marginBottom:14 } }, "Dit bericht verschijnt bij je cli\xEBnt onder \u201CMijn Therapeut\u201D"),
-        E("textarea", {
-          className:"ta",
-          placeholder:"Schrijf een bericht, motivatie of opdracht...",
-          value: msgInput,
-          onChange: e => setMsgInput(e.target.value),
-          rows: 4,
-          style: { width:"100%", padding:"10px 14px", borderRadius:12, border:"2px solid rgba(112,188,188,0.2)", background:"rgba(112,188,188,0.04)", color:g, fontSize:13, fontFamily:"inherit", outline:"none", marginBottom:10, boxSizing:"border-box", resize:"vertical" }
-        }),
-        E("div", { style: { display:"flex", gap:10 } },
-          E("button", { style: { flex:1, background:"none", border:"1px solid " + g3, borderRadius:14, padding:"10px 0", color:g, fontSize:13, cursor:"pointer" }, onClick: () => setDashSelClient(null) }, "Annuleren"),
-          E("button", { className:"mb", style: { flex:1, padding:"10px 0" }, onClick: async () => {
-            if (!msgInput.trim()) return;
-            await therapistSendMessage(dashSelClient.key, msgInput.trim(), userName || treeName || "Therapeut");
-            setDashSelClient(null); setMsgInput("");
-            setDashMsg("\u2709\uFE0F Bericht verstuurd!"); setTimeout(() => setDashMsg(""), 3000);
-          } }, "Versturen \u2709\uFE0F")
-        )
-      )
     ),
 
     // --- EIGEN OEFENING TOEVOEGEN OVERLAY ---
@@ -2071,11 +2159,8 @@ function HuxiApp() {
           if (userKey) {
             try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
           }
-          try { localStorage.removeItem("huxi-profile"); } catch(e) {}
-          setShowDeleteConfirm(false); setShowSett(false);
-          setPhase("login"); setAccType(null); setUserKey(""); setLoginName(""); setLoginPin("");
-          setGrowth(0.01); setCoins(0); setLetters([]); setDiary([]);
-          setWi({ leaves:0,flowers:0,grass:0,stones:0,shrooms:0,bushes:0,streakDays:0,brieven:0,dagboeken:0,tools:0,checkins:0,tasks:0 });
+          try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
+          resetAllState();
         }
       }, "Ja, verwijder alles")
     )
@@ -2099,15 +2184,8 @@ function HuxiApp() {
     ["Account", E("button", {
       key: "a", className: "tb",
       onClick: () => {
-        try { localStorage.removeItem("huxi-profile"); } catch(e) {}
-        setPhase("login"); setAccType(null); setCheckinDone(false);
-        setUserKey(""); setLoginName(""); setLoginPin("");
-        setBuddy("pet_none"); setGoals([]); setStreakShields(0); setLastCheckinDate("");
-        setOwnedItems(["hat_none","shirt_none","pants_none","shoes_none","skin_light","hair_short","hairc_brown","acc_none","pet_none"]);
-        setAvatar({ hat:"hat_none", shirt:"shirt_none", pants:"pants_none", shoes:"shoes_none", skin:"skin_light", hair:"hair_short", hairc:"hairc_brown", acc:"acc_none", pet:"pet_none" });
-        setLetters([]); setDiary([]); setGrowth(0.01); setCoins(0);
-        setWi({ leaves:0,flowers:0,grass:0,stones:0,shrooms:0,bushes:0,streakDays:0,brieven:0,dagboeken:0,tools:0,checkins:0,tasks:0 });
-        setTotalSessions(0); setSeenEx([]); setLastTaskTexts([]);
+        try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
+        resetAllState();
       }
     }, "Uitloggen")],
     ["Mijn koppelcode", E("button", {
@@ -2328,7 +2406,7 @@ function HuxiApp() {
           const newPos = { ...petPositions, [petId]: { x, y } };
           setPetPositions(newPos);
           const saveP = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPos, exPerEx, therapistCode, linkedTherapist };
-          try { localStorage.setItem("huxi-profile", JSON.stringify(saveP)); } catch(e2) {}
+          try { saveToLocal(saveP); } catch(e2) {}
           if (userKey) firebaseSave(userKey, saveP);
         },
         onClick: () => tapA("\uD83C\uDF33 " + (PET_EM[petId] || "") + " woont in jouw wereld!"),
@@ -2715,7 +2793,7 @@ function HuxiApp() {
             setExPerEx(prev => {
               const updated = { ...prev };
               const saveP2 = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx: updated };
-              try { localStorage.setItem("huxi-profile", JSON.stringify(saveP2)); } catch(e) {}
+              try { saveToLocal(saveP2); } catch(e) {}
               if (userKey) firebaseSave(userKey, saveP2);
               return updated;
             });
@@ -3148,7 +3226,7 @@ function HuxiApp() {
         setGrowth(newGrowthL);
         showWorldReward("letter");
         const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-        try { localStorage.setItem("huxi-profile", JSON.stringify(saveLW)); } catch(e) {}
+        try { saveToLocal(saveLW); } catch(e) {}
         if (userKey) firebaseSave(userKey, saveLW);
       }
     }, !letterDraft.trim() ? "Schrijf eerst je brief..." : "Bewaar brief \uD83C\uDF3F")));
@@ -3989,7 +4067,7 @@ function HuxiApp() {
               dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
               lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
             };
-            try { localStorage.setItem("huxi-profile", JSON.stringify(saveEq)); } catch(e) {}
+            try { saveToLocal(saveEq); } catch(e) {}
             if (userKey) firebaseSave(userKey, saveEq);
           } else {
             const newAv = { ...avatar, [grp.k]: item.id };
@@ -4001,7 +4079,7 @@ function HuxiApp() {
               dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
               lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
             };
-            try { localStorage.setItem("huxi-profile", JSON.stringify(saveEq)); } catch(e) {}
+            try { saveToLocal(saveEq); } catch(e) {}
             if (userKey) firebaseSave(userKey, saveEq);
           }
         } else if (canBuy) {
@@ -4023,7 +4101,7 @@ function HuxiApp() {
             dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
             lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
           };
-          try { localStorage.setItem("huxi-profile", JSON.stringify(saveNow)); } catch(e) {}
+          try { saveToLocal(saveNow); } catch(e) {}
           if (userKey) firebaseSave(userKey, saveNow);
           showWorldReward("shop");
         }
@@ -4051,7 +4129,7 @@ function HuxiApp() {
       setAvatar(a => ({ ...a, [grp.k]: grp.k + "_none" }));
       const newAvReset = { ...avatar, [grp.k]: grp.k + "_none" };
       const saveAR = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAvReset, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-      try { localStorage.setItem("huxi-profile", JSON.stringify(saveAR)); } catch(e) {}
+      try { saveToLocal(saveAR); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveAR);
     }
   }, "Geen \u2715"))))
@@ -4535,7 +4613,7 @@ function HuxiApp() {
               setDraft("");
               var newGrowthGoal = microGrow(0.001);
               const saveG = { accType, reason, experience, treeName, userName, growth: newGrowthGoal, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-              try { localStorage.setItem("huxi-profile", JSON.stringify(saveG)); } catch(e2) {}
+              try { saveToLocal(saveG); } catch(e2) {}
               if (userKey) firebaseSave(userKey, saveG);
             }
           }, draft.trim() ? "Doel bewaren \uD83C\uDFAF" : "Schrijf eerst je doel...")
@@ -4580,7 +4658,7 @@ function HuxiApp() {
                 const newGoals = goals.filter(x => x.id !== goal.id);
                 setGoals(newGoals);
                 const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
-                try { localStorage.setItem("huxi-profile", JSON.stringify(saveG)); } catch(e2) {}
+                try { saveToLocal(saveG); } catch(e2) {}
                 if (userKey) firebaseSave(userKey, saveG);
               }
             }, "Verwijderen")
@@ -4617,11 +4695,8 @@ function HuxiApp() {
           if (userKey) {
             try { await fetch(FIREBASE_URL + "/users/" + userKey + ".json", { method: "DELETE" }); } catch(e) {}
           }
-          try { localStorage.removeItem("huxi-profile"); } catch(e) {}
-          setShowDeleteConfirm(false); setShowSett(false);
-          setPhase("login"); setAccType(null); setUserKey(""); setLoginName(""); setLoginPin("");
-          setGrowth(0.01); setCoins(0); setLetters([]); setDiary([]);
-          setWi({ leaves:0,flowers:0,grass:0,stones:0,shrooms:0,bushes:0,streakDays:0,brieven:0,dagboeken:0,tools:0,checkins:0,tasks:0 });
+          try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
+          resetAllState();
         }
       }, "Ja, verwijder alles")
     )
@@ -4652,27 +4727,8 @@ function HuxiApp() {
     key: "a",
     className: "tb",
     onClick: () => {
-          try { localStorage.removeItem("huxi-profile"); } catch(e) {}
-          setPhase("login");
-          setAccType(null);
-          setCheckinDone(false);
-          setUserKey("");
-          setLoginName("");
-          setLoginPin("");
-          setBuddy("pet_none");
-          setGoals([]);
-          setStreakShields(0);
-          setLastCheckinDate("");
-          setOwnedItems(["hat_none","shirt_none","pants_none","shoes_none","skin_light","hair_short","hairc_brown","acc_none","pet_none"]);
-          setAvatar({ hat:"hat_none", shirt:"shirt_none", pants:"pants_none", shoes:"shoes_none", skin:"skin_light", hair:"hair_short", hairc:"hairc_brown", acc:"acc_none", pet:"pet_none" });
-          setLetters([]);
-          setDiary([]);
-          setGrowth(0.01);
-          setCoins(0);
-          setWi({ leaves:0, flowers:0, grass:0, stones:0, shrooms:0, bushes:0, streakDays:0, brieven:0, dagboeken:0, tools:0, checkins:0, tasks:0 });
-          setTotalSessions(0);
-          setSeenEx([]);
-          setLastTaskTexts([]);
+          try { var _lk = localStorage.getItem("huxi-last-key"); if (_lk) localStorage.removeItem("huxi-profile-" + _lk); localStorage.removeItem("huxi-profile"); localStorage.removeItem("huxi-last-key"); } catch(e) {}
+          resetAllState();
         }
   }, "Uitloggen")],
   // Therapeut koppeling in instellingen
