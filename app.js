@@ -1626,19 +1626,17 @@ function HuxiApp() {
   }
 
   // THERAPIST DASHBOARD
-  // Laad dashboard cliënten als therapeut
-  const loadDashClients = async () => {
-    if (!therapistCode) return;
-    setDashLoading(true);
-    try {
-      var cls = await therapistLoadClients(therapistCode);
-      setDashClients(Array.isArray(cls) ? cls : []);
-    } catch(e) { setDashClients([]); }
-    setDashLoading(false);
-  };
-  useEffect(() => { if (phase === "therapist_dash") loadDashClients(); }, [therapistCode, phase]);
-
   if (phase === "therapist_dash") {
+    const loadClients = async () => {
+      if (!therapistCode) return;
+      setDashLoading(true);
+      try {
+        var cls = await therapistLoadClients(therapistCode);
+        setDashClients(Array.isArray(cls) ? cls : []);
+      } catch(e) { setDashClients([]); }
+      setDashLoading(false);
+    };
+    if (dashClients.length === 0 && !dashLoading && therapistCode) loadClients();
 
     // Genereer code als die er nog niet is
     const generateCode = async () => {
@@ -1717,7 +1715,7 @@ function HuxiApp() {
       E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 } },
         E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDC65 Cli\xEBnten (" + dashClients.length + ")"),
         E("button", { style: { background:"rgba(112,188,188,0.15)", border:"1px solid rgba(112,188,188,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" },
-          onClick: loadDashClients
+          onClick: loadClients
         }, "\uD83D\uDD04 Vernieuw")
       ),
 
