@@ -304,6 +304,9 @@ function HuxiApp() {
   const [dashFeedback, setDashFeedback] = useState([]);
   const [dashFbLoading, setDashFbLoading] = useState(false);
   const [showDashFb, setShowDashFb] = useState(false);
+  const [clientNote, setClientNote] = useState("");
+  const [noteSaved, setNoteSaved] = useState(false);
+  const [sentMessages, setSentMessages] = useState([]);
   const codeRecoveryDone = useRef(false);
   const [msgInput, setMsgInput] = useState("");
   const [assignClient, setAssignClient] = useState(null);
@@ -1973,13 +1976,20 @@ function HuxiApp() {
       var scBreaths = sc.dailyBreaths || 0;
       var scActive = sc.lastDay === new Date().toDateString();
 
+      // Laad notities uit localStorage bij eerste render van deze cliënt
+      var noteKey = "huxi-note-" + sc.key;
+      if (clientNote === "" && !noteSaved) {
+        var savedNote = ""; try { savedNote = localStorage.getItem(noteKey) || ""; } catch(e) {}
+        if (savedNote && savedNote !== clientNote) { setTimeout(() => setClientNote(savedNote), 0); }
+      }
+
       return E("div", { style: W },
         E("div", { style: { ...F2, background:"linear-gradient(180deg,#F5F7FA,#EDF0F5)", overflow:"auto" } },
           E("div", { style: { padding:"16px 20px", maxWidth:420, margin:"0 auto", paddingBottom:40 } },
 
             // Header met terug-knop
             E("div", { style: { display:"flex", alignItems:"center", gap:10, marginBottom:16 } },
-              E("button", { style: { background:"none", border:"none", fontSize:20, cursor:"pointer", padding:0 }, onClick: () => setDashSelClient(null) }, "\u2190"),
+              E("button", { style: { background:"none", border:"none", fontSize:20, cursor:"pointer", padding:0 }, onClick: () => { setDashSelClient(null); setClientNote(""); setNoteSaved(false); setSentMessages([]); } }, "\u2190"),
               E("div", null,
                 E("h1", { style: { fontSize:20, fontWeight:700, color:g, margin:0 } }, scName),
                 E("p", { style: { fontSize:11, color: scActive ? "#4CAF50" : g5, margin:0 } }, scActive ? "\u2705 Vandaag actief" : "\u23F0 Laatst actief: " + (sc.lastDay || "Onbekend"))
@@ -2067,6 +2077,48 @@ function HuxiApp() {
                 E("span", { style: { fontSize:11, color:g5 } }, row[0]),
                 E("span", { style: { fontSize:11, fontWeight:600, color:g } }, row[1])
               ))
+            ),
+
+            // Privénotities (lokaal opgeslagen — verlaat nooit dit apparaat)
+            E("div", { style: { background:"white", borderRadius:16, padding:14, marginTop:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+              E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
+                E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDD12 Priv\u00E9notities"),
+                E("span", { style: { fontSize:9, color:g5, background:"rgba(112,188,188,0.1)", padding:"2px 8px", borderRadius:6 } }, "Alleen op dit apparaat")
+              ),
+              E("textarea", {
+                style: { width:"100%", padding:"10px 14px", borderRadius:12, border:"2px solid rgba(112,188,188,0.15)", background:"rgba(245,247,250,0.8)", color:g, fontSize:12, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:80, boxSizing:"border-box" },
+                placeholder:"Sessieaantekeningen, observaties, aandachtspunten...",
+                value: clientNote,
+                onChange: e => { setClientNote(e.target.value); setNoteSaved(false); }
+              }),
+              E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 } },
+                E("span", { style: { fontSize:10, color: noteSaved ? "#4CAF50" : g5 } }, noteSaved ? "\u2705 Opgeslagen" : ""),
+                E("button", { style: { background:"rgba(112,188,188,0.15)", border:"1px solid rgba(112,188,188,0.3)", borderRadius:8, padding:"6px 14px", fontSize:11, color:g, cursor:"pointer", fontFamily:"inherit", fontWeight:600 },
+                  onClick: () => { try { localStorage.setItem("huxi-note-" + sc.key, clientNote); setNoteSaved(true); } catch(e) {} }
+                }, "\uD83D\uDCBE Opslaan")
+              )
+            ),
+
+            // Berichtengeschiedenis
+            E("div", { style: { background:"white", borderRadius:16, padding:14, marginTop:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+              E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
+                E("h3", { style: { fontSize:13, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDCE8 Verzonden berichten"),
+                E("button", { style: { background:"rgba(112,188,188,0.15)", border:"1px solid rgba(112,188,188,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" },
+                  onClick: async () => {
+                    var msgs = await clientLoadMessages(sc.key);
+                    setSentMessages(msgs);
+                  }
+                }, sentMessages.length > 0 ? "\uD83D\uDD04 Vernieuw" : "\uD83D\uDCE5 Laden")
+              ),
+              sentMessages.length === 0 && E("p", { style: { fontSize:11, color:g5 } }, "Klik 'Laden' om berichten te bekijken"),
+              sentMessages.map((msg, mi) => E("div", { key: msg.fbKey || mi, style: { padding:"8px 0", borderBottom: mi < sentMessages.length-1 ? "1px solid rgba(61,74,88,0.06)" : "none" } },
+                E("div", { style: { display:"flex", justifyContent:"space-between", marginBottom:2 } },
+                  E("span", { style: { fontSize:10, fontWeight:600, color:"#70BCBC" } }, msg.from || "Jij"),
+                  E("span", { style: { fontSize:9, color:g5 } }, new Date(msg.sentAt).toLocaleDateString("nl-BE", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }))
+                ),
+                E("p", { style: { fontSize:12, color:g, margin:0, lineHeight:1.4 } }, msg.text),
+                !msg.read && E("span", { style: { fontSize:9, color:"#E07850", fontWeight:600 } }, "Ongelezen")
+              ))
             )
           )
         ),
@@ -2150,6 +2202,30 @@ function HuxiApp() {
         : E("button", { className:"mb", style: { padding:"10px 24px", fontSize:13 }, onClick: generateCode }, "\uD83D\uDD11 Koppelcode aanmaken"),
       E("p", { style: { color:"rgba(255,255,255,0.7)", fontSize:10, margin:"8px 0 0" } }, "Deel deze code met je cli\xEBnten."),
       dashMsg && E("p", { style: { color:"white", fontSize:12, fontWeight:600, margin:"8px 0 0" } }, dashMsg)
+    ),
+
+    // --- SAMENVATTEND OVERZICHT ---
+    dashClients.length > 0 && E("div", { style: { display:"flex", gap:8, marginBottom:16 } },
+      (() => {
+        var activeCount = dashClients.filter(cl => cl.lastDay === new Date().toDateString()).length;
+        var careCount = dashClients.filter(cl => needsCare(cl)).length;
+        var totalOpen = dashClients.reduce((s, cl) => s + (cl.assignments || []).filter(a => !a.done).length, 0);
+        var avgMood = dashClients.filter(cl => cl.dailyMood).length > 0
+          ? (dashClients.filter(cl => cl.dailyMood).reduce((s, cl) => s + ({calm:5,ok:4,restless:3,tense:2,overwhelmed:1,great:5,good:4,bad:2,terrible:1}[cl.dailyMood] || 3), 0) / dashClients.filter(cl => cl.dailyMood).length)
+          : 0;
+        var moodLabel = avgMood >= 4 ? "Goed" : avgMood >= 3 ? "Oké" : avgMood > 0 ? "Aandacht" : "—";
+        var moodBg = avgMood >= 4 ? "rgba(76,175,80,0.1)" : avgMood >= 3 ? "rgba(255,152,0,0.1)" : avgMood > 0 ? "rgba(244,67,54,0.1)" : "rgba(136,153,170,0.1)";
+        return [
+          ["\uD83D\uDC65", String(activeCount) + "/" + dashClients.length, "Actief", "rgba(112,188,188,0.1)"],
+          ["\uD83D\uDE0A", moodLabel, "Stemming", moodBg],
+          ["\uD83D\uDCCB", String(totalOpen), "Open taken", "rgba(220,117,83,0.1)"],
+          ["\u26A0\uFE0F", String(careCount), "Zorg nodig", careCount > 0 ? "rgba(244,67,54,0.1)" : "rgba(136,153,170,0.1)"]
+        ].map((s, i) => E("div", { key:i, style: { flex:1, background:s[3], borderRadius:12, padding:"10px 4px", textAlign:"center" } },
+          E("div", { style: { fontSize:18, marginBottom:2 } }, s[0]),
+          E("p", { style: { fontSize:15, fontWeight:700, color:g, margin:0 } }, s[1]),
+          E("p", { style: { fontSize:8, color:g5, margin:0 } }, s[2])
+        ));
+      })()
     ),
 
     // --- CLIËNTENLIJST ---
