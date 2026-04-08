@@ -14,7 +14,10 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
   }, []);
   const t = tick * 0.08;
   const el = React.createElement;
-  const g = Math.max(0, Math.min(1, growth));
+  // Guards tegen NaN/undefined props
+  const g = Math.max(0, Math.min(1, Number(growth) || 0));
+  const _ts = Number(totalSessions) || 0;
+  const _wp = Math.max(0, Math.min(1, Number(wp) || 0));
 
   const W = 430, H = 700;
   const cx = W / 2;
@@ -644,7 +647,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
 
   // Konijn (goed — behouden)
   const bunnyX=95+Math.sin(t*0.15)*28, bunnyY=groundY+28, bHop=Math.abs(Math.sin(t*0.8))*4;
-  const bunny = totalSessions>=3 ? el("g",{key:"bunny",transform:`translate(${bunnyX},${bunnyY-bHop})`},
+  const bunny = _ts>=3 ? el("g",{key:"bunny",transform:`translate(${bunnyX},${bunnyY-bHop})`},
     el("ellipse",{cx:0,cy:0,rx:9,ry:7,fill:"#F0E8DC"}),
     el("circle",{cx:7,cy:-4.5,r:5.5,fill:"#F0E8DC"}),
     el("ellipse",{cx:4.5,cy:-13,rx:2.2,ry:6.5,fill:"#F0E8DC"}),el("ellipse",{cx:4.5,cy:-13,rx:1.3,ry:4.5,fill:"#F0C8C0"}),
@@ -666,7 +669,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
 
   // Vos — sierlijk, puntige snuit, driehoekige oren
   const foxX=315+Math.sin(t*0.12+2)*22, foxY=groundY+33;
-  const fox = (g>=0.38&&totalSessions>=10) ? el("g",{key:"fox",transform:`translate(${foxX},${foxY})`,opacity:appear(0.38,0.08)},
+  const fox = (g>=0.38&&_ts>=10) ? el("g",{key:"fox",transform:`translate(${foxX},${foxY})`,opacity:appear(0.38,0.08)},
     el("ellipse",{cx:0,cy:0,rx:12,ry:7,fill:"#D4783C"}), // lichaam
     el("ellipse",{cx:0,cy:2,rx:8,ry:4,fill:"#F0E8DC",opacity:0.6}), // witte buik
     el("ellipse",{cx:-11,cy:-3,r:6,rx:6,ry:5,fill:"#D4783C"}), // hoofd
@@ -695,7 +698,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
   ) : null;
 
   // Kat — slapend, opgerold
-  const cat = (isNight||isEvening)&&totalSessions>=5 ? el("g",{key:"cat",transform:`translate(${cx-55},${groundY+38})`},
+  const cat = (isNight||isEvening)&&_ts>=5 ? el("g",{key:"cat",transform:`translate(${cx-55},${groundY+38})`},
     el("ellipse",{cx:0,cy:0,rx:13,ry:7,fill:"#8A8A90"}), // lichaam
     el("circle",{cx:10,cy:-2,r:5.5,fill:"#8A8A90"}), // hoofd
     el("path",{d:"M6.5,-6.5 L8,-11 L10,-6.5",fill:"#8A8A90"}), // linkeroor (driehoek)
@@ -726,7 +729,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
   ) : null;
 
   // Hertje — elegant, bambi-achtig
-  const deerShow = g>=0.82&&((Math.floor(t*0.01)+totalSessions)%7<2);
+  const deerShow = g>=0.82&&((Math.floor(t*0.01)+_ts)%7<2);
   const deer = deerShow ? el("g",{key:"deer",transform:`translate(${55+Math.sin(t*0.08)*35},${groundY+12})`,opacity:0.65},
     el("ellipse",{cx:0,cy:0,rx:13,ry:8,fill:"#C09060"}), // lichaam
     el("ellipse",{cx:2,cy:2,rx:8,ry:4,fill:"#E0C8A0",opacity:0.4}), // lichte buik
@@ -748,7 +751,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
   ) : null;
 
   // Egel — bolletje met stekels
-  const hogShow = g>=0.42&&((Math.floor(t*0.008)+totalSessions*3)%11<3);
+  const hogShow = g>=0.42&&((Math.floor(t*0.008)+_ts*3)%11<3);
   const hedgehog = hogShow ? el("g",{key:"hog",transform:`translate(${275+Math.sin(t*0.1)*14},${groundY+43})`},
     el("ellipse",{cx:0,cy:0,rx:8,ry:5,fill:"#8A7060"}), // lichaam
     el("circle",{cx:7,cy:-1,r:3,fill:"#C0A080"}), // snoetje
@@ -762,7 +765,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
   ) : null;
 
   // Schildpad — schattig schild
-  const trtShow = g>=0.52&&((Math.floor(t*0.005)+totalSessions*7)%13<2);
+  const trtShow = g>=0.52&&((Math.floor(t*0.005)+_ts*7)%13<2);
   const turtle = trtShow ? el("g",{key:"trt",transform:`translate(${195+Math.sin(t*0.05)*18},${groundY+53})`,opacity:0.7},
     el("ellipse",{cx:0,cy:0,rx:9,ry:6,fill:"#5A8A50"}), // schild
     el("ellipse",{cx:0,cy:0,rx:7,ry:4,fill:"#4A7A40"}), // schild patroon
@@ -833,9 +836,52 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
     return el("circle",{key:"ws"+i,cx:rng()*W,cy:groundY+rng()*75,r:1.1,fill:"#FFFDE0",opacity:(0.1+0.9*Math.abs(Math.sin(t*2+i*0.6)))*0.35});
   }) : [];
 
+  // ─── EXTRA DETAILS 90-100% ───
+  // Glowing tree aura at 92%
+  const treeAura = g>=0.92 ? el("ellipse",{cx:cx,cy:groundY-tH2*0.45,rx:60+appear(0.92,0.06)*40,ry:80+appear(0.92,0.06)*50,fill:"none",stroke:flowerColors[0],strokeWidth:1.5,opacity:appear(0.92,0.06)*0.15*(0.5+0.5*Math.sin(t*0.8)),filter:"url(#glow)"}) : null;
+  // Falling petals at 90%
+  const fallingPetals = g>=0.90 ? Array.from({length:Math.floor(appear(0.90,0.08)*8)},(_,i) => {
+    const px = 40+((i*97+33)%350);
+    const py = (groundY*0.2 + ((t*12+i*80)%(groundY*0.7)));
+    const ps = 5+i%3;
+    return el("text",{key:"fp"+i,x:px,y:py,fontSize:ps,opacity:0.3+0.2*Math.sin(t+i),transform:"rotate("+(t*20+i*45)+","+px+","+py+")"},"🌸");
+  }) : [];
+  // Crown jewel / golden fruit at 95%
+  const goldenFruit = g>=0.95 ? Array.from({length:Math.floor(appear(0.95,0.05)*5)},(_,i) => {
+    const rng=srand(i*77+55);
+    const fx=cx-35+rng()*70;
+    const fy=groundY-tH2*0.5-rng()*tH2*0.3;
+    return el("circle",{key:"gf"+i,cx:fx,cy:fy,r:3+rng()*2,fill:"#FFD700",opacity:appear(0.95,0.05)*(0.5+0.5*Math.sin(t*1.5+i*1.2)),filter:"url(#glow)"});
+  }) : [];
+  // Magical particles at 98%
+  const magicParticles = g>=0.98 ? Array.from({length:Math.floor(appear(0.98,0.02)*12)},(_,i) => {
+    const rng=srand(i*53+17);
+    const mx=rng()*W;
+    const my=rng()*groundY;
+    const mop=0.15+0.25*Math.abs(Math.sin(t*1.8+i*0.9));
+    return el("circle",{key:"mp"+i,cx:mx,cy:my,r:1+rng(),fill:"#FFFACD",opacity:mop});
+  }) : [];
+
   const rareEl = rareAnimal ? el("text",{key:"rare",x:cx-60,y:groundY+10,fontSize:28,opacity:0.5+0.5*Math.abs(Math.sin(t)),style:{cursor:"pointer"}},rareAnimal) : null;
   const overlay = el("rect",{x:0,y:0,width:W,height:H,fill:todOverlay,pointerEvents:"none"});
-  const tapAreaEl = el("rect",{x:cx-100,y:groundY-250,width:200,height:200,fill:"transparent",style:{cursor:"pointer"},onClick:tapA});
+  var treeTapMsgs = [
+    "🌳 Je boom ruist zachtjes in de wind",
+    "🍃 Een blaadje dwarrelt naar beneden",
+    "🌿 Je boom voelt je aanwezigheid",
+    "✨ Er glanst iets tussen de takken",
+    "🌱 Je boom groeit stilletjes verder",
+    "🍂 De bladeren fluisteren zachtjes",
+    "🌸 Je boom staat er mooi bij vandaag",
+    "🦋 Een vlinder landt even op een tak",
+    "🐦 Een vogel fluit vanuit de kruin",
+    "🌻 Je boom baadt in het licht",
+    "💚 Je boom is blij dat je er bent",
+    "🌊 De wind speelt door de bladeren",
+    "🍀 Er groeit iets moois aan je boom",
+    "🌙 Je boom waakt over je wereld",
+    "☀️ Zonnestralen dansen door de takken"
+  ];
+  const tapAreaEl = el("rect",{x:cx-100,y:groundY-250,width:200,height:200,fill:"transparent",style:{cursor:"pointer"},onClick:() => tapA(treeTapMsgs[Math.floor(Math.random()*treeTapMsgs.length)])});
 
   // ═══════════════════════════════════════════════════════════
   // RENDER VOLGORDE
@@ -861,6 +907,7 @@ function BoomCanvas({ season, growth, wp, tod, c, totalSessions, wi, accType, ta
       // Effecten
       ...butterflies, ...dragonflies, ...fireflies,
       ...fallingLeaves, ...snow, ...worldSparkles,
+      ...fallingPetals, treeAura, ...goldenFruit, ...magicParticles,
       rareEl, overlay, tapAreaEl
     )
   );

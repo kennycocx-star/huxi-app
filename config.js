@@ -39,6 +39,19 @@ var therapistRegister = async (therapistKey, displayName) => {
   } catch(e) { console.warn("Therapeut registratie fout:", e); return null; }
 };
 
+// Zoek bestaande koppelcode voor een therapeut (recovery als code verloren is)
+var therapistFindCode = async (therapistKey) => {
+  try {
+    var res = await fetch(FIREBASE_URL + "/therapists.json");
+    var data = await res.json();
+    if (!data) return null;
+    for (var code of Object.keys(data)) {
+      if (data[code] && data[code].key === therapistKey) return code;
+    }
+    return null;
+  } catch(e) { console.warn("Therapeut code zoeken fout:", e); return null; }
+};
+
 // Check of koppelcode bestaat en geef therapeut-info terug
 var therapistLookup = async (code) => {
   try {

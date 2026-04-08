@@ -296,6 +296,7 @@ function HuxiApp() {
   const [dashView, setDashView] = useState("overview");
   const [dashSelClient, setDashSelClient] = useState(null);
   const [dashMsg, setDashMsg] = useState("");
+  const codeRecoveryDone = useRef(false);
   const [msgInput, setMsgInput] = useState("");
   const [assignClient, setAssignClient] = useState(null);
   // ═══ CLIËNT OPDRACHTEN ═══
@@ -504,10 +505,10 @@ function HuxiApp() {
     }
   }, [lastDay]);
   // Enrich derived from world items - slow accumulation
-  const enrich = Math.min(1, wi.leaves * 0.0013 + wi.flowers * 0.0025 + wi.grass * 0.001 + wi.stones * 0.0017 + wi.shrooms * 0.0017 + wi.bushes * 0.002 + wi.checkins * 0.0003 + wi.tasks * 0.0005);
+  const enrich = Math.min(1, wi.leaves * 0.00065 + wi.flowers * 0.00125 + wi.grass * 0.0005 + wi.stones * 0.00085 + wi.shrooms * 0.00085 + wi.bushes * 0.001 + wi.checkins * 0.00015 + wi.tasks * 0.00025);
   // World progress - unlocks landscape features
-  const wpBoost = growth >= 0.8 ? 3.0 : 1.0;
-  const wp = Math.min(1, (totalSessions * 0.0004 + wi.leaves * 0.0008 + wi.flowers * 0.0016 + wi.grass * 0.0006 + wi.stones * 0.0012 + wi.shrooms * 0.0012 + wi.bushes * 0.0016 + wi.brieven * 0.002 + wi.dagboeken * 0.0008 + wi.streakDays * 0.002) * wpBoost);
+  const wpBoost = growth >= 0.8 ? 2.5 : 1.0;
+  const wp = Math.min(1, (totalSessions * 0.0002 + wi.leaves * 0.0004 + wi.flowers * 0.0008 + wi.grass * 0.0003 + wi.stones * 0.0006 + wi.shrooms * 0.0006 + wi.bushes * 0.0008 + wi.brieven * 0.001 + wi.dagboeken * 0.0004 + wi.streakDays * 0.001) * wpBoost);
   useEffect(() => {
     if (phase !== "world") return;
     setWMsg((userName ? "Hoi " + userName + "! " : "") + "Welkom bij " + treeName + " 🌿");
@@ -537,32 +538,64 @@ function HuxiApp() {
     }, 180000);
     return () => clearInterval(iv);
   }, [phase, reminder]);
-  // Generate daily tasks ONCE after checkin - never regenerate same day
+  // Generate daily tasks ONCE after checkin - mood-based with category rotation
   useEffect(() => {
     if (checkinDone && !tasksGenerated) {
       const type = accType === "child" ? "child" : accType === "junior" ? "junior" : "adult";
       const allTasks = [...MICRO[type]];
-      const fresh = allTasks.filter(t => !lastTaskTexts.includes(t));
-      const pool = fresh.length >= maxTasks ? fresh : allTasks;
-      const shuffled = pool.sort(() => Math.random() - 0.5);
-      const picked = [];
-      const usedPrefixes = new Set();
-      for (const t of shuffled) {
-        if (picked.length >= maxTasks) break;
-        const prefix = t.substring(0, 15);
-        if (!usedPrefixes.has(prefix)) {
-          picked.push(t);
-          usedPrefixes.add(prefix);
+      // For adult/junior: tasks are in groups of 15 per category
+      // Categories: ademhaling, lichaam, zintuigen, dankbaarheid, reflectie, positief, beweging, verbinding, natuur, creatief
+      const catSize = type === "adult" ? 15 : (type === "junior" ? 15 : Math.ceil(allTasks.length / 10));
+      const numCats = Math.ceil(allTasks.length / catSize);
+      // Mood-based category weighting
+      var catWeights = new Array(numCats).fill(1);
+      if (type !== "child") {
+        // Calm moods → more reflectie, dankbaarheid, natuur
+        if (dailyMood === "calm" || dailyMood === "happy") {
+          catWeights[3] = 3; catWeights[4] = 2; catWeights[8] = 2; catWeights[9] = 2;
+        }
+        // Stressed moods → more ademhaling, lichaam, zintuigen
+        if (dailyMood === "tense" || dailyMood === "overwhelmed" || dailyMood === "restless") {
+          catWeights[0] = 3; catWeights[1] = 3; catWeights[2] = 2; catWeights[6] = 2;
+        }
+        // Sad/low → more positief, verbinding, dankbaarheid
+        if (dailyMood === "sad" || dailyMood === "low") {
+          catWeights[5] = 3; catWeights[7] = 3; catWeights[3] = 2;
         }
       }
+      // Pick tasks from different categories (no 2 from same category)
+      var usedCats = new Set();
+      var fresh = allTasks.filter(t => !lastTaskTexts.includes(t));
+      var pool = fresh.length >= maxTasks * 3 ? fresh : allTasks;
+      var picked = [];
+      // Weighted shuffle: try categories with higher weights first
+      var catOrder = [];
+      for (var ci = 0; ci < numCats; ci++) {
+        for (var w = 0; w < catWeights[ci]; w++) catOrder.push(ci);
+      }
+      catOrder.sort(() => Math.random() - 0.5);
+      for (var co of catOrder) {
+        if (picked.length >= maxTasks) break;
+        if (usedCats.has(co)) continue;
+        var catStart = co * catSize;
+        var catEnd = Math.min(catStart + catSize, pool.length);
+        var catPool = pool.slice(catStart, catEnd).filter(t => !lastTaskTexts.includes(t));
+        if (catPool.length === 0) catPool = pool.slice(catStart, catEnd);
+        if (catPool.length > 0) {
+          picked.push(catPool[Math.floor(Math.random() * catPool.length)]);
+          usedCats.add(co);
+        }
+      }
+      // Fallback if not enough
       if (picked.length < maxTasks) {
-        for (const t of shuffled) {
+        var remaining = pool.filter(t => !picked.includes(t)).sort(() => Math.random() - 0.5);
+        for (var rt of remaining) {
           if (picked.length >= maxTasks) break;
-          if (!picked.includes(t)) picked.push(t);
+          picked.push(rt);
         }
       }
       const newTasks = picked.map((t, i) => ({ id: Date.now() + i, text: t }));
-      const newLastTaskTexts = [...picked, ...lastTaskTexts].slice(0, 30);
+      const newLastTaskTexts = [...picked, ...lastTaskTexts].slice(0, 60);
       setDailyTasks(newTasks);
       setLastTaskTexts(newLastTaskTexts);
       setTasksGenerated(true);
@@ -612,7 +645,7 @@ function HuxiApp() {
       const newActions = dailyActions + 1;
       const newSessions = totalSessions + 1;
       const newCoinsF = coins + (ex.pts || 10);
-      const newGrowthF = Math.min(1, growth + 0.004);
+      const newGrowthF = Math.min(1, growth + 0.002);
       const newWiF = { ...wi, leaves: wi.leaves + 1 };
       const newExPerEx = { ...exPerEx, [ex.id]: (exPerEx[ex.id] || 0) + 1 };
       // State updates
@@ -799,7 +832,7 @@ function HuxiApp() {
             var wb = getWelcomeBack(d.accType, d.userName, d.growth || 0.01, d.totalSessions || 0, d.wi ? d.wi.streakDays || 0 : 0);
             setWelcomeBackMsg(wb);
             setShowWelcomeBack(true);
-            var loginGrowth = Math.min(1, (d.growth || 0.01) + 0.0005);
+            var loginGrowth = Math.min(1, (d.growth || 0.01) + 0.00025);
             setGrowth(loginGrowth);
           }
           setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
@@ -1130,7 +1163,7 @@ function HuxiApp() {
     const yesterday = new Date(Date.now() - 86400000).toDateString();
     const twoDaysAgo = new Date(Date.now() - 2*86400000).toDateString();
     // Bereken alle nieuwe waarden INLINE zodat de save correct is
-    const newGrowthC = Math.min(1, growth + 0.001);
+    const newGrowthC = Math.min(1, growth + 0.00025);
     let newStreak = wi.streakDays || 0;
     let newShields = streakShields;
     if (lastCheckinDate === today) {
@@ -1178,7 +1211,7 @@ function HuxiApp() {
     setLetterDraft("");
     setShowLetter(false);
     showWorldReward("letter");
-    const newGrowthL2 = microGrow(0.002);
+    const newGrowthL2 = microGrow(0.001);
     const newWi = { ...wi, flowers: wi.flowers + 1, brieven: wi.brieven + 1 };
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 8 : coins;
@@ -1195,7 +1228,7 @@ function HuxiApp() {
     setDiaryDraft("");
     setShowDiary(false);
     showWorldReward("diary");
-    const newGrowthD2 = microGrow(0.0015);
+    const newGrowthD2 = microGrow(0.00075);
     const newWi = { ...wi, grass: wi.grass + 1, dagboeken: wi.dagboeken + 1 };
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
@@ -1214,11 +1247,47 @@ function HuxiApp() {
     resetAllState();
   };
   const tapA = msg => {
+    if (typeof msg !== "string") return;
     setAnimalMsg(msg);
     setTimeout(() => setAnimalMsg(""), 2500);
   };
+  // ═══ VARIED MESSAGE POOLS ═══
+  var pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  var MSG_BREATH_DONE = [
+    "Je ademhaling voor vandaag is klaar — tot morgen 🌿",
+    "Goed gedaan! Je hebt vandaag al geademd 🍃",
+    "Je longen hebben rust verdiend — tot morgen ✨",
+    "Klaar voor vandaag — morgen weer een nieuw moment 🌙",
+    "Je ademhaling zit erop — geniet van de rust 🌊"
+  ];
+  var MSG_TASK_DONE = [
+    "Alle opdrachten van vandaag zijn klaar — tot morgen 🌿",
+    "Je hebt alles gedaan voor vandaag — knap! 🌟",
+    "Opdrachten klaar! Neem de rest van de dag voor jezelf 🍃",
+    "Alles afgerond — morgen wacht er weer iets nieuws ✨",
+    "Goed bezig! Tot morgen met nieuwe opdrachten 💚"
+  ];
+  var MSG_BREATH_COOL = min => [
+    "⏳ Nog " + min + " wachten voor je volgende ademhaling",
+    "⏳ Even geduld — nog " + min + " tot je volgende sessie",
+    "🌿 Neem even rust — nog " + min + " te gaan",
+    "⏳ Je volgende ademhaling is over " + min + " beschikbaar"
+  ];
+  var MSG_TASK_COOL = min => [
+    "⏳ Nog " + min + " wachten voor je volgende opdracht",
+    "⏳ Even pauze — nog " + min + " tot de volgende",
+    "🌱 Neem het rustig — nog " + min + " te gaan",
+    "⏳ Je volgende opdracht komt over " + min
+  ];
+  var MSG_LOCKED = [
+    "🌱 Blijf oefenen — deze oefening komt beschikbaar naarmate je groeit",
+    "🔒 Deze oefening ontgrendel je met meer ervaring",
+    "🌿 Nog even — je bent er bijna!",
+    "✨ Meer oefenen opent nieuwe mogelijkheden",
+    "🌳 Je boom moet nog wat groeien voor deze oefening"
+  ];
   const finTool = () => {
-    const newGrowthT = Math.min(1, growth + 0.002);
+    const newGrowthT = Math.min(1, growth + 0.001);
     const newWiT = {
       ...wi,
       tools: wi.tools + 1,
@@ -1269,7 +1338,7 @@ function HuxiApp() {
   };
   const completeTask = tid => {
     const newTasks = dailyTasks.filter(t => t.id !== tid);
-    const newGrowth = Math.min(1, growth + 0.002);
+    const newGrowth = Math.min(1, growth + 0.001);
     const newWi = { ...wi, tasks: wi.tasks + 1, bushes: wi.bushes + (wi.tasks % 5 === 0 ? 1 : 0) };
     const newActions = dailyActions + 1;
     const newSessions = totalSessions + 1;
@@ -1435,7 +1504,7 @@ function HuxiApp() {
                 var wb2 = getWelcomeBack(data.accType, data.userName, data.growth || 0.01, data.totalSessions || 0, data.wi ? data.wi.streakDays || 0 : 0);
                 setWelcomeBackMsg(wb2);
                 setShowWelcomeBack(true);
-                var loginGrowth2 = Math.min(1, (data.growth || 0.01) + 0.0005);
+                var loginGrowth2 = Math.min(1, (data.growth || 0.01) + 0.00025);
                 setGrowth(loginGrowth2);
               }
               // Sla per-account op in localStorage
@@ -1822,12 +1891,39 @@ function HuxiApp() {
     };
     if (dashClients.length === 0 && !dashLoading && therapistCode) loadClients();
 
-    // Genereer code als die er nog niet is
+    // Auto-herstel: als therapistCode ontbreekt, zoek EENMALIG in Firebase
+    if (!therapistCode && !dashLoading && !codeRecoveryDone.current) {
+      codeRecoveryDone.current = true;
+      (async () => {
+        try {
+          var found = await therapistFindCode(userKey);
+          if (found) {
+            setTherapistCode(found);
+            saveDataRef.current.therapistCode = found;
+            saveData();
+          }
+        } catch(e) { console.warn("Code recovery failed:", e); }
+      })();
+    }
+
+    // Genereer code als die er nog niet is, of herstel verloren code
     const generateCode = async () => {
       if (therapistCode) return;
       try {
+        // Eerst proberen bestaande code te herstellen
+        var existingCode = await therapistFindCode(userKey);
+        if (existingCode) {
+          setTherapistCode(existingCode);
+          saveDataRef.current.therapistCode = existingCode;
+          saveData();
+          setDashMsg("Code hersteld: " + existingCode);
+          setTimeout(() => setDashMsg(""), 3000);
+          return;
+        }
+        // Geen bestaande code gevonden — maak nieuwe aan
         var code = await therapistRegister(userKey, userName);
         setTherapistCode(code);
+        saveDataRef.current.therapistCode = code;
         saveData();
       } catch(e) { setDashMsg("Fout bij aanmaken code"); }
     };
@@ -1973,11 +2069,11 @@ function HuxiApp() {
             E("h3", { style: { color:g, fontSize:16, fontWeight:700, textAlign:"center", marginBottom:14 } }, "Toewijzen aan " + scName),
             E("p", { style: { fontSize:11, color:g5, textAlign:"center", marginBottom:12 } }, "Kies een oefening:"),
             EX.map(ex => E("button", { key:ex.id, className:"rb", style: { background:"rgba(220,117,83,0.05)", borderColor:"rgba(220,117,83,0.15)" },
-              onClick: async () => { await therapistAssignExercise(therapistCode, sc.key, { name: ex.name, id: ex.id }); setAssignClient(null); sc.assignments = [...(sc.assignments||[]), {name:ex.name, id:ex.id, done:false, fbKey:"new_"+Date.now()}]; setDashSelClient({...sc}); setDashMsg("\u2705 " + ex.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
+              onClick: async () => { try { await therapistAssignExercise(therapistCode, sc.key, { name: ex.name, id: ex.id }); setAssignClient(null); sc.assignments = [...(sc.assignments||[]), {name:ex.name, id:ex.id, done:false, fbKey:"new_"+Date.now()}]; setDashSelClient({...sc}); setDashMsg("\u2705 " + ex.name + " toegewezen!"); } catch(e) { setDashMsg("\u274C Toewijzing mislukt"); } setTimeout(() => setDashMsg(""), 3000); }
             }, E("span", null, "\uD83C\uDF2C\uFE0F"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ex.name))),
             custExList.length > 0 && E("p", { style: { fontSize:10, color:g5, marginTop:8, marginBottom:4, fontWeight:600 } }, "Eigen oefeningen:"),
             custExList.map(ce => E("button", { key:ce.id, className:"rb", style: { background:"rgba(112,188,188,0.05)", borderColor:"rgba(112,188,188,0.15)" },
-              onClick: async () => { await therapistAssignExercise(therapistCode, sc.key, { name: ce.name + (ce.desc ? " \u2014 " + ce.desc : ""), id: "custom_" + ce.id }); setAssignClient(null); sc.assignments = [...(sc.assignments||[]), {name:ce.name, done:false, fbKey:"new_"+Date.now()}]; setDashSelClient({...sc}); setDashMsg("\u2705 " + ce.name + " toegewezen!"); setTimeout(() => setDashMsg(""), 3000); }
+              onClick: async () => { try { await therapistAssignExercise(therapistCode, sc.key, { name: ce.name + (ce.desc ? " \u2014 " + ce.desc : ""), id: "custom_" + ce.id }); setAssignClient(null); sc.assignments = [...(sc.assignments||[]), {name:ce.name, done:false, fbKey:"new_"+Date.now()}]; setDashSelClient({...sc}); setDashMsg("\u2705 " + ce.name + " toegewezen!"); } catch(e) { setDashMsg("\u274C Toewijzing mislukt"); } setTimeout(() => setDashMsg(""), 3000); }
             }, E("span", null, "\uD83D\uDCCB"), E("span", { style: { fontSize:12, fontWeight:600, color:g } }, ce.name)))
           )
         ),
@@ -2198,7 +2294,7 @@ function HuxiApp() {
         if (therapistCode) { setLinkMsg("Je code: " + therapistCode); return; }
         setLinkMsg("Code aanmaken...");
         var code = await therapistRegister(userKey, userName);
-        if (code) { setTherapistCode(code); setLinkMsg("Je code: " + code); saveData(); }
+        if (code) { setTherapistCode(code); saveDataRef.current.therapistCode = code; setLinkMsg("Je code: " + code); saveData(); }
         else setLinkMsg("Fout bij aanmaken");
       }
     }, therapistCode ? "\uD83D\uDD11 " + therapistCode : "\uD83D\uDD11 Code aanmaken")],
@@ -2396,7 +2492,7 @@ function HuxiApp() {
         cursor: "pointer",
         filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.15))"
       },
-      onClick: () => tapA("\uD83D\uDC3E " + (PET_EM[buddy] || "") + " loopt met je mee!")
+      onClick: () => tapA(pick(["🐾 " + (PET_EM[buddy]||"") + " loopt met je mee!", "🐾 " + (PET_EM[buddy]||"") + " is blij je te zien!", "💕 " + (PET_EM[buddy]||"") + " geeft je een knuffel!", "🌟 " + (PET_EM[buddy]||"") + " danst vrolijk rond!", "🐾 " + (PET_EM[buddy]||"") + " kijkt je trouw aan", "💤 " + (PET_EM[buddy]||"") + " gaapt en rekt zich uit", "✨ " + (PET_EM[buddy]||"") + " is je beste maatje!", "🎵 " + (PET_EM[buddy]||"") + " maakt een blij geluidje"]))
     }, PET_EM[buddy]),
     ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none" && p !== buddy && petPositions[p] !== false).map(petId => {
       const pos = petPositions[petId] || { x: 10 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 18) % 70, y: 30 + (ownedItems.filter(p => p.startsWith("pet_") && p !== "pet_none").indexOf(petId) * 13) % 35 };
@@ -2413,7 +2509,7 @@ function HuxiApp() {
           try { saveToLocal(saveP); } catch(e2) {}
           if (userKey) firebaseSave(userKey, saveP);
         },
-        onClick: () => tapA("\uD83C\uDF33 " + (PET_EM[petId] || "") + " woont in jouw wereld!"),
+        onClick: () => tapA(pick(["🌳 " + (PET_EM[petId]||"") + " woont in jouw wereld!", "🌿 " + (PET_EM[petId]||"") + " geniet van de rust hier", "☀️ " + (PET_EM[petId]||"") + " zwaait naar je!", "🍃 " + (PET_EM[petId]||"") + " voelt zich thuis", "✨ " + (PET_EM[petId]||"") + " vindt het fijn hier"])),
         style: {
           position: "absolute",
           left: pos.x + "%",
@@ -2859,12 +2955,12 @@ function HuxiApp() {
     },
     onClick: () => {
       if (!canDoBreath) {
-        setWMsg("Je ademhaling voor vandaag is klaar \u2014 tot morgen \uD83C\uDF3F");
+        setWMsg(pick(MSG_BREATH_DONE));
         setTimeout(() => setWMsg(""), 3000);
         return;
       }
       if (breathOnCooldown) {
-        setWMsg("\u23F3 Nog " + fmtMin(breathCooldown) + " wachten voor je volgende ademhaling");
+        setWMsg(pick(MSG_BREATH_COOL(fmtMin(breathCooldown))));
         setTimeout(() => setWMsg(""), 3000);
         return;
       }
@@ -2882,12 +2978,12 @@ function HuxiApp() {
     },
     onClick: () => {
       if (!canDoTask) {
-        setWMsg("Alle opdrachten van vandaag zijn klaar \u2014 tot morgen \uD83C\uDF3F");
+        setWMsg(pick(MSG_TASK_DONE));
         setTimeout(() => setWMsg(""), 3000);
         return;
       }
       if (taskOnCooldown) {
-        setWMsg("\u23F3 Nog " + fmtMin(taskCooldown) + " wachten voor je volgende opdracht");
+        setWMsg(pick(MSG_TASK_COOL(fmtMin(taskCooldown))));
         setTimeout(() => setWMsg(""), 3000);
         return;
       }
@@ -3023,7 +3119,7 @@ function HuxiApp() {
     },
     onClick: () => {
       if (!canDoBreath) {
-        setWMsg("Je ademhaling voor vandaag is klaar \u2014 tot morgen \uD83C\uDF3F");
+        setWMsg(pick(MSG_BREATH_DONE));
         setTimeout(() => setWMsg(""), 3000);
         return;
       }
@@ -3037,6 +3133,24 @@ function HuxiApp() {
       fontWeight: 600
     }
   }, canDoBreath ? "Laat HUXI kiezen" : "Klaar voor vandaag \uD83C\uDF3F")),
+    canDoBreath && /*#__PURE__*/React.createElement("button", {
+    className: "rb",
+    style: {
+      justifyContent: "center",
+      background: "rgba(112,188,188,0.08)",
+      borderColor: "rgba(112,188,188,0.25)",
+      marginBottom: 10
+    },
+    onClick: () => {
+      if (!canDoBreath) { setWMsg(pick(MSG_BREATH_DONE)); setTimeout(() => setWMsg(""), 3000); return; }
+      var ex = pickEx();
+      launchEx(ex, 10);
+      setShowPicker(false);
+    }
+  }, /*#__PURE__*/React.createElement("span", null, "\u26A1"), /*#__PURE__*/React.createElement("div", { style: { textAlign: "left" } },
+    /*#__PURE__*/React.createElement("span", { style: { color: g, fontSize: 14, fontWeight: 600, display: "block" } }, "Snelle reset (~1,5 min)"),
+    /*#__PURE__*/React.createElement("span", { style: { color: g5, fontSize: 10 } }, "Korte sessie om even te pauzeren")
+  )),
     accType === "junior" && totalSessions >= 5 && /*#__PURE__*/React.createElement("p", {
       style: { color: "rgba(61,74,88,0.35)", fontSize: 10, textAlign: "center", margin: "-6px 0 8px", fontStyle: "italic" }
     }, dailyMood === "tense" || dailyMood === "overwhelmed" || dailyMood === "restless"
@@ -3056,7 +3170,7 @@ function HuxiApp() {
       },
       onClick: () => {
         if (!unlocked) {
-          setWMsg("\uD83C\uDF31 Blijf oefenen — deze oefening komt beschikbaar naarmate je groeit");
+          setWMsg(pick(MSG_LOCKED));
           setTimeout(() => setWMsg(""), 3000);
           return;
         }
@@ -4094,7 +4208,7 @@ function HuxiApp() {
           setOwnedItems(newOwned);
           if (grp.k !== 'pet') setAvatar(newAvatar);
           if (grp.k === 'pet') setBuddy(item.id);
-          var newGrowthShop = microGrow(0.0008);
+          var newGrowthShop = microGrow(0.0004);
           const saveNow = {
             accType, reason, experience, treeName, userName, growth: newGrowthShop,
             coins: item.p > 0 ? coins - item.p : coins,
@@ -4615,7 +4729,7 @@ function HuxiApp() {
               const newGoals = [newGoal, ...goals];
               setGoals(newGoals);
               setDraft("");
-              var newGrowthGoal = microGrow(0.001);
+              var newGrowthGoal = microGrow(0.0005);
               const saveG = { accType, reason, experience, treeName, userName, growth: newGrowthGoal, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
               try { saveToLocal(saveG); } catch(e2) {}
               if (userKey) firebaseSave(userKey, saveG);
@@ -4744,7 +4858,7 @@ function HuxiApp() {
       if (therapistCode) { setLinkMsg("Je code: " + therapistCode); return; }
       setLinkMsg("Code aanmaken...");
       var code = await therapistRegister(userKey, userName);
-      if (code) { setTherapistCode(code); setLinkMsg("Je code: " + code); saveData(); }
+      if (code) { setTherapistCode(code); saveDataRef.current.therapistCode = code; setLinkMsg("Je code: " + code); saveData(); }
       else setLinkMsg("Fout bij aanmaken");
     }
   }, therapistCode ? "\uD83D\uDD11 " + therapistCode : "\uD83D\uDD11 Code aanmaken")] :
@@ -4752,7 +4866,7 @@ function HuxiApp() {
     linkedTherapist
       ? /*#__PURE__*/React.createElement("button", { className: "tb", style: { color: "#E07850", fontSize: 11 }, onClick: async () => {
           await clientUnlinkTherapist(userKey, linkedTherapist);
-          setLinkedTherapist(null); setLinkMsg("Ontkoppeld"); saveData();
+          setLinkedTherapist(null); saveDataRef.current.linkedTherapist = null; setLinkMsg("Ontkoppeld"); saveData();
         } }, "\u274C Ontkoppelen")
       : /*#__PURE__*/React.createElement(React.Fragment, null,
           /*#__PURE__*/React.createElement("input", { type: "text", maxLength: 6, placeholder: "Code", value: linkInput,
@@ -4765,7 +4879,7 @@ function HuxiApp() {
             var th = await therapistLookup(linkInput);
             if (!th) { setLinkMsg("Code niet gevonden"); return; }
             var ok = await clientLinkToTherapist(userKey, linkInput);
-            if (ok) { setLinkedTherapist(linkInput); setLinkMsg("Gekoppeld aan " + th.name); setLinkInput(""); saveData(); }
+            if (ok) { setLinkedTherapist(linkInput); saveDataRef.current.linkedTherapist = linkInput; setLinkMsg("Gekoppeld aan " + th.name); setLinkInput(""); saveData(); }
             else setLinkMsg("Koppeling mislukt");
           } }, "\u2705 Koppel"))
   )],
