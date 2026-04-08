@@ -2457,7 +2457,7 @@ function HuxiApp() {
     onClick: () => setShowSett(false)
   }, "Sluiten")))
 
-  );
+  ));
   }
 
 
