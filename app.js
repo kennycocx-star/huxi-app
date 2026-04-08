@@ -2228,6 +2228,31 @@ function HuxiApp() {
       })()
     ),
 
+    // --- SUMMARY STATISTICS ---
+    dashClients.length > 0 && E("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 } },
+      (() => {
+        var activeCount = dashClients.filter(c => c.lastDay === new Date().toDateString()).length;
+        var moodClients = dashClients.filter(c => c.dailyMood);
+        var moodMap = { geweldig:5, blij:4, ok:3, meh:2, slecht:1 };
+        var avgMood = moodClients.length > 0 ? (moodClients.reduce((s,c) => s + (moodMap[c.dailyMood] || 3), 0) / moodClients.length).toFixed(1) : "-";
+        var openTasks = dashClients.reduce((s,c) => s + ((c.assignments || []).filter(a => !a.done).length), 0);
+        var careCount = dashClients.filter(c => needsCare(c)).length;
+        var cards = [
+          ["\uD83D\uDFE2", activeCount + "/" + dashClients.length, "Actief vandaag"],
+          ["\uD83D\uDE0A", avgMood, "Gem. stemming"],
+          ["\uD83D\uDCCB", openTasks, "Open opdrachten"],
+          ["\u26A0\uFE0F", careCount, "Aandacht nodig"]
+        ];
+        return cards.map((c, i) => E("div", { key:i, style: { background:"white", borderRadius:12, padding:"12px 14px", boxShadow:"0 2px 8px rgba(0,0,0,0.05)" } },
+          E("div", { style: { display:"flex", alignItems:"center", gap:6, marginBottom:4 } },
+            E("span", { style: { fontSize:14 } }, c[0]),
+            E("span", { style: { fontSize:18, fontWeight:800, color:g } }, c[1])
+          ),
+          E("p", { style: { fontSize:9, color:g5, margin:0 } }, c[2])
+        ));
+      })()
+    ),
+
     // --- CLIËNTENLIJST ---
     E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
       E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 } },
@@ -2314,8 +2339,7 @@ function HuxiApp() {
           } }, "Toevoegen")
         )
       )
-    )
-  )),
+    ),
 
     // --- FEEDBACK OVERZICHT (alleen voor admin) ---
     userKey === "kenny_huxi_4250" && E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
@@ -2351,7 +2375,7 @@ function HuxiApp() {
           }, "\uD83C\uDF1F Opgelost")
         )
       ))
-    ),
+    )),
 
   // ═══ DELETE CONFIRM OVERLAY (DASHBOARD) ═══
   showDeleteConfirm && E("div", {
