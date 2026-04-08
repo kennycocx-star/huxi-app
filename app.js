@@ -308,6 +308,7 @@ function HuxiApp() {
   const [noteSaved, setNoteSaved] = useState(false);
   const [sentMessages, setSentMessages] = useState([]);
   const codeRecoveryDone = useRef(false);
+  const dashInitialLoadDone = useRef(false);
   const [msgInput, setMsgInput] = useState("");
   const [assignClient, setAssignClient] = useState(null);
   // ═══ CLIËNT OPDRACHTEN ═══
@@ -437,6 +438,7 @@ function HuxiApp() {
     // Therapeut-specifiek
     setTherapistCode(null); setTherapistClients([]); setTherapistLoading(false);
     setDashLoading(false); setDashClients([]); setDashView("overview"); setDashSelClient(null); setDashMsg(""); setMsgInput(""); setAssignClient(null);
+    dashInitialLoadDone.current = false;
     setThClients([]); setSelClient(null); setShowAssign(false);
     setShowAddEx(false); setCustExName(""); setCustExDesc(""); setCustExList([]);
     setCareAlert(true); setThAgenda([]); setShowAgendaAdd(false); setAgClient(""); setAgDate(""); setAgTime("");
@@ -1900,7 +1902,10 @@ function HuxiApp() {
       } catch(e) { setDashClients([]); }
       setDashLoading(false);
     };
-    if (dashClients.length === 0 && !dashLoading && therapistCode) loadClients();
+    if (dashClients.length === 0 && !dashLoading && therapistCode && !dashInitialLoadDone.current) {
+      dashInitialLoadDone.current = true;
+      loadClients();
+    }
 
     // Auto-herstel: als therapistCode ontbreekt, zoek EENMALIG in Firebase
     if (!therapistCode && !dashLoading && !codeRecoveryDone.current) {
