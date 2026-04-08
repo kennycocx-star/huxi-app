@@ -256,6 +256,11 @@ function HuxiApp() {
   const [showMem, setShowMem] = useState(false);
   const [memTxt, setMemTxt] = useState("");
   const [showSett, setShowSett] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [fbType, setFbType] = useState("suggestie");
+  const [fbMsg, setFbMsg] = useState("");
+  const [fbSending, setFbSending] = useState(false);
+  const [fbDone, setFbDone] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showLetter, setShowLetter] = useState(false);
   const [letterDraft, setLetterDraft] = useState("");
@@ -296,6 +301,9 @@ function HuxiApp() {
   const [dashView, setDashView] = useState("overview");
   const [dashSelClient, setDashSelClient] = useState(null);
   const [dashMsg, setDashMsg] = useState("");
+  const [dashFeedback, setDashFeedback] = useState([]);
+  const [dashFbLoading, setDashFbLoading] = useState(false);
+  const [showDashFb, setShowDashFb] = useState(false);
   const codeRecoveryDone = useRef(false);
   const [msgInput, setMsgInput] = useState("");
   const [assignClient, setAssignClient] = useState(null);
@@ -2232,6 +2240,42 @@ function HuxiApp() {
       )
     )
   )),
+
+    // --- FEEDBACK OVERZICHT (alleen voor admin) ---
+    userKey === "kenny_huxi_4250" && E("div", { style: { background:"white", borderRadius:16, padding:16, marginBottom:16, boxShadow:"0 2px 10px rgba(0,0,0,0.06)" } },
+      E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 } },
+        E("h3", { style: { fontSize:14, fontWeight:700, color:g, margin:0 } }, "\uD83D\uDCDD Feedback" + (dashFeedback.length > 0 ? " (" + dashFeedback.filter(f => f.status === "nieuw").length + " nieuw)" : "")),
+        E("button", { style: { background:"rgba(220,117,83,0.1)", border:"1px solid rgba(220,117,83,0.3)", borderRadius:8, padding:"4px 10px", fontSize:10, color:g, cursor:"pointer", fontFamily:"inherit" },
+          onClick: async () => { setDashFbLoading(true); var fb = await feedbackLoadAll(); setDashFeedback(fb); setDashFbLoading(false); setShowDashFb(!showDashFb); }
+        }, showDashFb ? "\uD83D\uDD3C Inklappen" : "\uD83D\uDCE5 Laden")
+      ),
+      dashFbLoading && E("p", { style: { fontSize:12, color:g5, textAlign:"center", padding:"8px 0" } }, "Feedback laden..."),
+      showDashFb && !dashFbLoading && dashFeedback.length === 0 && E("p", { style: { fontSize:12, color:g5, textAlign:"center", padding:"8px 0" } }, "Nog geen feedback ontvangen."),
+      showDashFb && !dashFbLoading && dashFeedback.map((fb, i) => E("div", { key: fb.fbId, style: {
+        padding:"10px 0", borderBottom: i < dashFeedback.length-1 ? "1px solid rgba(61,74,88,0.08)" : "none"
+      } },
+        E("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 } },
+          E("div", { style: { display:"flex", gap:6, alignItems:"center" } },
+            E("span", { style: { fontSize:14 } }, fb.type === "bug" ? "\uD83D\uDC1B" : fb.type === "suggestie" ? "\uD83D\uDCA1" : "\uD83D\uDCAC"),
+            E("span", { style: { fontSize:12, fontWeight:600, color:g } }, fb.userName || "Anoniem"),
+            E("span", { style: { fontSize:9, padding:"2px 6px", borderRadius:6, fontWeight:600,
+              background: fb.status === "nieuw" ? "rgba(220,117,83,0.12)" : fb.status === "bekeken" ? "rgba(112,188,188,0.12)" : "rgba(76,175,80,0.12)",
+              color: fb.status === "nieuw" ? "#DC7553" : fb.status === "bekeken" ? "#70BCBC" : "#4CAF50"
+            } }, fb.status)
+          ),
+          E("span", { style: { fontSize:9, color:g5 } }, new Date(fb.sentAt).toLocaleDateString("nl-BE", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" }))
+        ),
+        E("p", { style: { fontSize:12, color:g, margin:"4px 0 6px", lineHeight:1.4 } }, fb.message),
+        fb.status === "nieuw" && E("div", { style: { display:"flex", gap:6 } },
+          E("button", { style: { background:"rgba(112,188,188,0.1)", border:"1px solid rgba(112,188,188,0.3)", borderRadius:6, padding:"3px 8px", fontSize:9, color:g, cursor:"pointer", fontFamily:"inherit" },
+            onClick: async () => { await feedbackUpdateStatus(fb.fbId, "bekeken"); setDashFeedback(p => p.map(f => f.fbId === fb.fbId ? {...f, status:"bekeken"} : f)); }
+          }, "\u2705 Bekeken"),
+          E("button", { style: { background:"rgba(76,175,80,0.1)", border:"1px solid rgba(76,175,80,0.3)", borderRadius:6, padding:"3px 8px", fontSize:9, color:g, cursor:"pointer", fontFamily:"inherit" },
+            onClick: async () => { await feedbackUpdateStatus(fb.fbId, "opgelost"); setDashFeedback(p => p.map(f => f.fbId === fb.fbId ? {...f, status:"opgelost"} : f)); }
+          }, "\uD83C\uDF1F Opgelost")
+        )
+      ))
+    ),
 
   // ═══ DELETE CONFIRM OVERLAY (DASHBOARD) ═══
   showDeleteConfirm && E("div", {
@@ -4889,6 +4933,11 @@ function HuxiApp() {
     className: "tb",
     onClick: () => { setShowTherapistPanel(true); setShowSett(false); }
   }, "\uD83D\uDCCA Cliënten bekijken")] : null,
+  ["Feedback geven", /*#__PURE__*/React.createElement("button", {
+    key: "fb",
+    className: "tb",
+    onClick: () => { setShowFeedback(true); setShowSett(false); }
+  }, "\uD83D\uDCDD Feedback")],
   ["Nieuw begin", /*#__PURE__*/React.createElement("button", {
     key: "del",
     className: "tb",
@@ -4917,6 +4966,61 @@ function HuxiApp() {
     },
     onClick: () => setShowSett(false)
   }, "Sluiten"))),
+
+  // ═══ FEEDBACK FORMULIER OVERLAY ═══
+  showFeedback && /*#__PURE__*/React.createElement("div", {
+    style: { position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:998, background:"rgba(0,0,0,0.4)", backdropFilter:"blur(5px)", display:"flex", alignItems:"center", justifyContent:"center" },
+    onClick: () => { setShowFeedback(false); setFbDone(false); setFbMsg(""); setFbType("suggestie"); }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fadeIn",
+    style: { background:"rgba(255,255,255,0.97)", borderRadius:24, padding:24, width:"85%", maxWidth:360, boxShadow:"0 20px 60px rgba(0,0,0,0.3)" },
+    onClick: e => e.stopPropagation()
+  },
+    fbDone
+      ? /*#__PURE__*/React.createElement("div", { style: { textAlign:"center", padding:"20px 0" } },
+          /*#__PURE__*/React.createElement("div", { style: { fontSize:48, marginBottom:12 } }, "\uD83D\uDE4F"),
+          /*#__PURE__*/React.createElement("h3", { style: { color:g, fontSize:18, fontWeight:700, margin:"0 0 8px" } }, "Bedankt!"),
+          /*#__PURE__*/React.createElement("p", { style: { color:g5, fontSize:13, margin:"0 0 20px", lineHeight:1.5 } }, "Je feedback helpt HUXI beter te maken."),
+          /*#__PURE__*/React.createElement("button", { className:"mb", style: { padding:"11px 32px" }, onClick: () => { setShowFeedback(false); setFbDone(false); setFbMsg(""); setFbType("suggestie"); } }, "Sluiten")
+        )
+      : /*#__PURE__*/React.createElement(React.Fragment, null,
+          /*#__PURE__*/React.createElement("h3", { style: { color:g, fontSize:18, fontWeight:700, textAlign:"center", margin:"0 0 4px" } }, "\uD83D\uDCDD Feedback"),
+          /*#__PURE__*/React.createElement("p", { style: { color:g5, fontSize:12, textAlign:"center", margin:"0 0 16px" } }, "Laat ons weten wat je denkt!"),
+          /*#__PURE__*/React.createElement("div", { style: { display:"flex", gap:8, marginBottom:16 } },
+            ["bug", "suggestie", "algemeen"].map(t => /*#__PURE__*/React.createElement("button", {
+              key: t,
+              style: {
+                flex:1, padding:"8px 0", borderRadius:12, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", border: fbType === t ? "2px solid #DC7553" : "2px solid rgba(61,74,88,0.12)",
+                background: fbType === t ? "rgba(220,117,83,0.08)" : "transparent", color: fbType === t ? "#DC7553" : g5
+              },
+              onClick: () => setFbType(t)
+            }, t === "bug" ? "\uD83D\uDC1B Bug" : t === "suggestie" ? "\uD83D\uDCA1 Idee" : "\uD83D\uDCAC Algemeen"))
+          ),
+          /*#__PURE__*/React.createElement("textarea", {
+            style: { width:"100%", padding:"12px 14px", borderRadius:14, border:"2px solid rgba(220,117,83,0.15)", background:"rgba(245,247,250,0.8)", color:g, fontSize:14, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" },
+            placeholder: fbType === "bug" ? "Beschrijf wat er misging..." : fbType === "suggestie" ? "Wat zou je graag willen zien?" : "Vertel ons wat je denkt...",
+            value: fbMsg,
+            onChange: e => setFbMsg(e.target.value)
+          }),
+          /*#__PURE__*/React.createElement("div", { style: { display:"flex", gap:10, marginTop:16 } },
+            /*#__PURE__*/React.createElement("button", {
+              style: { flex:1, background:"none", border:"1px solid rgba(61,74,88,0.2)", borderRadius:14, padding:"12px 0", color:g, fontSize:13, cursor:"pointer", fontFamily:"inherit" },
+              onClick: () => { setShowFeedback(false); setFbMsg(""); setFbType("suggestie"); }
+            }, "Annuleren"),
+            /*#__PURE__*/React.createElement("button", {
+              className: "mb",
+              style: { flex:1, padding:"12px 0", opacity: !fbMsg.trim() || fbSending ? 0.5 : 1 },
+              onClick: async () => {
+                if (!fbMsg.trim() || fbSending) return;
+                setFbSending(true);
+                var ok = await feedbackSend(userKey, userName || treeName, { type: fbType, message: fbMsg.trim(), page: phase });
+                setFbSending(false);
+                if (ok) { setFbDone(true); setFbMsg(""); }
+              }
+            }, fbSending ? "Versturen..." : "Verstuur")
+          )
+        )
+  )),
 
   // ═══ CLIËNT: OPDRACHTEN VAN THERAPEUT ═══
   showTherapistBox && (() => {

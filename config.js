@@ -207,3 +207,46 @@ var therapistLoadClients = async (therapistCode) => {
     return clients;
   } catch(e) { console.warn("Cliënten laden fout:", e); return []; }
 };
+
+// ═══ FEEDBACK SYSTEEM ═══
+
+// Gebruiker stuurt feedback (bug, suggestie, of algemeen)
+var feedbackSend = async (userKey, userName, feedback) => {
+  try {
+    var id = Date.now();
+    await fetch(FIREBASE_URL + "/feedback/" + id + ".json", {
+      method: "PUT",
+      body: JSON.stringify({
+        userKey: userKey,
+        userName: userName || "Anoniem",
+        type: feedback.type || "algemeen",
+        message: feedback.message,
+        page: feedback.page || "",
+        sentAt: id,
+        status: "nieuw"
+      })
+    });
+    return true;
+  } catch(e) { console.warn("Feedback sturen fout:", e); return false; }
+};
+
+// Therapeut/admin laadt alle feedback
+var feedbackLoadAll = async () => {
+  try {
+    var res = await fetch(FIREBASE_URL + "/feedback.json");
+    var data = await res.json();
+    if (!data) return [];
+    return Object.keys(data).map(k => ({ ...data[k], fbId: k })).sort((a,b) => b.sentAt - a.sentAt);
+  } catch(e) { console.warn("Feedback laden fout:", e); return []; }
+};
+
+// Therapeut markeert feedback als afgehandeld
+var feedbackUpdateStatus = async (fbId, newStatus) => {
+  try {
+    await fetch(FIREBASE_URL + "/feedback/" + fbId + ".json", {
+      method: "PATCH",
+      body: JSON.stringify({ status: newStatus })
+    });
+    return true;
+  } catch(e) { console.warn("Feedback status update fout:", e); return false; }
+};
