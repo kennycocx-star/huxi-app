@@ -224,6 +224,8 @@ function HuxiApp() {
   const [season, setSeason] = useState(getRealSeason());
   const [tod, setTod] = useState(getRealTod());
   const [growth, setGrowth] = useState(0.01);
+  const DAILY_GROWTH_CAP = 0.008; // Max groei per dag — zorgt dat de boom ~4 maanden duurt bij intensief gebruik
+  const dailyGrowthGainedRef = useRef(0); // Bijhouden hoeveel groei er vandaag al bij is gekomen
   // Granular world items - each earned one by one
   const [wi, setWi] = useState({
     leaves: 0,
@@ -512,7 +514,8 @@ function HuxiApp() {
       setTasksGenerated(false);
       setDailyBreaths(0);
       setDailyMood(null); // FIX C1: reset mood bij nieuwe dag
-      const resetData = { ...saveDataRef.current, lastDay: today, dailyActions: 0, checkinDone: false, dailyTasks: [], tasksGenerated: false, dailyBreaths: 0, dailyMood: null, wi: saveDataRef.current.wi, lastBreathTime: null, lastTaskTime: null };
+      dailyGrowthGainedRef.current = 0; // Reset dagelijkse groeicap
+      const resetData = { ...saveDataRef.current, lastDay: today, dailyActions: 0, checkinDone: false, dailyTasks: [], tasksGenerated: false, dailyBreaths: 0, dailyMood: null, dailyGrowthGained: 0, wi: saveDataRef.current.wi, lastBreathTime: null, lastTaskTime: null };
       try { saveToLocal(resetData); } catch(e) {}
       if (saveDataRef.current.userKey) firebaseSave(saveDataRef.current.userKey, resetData);
     }
@@ -613,7 +616,7 @@ function HuxiApp() {
       setLastTaskTexts(newLastTaskTexts);
       setTasksGenerated(true);
       // FIX C2: directe save zodat taken niet verloren gaan bij sluiten
-      const saveTaskGen = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts: newLastTaskTexts, dailyBreaths, dailyTasks: newTasks, tasksGenerated: true, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+      const saveTaskGen = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts: newLastTaskTexts, dailyBreaths, dailyTasks: newTasks, tasksGenerated: true, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
       try { saveToLocal(saveTaskGen); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveTaskGen);
     }
@@ -658,7 +661,9 @@ function HuxiApp() {
       const newActions = dailyActions + 1;
       const newSessions = totalSessions + 1;
       const newCoinsF = coins + (ex.pts || 10);
-      const newGrowthF = Math.min(1, growth + 0.002);
+      const breathAdd = Math.min(0.002, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+      dailyGrowthGainedRef.current += breathAdd;
+      const newGrowthF = Math.min(1, growth + breathAdd);
       const newWiF = { ...wi, leaves: wi.leaves + 1 };
       const newExPerEx = { ...exPerEx, [ex.id]: (exPerEx[ex.id] || 0) + 1 };
       // State updates
@@ -677,7 +682,7 @@ function HuxiApp() {
       setLastBreathTime(Date.now());
       showWorldReward("breath");
       // DIRECTE SAVE - geen delay
-      const saveF = { accType, reason, experience, treeName, userName, growth: newGrowthF, coins: newCoinsF, ownedItems, avatar, letters, diary, seenEx, lastExId: ex.id, dailyMood, totalSessions: newSessions, wi: newWiF, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: newBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx: newExPerEx, therapistCode, linkedTherapist };
+      const saveF = { accType, reason, experience, treeName, userName, growth: newGrowthF, coins: newCoinsF, ownedItems, avatar, letters, diary, seenEx, lastExId: ex.id, dailyMood, totalSessions: newSessions, wi: newWiF, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: newBreaths, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx: newExPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
       try { saveToLocal(saveF); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveF);
     };
@@ -753,7 +758,8 @@ function HuxiApp() {
       dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
       lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx,
       userKey, goalPeriod, reminder, lastBreathTime, lastTaskTime, // FIX M2+M3: goalPeriod en reminder opgeslagen
-      therapistCode, linkedTherapist
+      therapistCode, linkedTherapist,
+      dailyGrowthGained: dailyGrowthGainedRef.current
     };
   });
   var saveData = () => {
@@ -795,6 +801,7 @@ function HuxiApp() {
             setDailyTasks(d.dailyTasks || []);
             setTasksGenerated(d.tasksGenerated || false);
             setCheckinDone(d.checkinDone || false);
+            dailyGrowthGainedRef.current = d.dailyGrowthGained || 0;
           } else {
             setLastDay(today);
             setDailyActions(0);
@@ -803,6 +810,7 @@ function HuxiApp() {
             setTasksGenerated(false);
             setCheckinDone(false);
             setDailyMood(null);
+            dailyGrowthGainedRef.current = 0;
           }
           setOwnedItems(d.ownedItems || ["hat_none", "shirt_none", "pants_none", "shoes_none", "skin_light", "hair_short", "hairc_brown", "acc_none", "pet_none"]);
           setAvatar(d.avatar || {
@@ -845,7 +853,9 @@ function HuxiApp() {
             var wb = getWelcomeBack(d.accType, d.userName, d.growth || 0.01, d.totalSessions || 0, d.wi ? d.wi.streakDays || 0 : 0);
             setWelcomeBackMsg(wb);
             setShowWelcomeBack(true);
-            var loginGrowth = Math.min(1, (d.growth || 0.01) + 0.00025);
+            const loginAdd1 = Math.min(0.00025, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+            dailyGrowthGainedRef.current += loginAdd1;
+            var loginGrowth = Math.min(1, (d.growth || 0.01) + loginAdd1);
             setGrowth(loginGrowth);
           }
           setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
@@ -950,7 +960,10 @@ function HuxiApp() {
 
   // ═══ MICRO GROWTH — kleine groei bij elke actie ═══
   var microGrow = (amount) => {
-    var ng = Math.min(1, growth + amount);
+    const remaining = Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current);
+    const actual = Math.min(amount, remaining);
+    var ng = Math.min(1, growth + actual);
+    dailyGrowthGainedRef.current += actual;
     setGrowth(ng);
     return ng;
   };
@@ -1176,7 +1189,9 @@ function HuxiApp() {
     const yesterday = new Date(Date.now() - 86400000).toDateString();
     const twoDaysAgo = new Date(Date.now() - 2*86400000).toDateString();
     // Bereken alle nieuwe waarden INLINE zodat de save correct is
-    const newGrowthC = Math.min(1, growth + 0.00025);
+    const checkinAdd = Math.min(0.00025, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+    dailyGrowthGainedRef.current += checkinAdd;
+    const newGrowthC = Math.min(1, growth + checkinAdd);
     let newStreak = wi.streakDays || 0;
     let newShields = streakShields;
     if (lastCheckinDate === today) {
@@ -1203,7 +1218,7 @@ function HuxiApp() {
     setMoodHistory(newMoodH);
     if (accType === "child" || accType === "junior") setCoins(newCoinsC);
     // Inline save met nieuwe waarden (geen stale closure probleem)
-    const saveCI = { accType, reason, experience, treeName, userName, growth: newGrowthC, coins: newCoinsC, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood: id, totalSessions, wi: newWiC, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone: true, lastCheckinDate: today, streakShields: newShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx, therapistCode, linkedTherapist };
+    const saveCI = { accType, reason, experience, treeName, userName, growth: newGrowthC, coins: newCoinsC, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood: id, totalSessions, wi: newWiC, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone: true, lastCheckinDate: today, streakShields: newShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
     try { saveToLocal(saveCI); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveCI);
   };
@@ -1229,7 +1244,7 @@ function HuxiApp() {
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 8 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveL = { accType, reason, experience, treeName, userName, growth: newGrowthL2, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+    const saveL = { accType, reason, experience, treeName, userName, growth: newGrowthL2, coins: newCoins, ownedItems, avatar, letters: newLetters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
     try { saveToLocal(saveL); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveL);
   };
@@ -1246,7 +1261,7 @@ function HuxiApp() {
     setWi(newWi);
     const newCoins = (accType === "child" || accType === "junior") ? coins + 5 : coins;
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
-    const saveD = { accType, reason, experience, treeName, userName, growth: newGrowthD2, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+    const saveD = { accType, reason, experience, treeName, userName, growth: newGrowthD2, coins: newCoins, ownedItems, avatar, letters, diary: newDiary, seenEx, lastExId, dailyMood, totalSessions, wi: newWi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
     try { saveToLocal(saveD); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveD);
   };
@@ -1300,7 +1315,9 @@ function HuxiApp() {
     "🌳 Je boom moet nog wat groeien voor deze oefening"
   ];
   const finTool = () => {
-    const newGrowthT = Math.min(1, growth + 0.001);
+    const toolAdd = Math.min(0.001, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+    dailyGrowthGainedRef.current += toolAdd;
+    const newGrowthT = Math.min(1, growth + toolAdd);
     const newWiT = {
       ...wi,
       tools: wi.tools + 1,
@@ -1318,7 +1335,7 @@ function HuxiApp() {
     setDailyActions(newActionsT);
     setTotalSessions(newSessionsT);
     if (accType === "child" || accType === "junior") setCoins(newCoinsT);
-    const saveTL = { accType, reason, experience, treeName, userName, growth: newGrowthT, coins: newCoinsT, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessionsT, wi: newWiT, lastDay, dailyActions: newActionsT, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+    const saveTL = { accType, reason, experience, treeName, userName, growth: newGrowthT, coins: newCoinsT, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessionsT, wi: newWiT, lastDay, dailyActions: newActionsT, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
     try { saveToLocal(saveTL); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveTL);
   };
@@ -1351,7 +1368,9 @@ function HuxiApp() {
   };
   const completeTask = tid => {
     const newTasks = dailyTasks.filter(t => t.id !== tid);
-    const newGrowth = Math.min(1, growth + 0.001);
+    const taskAdd = Math.min(0.001, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+    dailyGrowthGainedRef.current += taskAdd;
+    const newGrowth = Math.min(1, growth + taskAdd);
     const newWi = { ...wi, tasks: wi.tasks + 1, bushes: wi.bushes + (wi.tasks % 5 === 0 ? 1 : 0) };
     const newActions = dailyActions + 1;
     const newSessions = totalSessions + 1;
@@ -1365,7 +1384,7 @@ function HuxiApp() {
     setTotalSessions(newSessions);
     if (accType === "child" || accType === "junior") setCoins(newCoins); // FIX H5: consistent met save
     showWorldReward("task");
-    const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+    const saveT = { accType, reason, experience, treeName, userName, growth: newGrowth, coins: newCoins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions: newSessions, wi: newWi, lastDay, dailyActions: newActions, lastTaskTexts, dailyBreaths: dailyBreaths, dailyTasks: newTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
     try { saveToLocal(saveT); } catch(e) {}
     if (userKey) firebaseSave(userKey, saveT);
   };
@@ -1507,17 +1526,21 @@ function HuxiApp() {
                 setLastDay(today); setDailyActions(data.dailyActions || 0);
                 setDailyBreaths(data.dailyBreaths || 0); setDailyTasks(data.dailyTasks || []);
                 setTasksGenerated(data.tasksGenerated || false); setCheckinDone(data.checkinDone || false);
+                dailyGrowthGainedRef.current = data.dailyGrowthGained || 0;
               } else {
                 setLastDay(today); setDailyActions(0); setDailyBreaths(0);
                 setDailyTasks([]); setTasksGenerated(false); setCheckinDone(false);
                 setDailyMood(null);
+                dailyGrowthGainedRef.current = 0;
               }
               if (data.lastTaskTexts) setLastTaskTexts(data.lastTaskTexts);
               if (data.accType !== "therapist") {
                 var wb2 = getWelcomeBack(data.accType, data.userName, data.growth || 0.01, data.totalSessions || 0, data.wi ? data.wi.streakDays || 0 : 0);
                 setWelcomeBackMsg(wb2);
                 setShowWelcomeBack(true);
-                var loginGrowth2 = Math.min(1, (data.growth || 0.01) + 0.00025);
+                const loginAdd2 = Math.min(0.00025, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+                dailyGrowthGainedRef.current += loginAdd2;
+                var loginGrowth2 = Math.min(1, (data.growth || 0.01) + loginAdd2);
                 setGrowth(loginGrowth2);
               }
               // Sla per-account op in localStorage
@@ -1806,7 +1829,7 @@ function HuxiApp() {
       setPhase(isT ? "therapist_dash" : "world");
       setGrowth(0.01);
       if (!isT) setShowWelcome(true);
-      const saveOB = { accType, reason, experience, treeName: nameIn.trim() || (accType === "child" ? "Sprout" : "Mijn Boom"), userName: userNameIn.trim() || "", growth: 0.01, coins, ownedItems, avatar, letters: [], diary: [], seenEx: [], lastExId: null, dailyMood: null, totalSessions: 0, wi, lastDay, dailyActions: 0, lastTaskTexts: [], dailyBreaths: 0, dailyTasks: [], tasksGenerated: false, checkinDone: false, lastCheckinDate: null, streakShields: 0, secretQ: plantSecQ, secretA: plantSecA.trim().toLowerCase(), goals: [], buddy: "pet_none", moodHistory: [], petPositions: {}, exPerEx: {} };
+      const saveOB = { accType, reason, experience, treeName: nameIn.trim() || (accType === "child" ? "Sprout" : "Mijn Boom"), userName: userNameIn.trim() || "", growth: 0.01, coins, ownedItems, avatar, letters: [], diary: [], seenEx: [], lastExId: null, dailyMood: null, totalSessions: 0, wi, lastDay, dailyActions: 0, lastTaskTexts: [], dailyBreaths: 0, dailyTasks: [], tasksGenerated: false, checkinDone: false, lastCheckinDate: null, streakShields: 0, secretQ: plantSecQ, secretA: plantSecA.trim().toLowerCase(), goals: [], buddy: "pet_none", moodHistory: [], petPositions: {}, exPerEx: {}, dailyGrowthGained: 0 };
       try { saveToLocal(saveOB); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveOB);
     };
@@ -2209,29 +2232,6 @@ function HuxiApp() {
       dashMsg && E("p", { style: { color:"white", fontSize:12, fontWeight:600, margin:"8px 0 0" } }, dashMsg)
     ),
 
-    // --- SAMENVATTEND OVERZICHT ---
-    dashClients.length > 0 && E("div", { style: { display:"flex", gap:8, marginBottom:16 } },
-      (() => {
-        var activeCount = dashClients.filter(cl => cl.lastDay === new Date().toDateString()).length;
-        var careCount = dashClients.filter(cl => needsCare(cl)).length;
-        var totalOpen = dashClients.reduce((s, cl) => s + (cl.assignments || []).filter(a => !a.done).length, 0);
-        var avgMood = dashClients.filter(cl => cl.dailyMood).length > 0
-          ? (dashClients.filter(cl => cl.dailyMood).reduce((s, cl) => s + ({calm:5,ok:4,restless:3,tense:2,overwhelmed:1,great:5,good:4,bad:2,terrible:1}[cl.dailyMood] || 3), 0) / dashClients.filter(cl => cl.dailyMood).length)
-          : 0;
-        var moodLabel = avgMood >= 4 ? "Goed" : avgMood >= 3 ? "Oké" : avgMood > 0 ? "Aandacht" : "—";
-        var moodBg = avgMood >= 4 ? "rgba(76,175,80,0.1)" : avgMood >= 3 ? "rgba(255,152,0,0.1)" : avgMood > 0 ? "rgba(244,67,54,0.1)" : "rgba(136,153,170,0.1)";
-        return [
-          ["\uD83D\uDC65", String(activeCount) + "/" + dashClients.length, "Actief", "rgba(112,188,188,0.1)"],
-          ["\uD83D\uDE0A", moodLabel, "Stemming", moodBg],
-          ["\uD83D\uDCCB", String(totalOpen), "Open taken", "rgba(220,117,83,0.1)"],
-          ["\u26A0\uFE0F", String(careCount), "Zorg nodig", careCount > 0 ? "rgba(244,67,54,0.1)" : "rgba(136,153,170,0.1)"]
-        ].map((s, i) => E("div", { key:i, style: { flex:1, background:s[3], borderRadius:12, padding:"10px 4px", textAlign:"center" } },
-          E("div", { style: { fontSize:18, marginBottom:2 } }, s[0]),
-          E("p", { style: { fontSize:15, fontWeight:700, color:g, margin:0 } }, s[1]),
-          E("p", { style: { fontSize:8, color:g5, margin:0 } }, s[2])
-        ));
-      })()
-    ),
 
     // --- SUMMARY STATISTICS ---
     dashClients.length > 0 && E("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 } },
@@ -2654,7 +2654,7 @@ function HuxiApp() {
           const y = Math.max(5, Math.min(75, ((e.clientY - rect.top) / rect.height) * 100));
           const newPos = { ...petPositions, [petId]: { x, y } };
           setPetPositions(newPos);
-          const saveP = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPos, exPerEx, therapistCode, linkedTherapist };
+          const saveP = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions: newPos, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
           try { saveToLocal(saveP); } catch(e2) {}
           if (userKey) firebaseSave(userKey, saveP);
         },
@@ -3041,7 +3041,7 @@ function HuxiApp() {
             setMoodHistory(newMoodH);
             setExPerEx(prev => {
               const updated = { ...prev };
-              const saveP2 = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx: updated };
+              const saveP2 = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory: newMoodH, petPositions, exPerEx: updated, dailyGrowthGained: dailyGrowthGainedRef.current };
               try { saveToLocal(saveP2); } catch(e) {}
               if (userKey) firebaseSave(userKey, saveP2);
               return updated;
@@ -3488,11 +3488,13 @@ function HuxiApp() {
         setLetterDraft("");
         setShowLetter(false);
         const newWiL = {...wi, flowers: wi.flowers+1, brieven: wi.brieven+1};
-        const newGrowthL = Math.min(1, growth+0.003);
+        const letterAdd = Math.min(0.003, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+        dailyGrowthGainedRef.current += letterAdd;
+        const newGrowthL = Math.min(1, growth + letterAdd);
         setWi(newWiL);
         setGrowth(newGrowthL);
         showWorldReward("letter");
-        const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+        const saveLW = { accType, reason, experience, treeName, userName, growth: newGrowthL, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi: newWiL, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
         try { saveToLocal(saveLW); } catch(e) {}
         if (userKey) firebaseSave(userKey, saveLW);
       }
@@ -4332,7 +4334,7 @@ function HuxiApp() {
               ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood,
               totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
               dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
-              lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
+              lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current
             };
             try { saveToLocal(saveEq); } catch(e) {}
             if (userKey) firebaseSave(userKey, saveEq);
@@ -4344,7 +4346,7 @@ function HuxiApp() {
               ownedItems, avatar: newAv, letters, diary, seenEx, lastExId, dailyMood,
               totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
               dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
-              lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
+              lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current
             };
             try { saveToLocal(saveEq); } catch(e) {}
             if (userKey) firebaseSave(userKey, saveEq);
@@ -4366,7 +4368,7 @@ function HuxiApp() {
             letters, diary, seenEx, lastExId, dailyMood,
             totalSessions, wi, lastDay, dailyActions, lastTaskTexts,
             dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone,
-            lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist
+            lastCheckinDate, streakShields, secretQ, secretA, goals, buddy: newBuddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current
           };
           try { saveToLocal(saveNow); } catch(e) {}
           if (userKey) firebaseSave(userKey, saveNow);
@@ -4395,7 +4397,7 @@ function HuxiApp() {
     onClick: () => {
       setAvatar(a => ({ ...a, [grp.k]: grp.k + "_none" }));
       const newAvReset = { ...avatar, [grp.k]: grp.k + "_none" };
-      const saveAR = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAvReset, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+      const saveAR = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar: newAvReset, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
       try { saveToLocal(saveAR); } catch(e) {}
       if (userKey) firebaseSave(userKey, saveAR);
     }
@@ -4879,7 +4881,7 @@ function HuxiApp() {
               setGoals(newGoals);
               setDraft("");
               var newGrowthGoal = microGrow(0.0005);
-              const saveG = { accType, reason, experience, treeName, userName, growth: newGrowthGoal, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+              const saveG = { accType, reason, experience, treeName, userName, growth: newGrowthGoal, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
               try { saveToLocal(saveG); } catch(e2) {}
               if (userKey) firebaseSave(userKey, saveG);
             }
@@ -4924,7 +4926,7 @@ function HuxiApp() {
               onClick: () => {
                 const newGoals = goals.filter(x => x.id !== goal.id);
                 setGoals(newGoals);
-                const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist };
+                const saveG = { accType, reason, experience, treeName, userName, growth, coins, ownedItems, avatar, letters, diary, seenEx, lastExId, dailyMood, totalSessions, wi, lastDay, dailyActions, lastTaskTexts, dailyBreaths, lastBreathTime, lastTaskTime, dailyTasks, tasksGenerated, checkinDone, lastCheckinDate, streakShields, secretQ, secretA, goals: newGoals, buddy, moodHistory, petPositions, exPerEx, therapistCode, linkedTherapist, dailyGrowthGained: dailyGrowthGainedRef.current };
                 try { saveToLocal(saveG); } catch(e2) {}
                 if (userKey) firebaseSave(userKey, saveG);
               }
