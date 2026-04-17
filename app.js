@@ -545,15 +545,96 @@ function HuxiApp() {
     return () => clearInterval(iv);
   }, []);
 
-  // Reminders - stay until dismissed
+  // Reminders - stay until dismissed. Altijd direct eentje zichtbaar bij openen van de wereld; elke 3 min een nieuwe (alleen als vorige is weggeklikt).
   useEffect(() => {
     if (phase !== "world") return;
-    const msgs = ["Drink een slokje water 💧", "Rek je even uit 🙆", "Adem even diep in 🌬️", "Kijk even naar buiten 🪟", "Rol je schouders 🧘"];
+    const msgs = [
+      // Fysiek & micro-bewegingen
+      "Drink een slokje water 💧",
+      "Rek je even uit 🙆",
+      "Rol je schouders 🧘",
+      "Voel even je voeten op de grond 🦶",
+      "Maak je kaak los 😌",
+      "Laat je schouders zakken 🌿",
+      "Ontspan je handen ✋",
+      "Rek je nek zachtjes 🧘‍♀️",
+      "Sta even recht en strek je 🙆‍♀️",
+      "Voel je billen op de stoel 🪑",
+      "Voel je handen — warm of koud? 🤲",
+      "Span je schouders op, en laat los 💆",
+      "Draai je polsen rustig rond 🔄",
+      "Wiebel even met je tenen 🦶",
+      "Masseer zacht je nek 💆‍♂️",
+      "Druk je voeten in de grond 🌍",
+      "Open je borstkas, rug recht 🌸",
+      "Rek je armen boven je hoofd 🙌",
+      "Draai je hoofd zacht van links naar rechts ↔️",
+      "Schud je handen los 🙌",
+      "Sta op en neem 5 stapjes 🚶",
+      // Adem
+      "Adem even diep in 🌬️",
+      "Neem drie trage ademhalingen 🌬️",
+      "Adem uit met een zucht 😮‍💨",
+      "Adem door je neus, uit door je mond 🌬️",
+      "Adem 4 tellen in, 6 tellen uit 🫁",
+      "Volg één ademhaling helemaal 🌊",
+      "Adem tot in je buik 🤲",
+      "Adem traag als een slapende kat 🐈",
+      "Laat je adem doen wat hij wil 🍃",
+      // Zintuigen
+      "Kijk even naar buiten 🪟",
+      "Luister even naar wat je hoort 👂",
+      "Zoek iets groens om naar te kijken 🌱",
+      "Voel hoe de lucht op je huid voelt 🍃",
+      "Knipper een paar keer rustig 👁️",
+      "Zoek 5 dingen die je nu kan zien 👀",
+      "Noem 3 geluiden die je hoort 🔔",
+      "Voel 2 texturen met je vingers ✨",
+      "Wat ruik je nu? 👃",
+      "Volg een lichtreflectie met je ogen 🌟",
+      "Welke kleur zie je het meest? 🎨",
+      "Voel de temperatuur in de kamer 🌡️",
+      // Gedachten & aanwezigheid
+      "Laat die gedachte even los ☁️",
+      "Merk wat er nu in je hoofd speelt 💭",
+      "Zeg tegen jezelf: dit is oké 🤍",
+      "Laat een piekergedachte voorbijvaren 🌊",
+      "Je hoeft nu niks op te lossen 🫶",
+      "Keer even terug naar dit moment 🕊️",
+      "Zet alles even op pauze ⏸️",
+      "Niks moet, even rust 🕯️",
+      // Hart & zelfcompassie
+      "Gun jezelf een glimlach 😊",
+      "Bedenk één ding waar je dankbaar voor bent 💛",
+      "Je doet het goed — echt 💚",
+      "Leg een hand op je hart ❤️",
+      "Zeg tegen jezelf: ik mag er zijn 🤗",
+      "Wees zacht voor jezelf vandaag 🌷",
+      "Denk aan iemand die je graag ziet 💖",
+      "Eén ding tegelijk is genoeg 🐢",
+      "Je bent meer dan je to-do lijst ✨",
+      "Wat heb je nú nodig? 🌼",
+      // Rust & omgeving
+      "Sluit je ogen 10 seconden 🌙",
+      "Kijk naar de lucht, even kort ☁️",
+      "Is het licht warm of koel? 💡",
+      "Leg je telefoon weg voor 1 minuut 📵",
+      "Luister even naar buiten 🌳",
+      // Verbinding
+      "Denk aan iets wat je vandaag mooi vond 🌻",
+      "Stuur iemand een kort lief bericht 💌",
+      "Geef jezelf mentaal een schouderklopje 🤚",
+      "Glimlach naar iets, gewoon omdat 😊",
+      "Bedank je lichaam voor vandaag 🌿"
+    ];
+    const pickMsg = () => msgs[Math.floor(Math.random() * msgs.length)];
+    // Altijd direct eentje tonen wanneer de wereld opent
+    setReminder(pickMsg());
     const iv = setInterval(() => {
-      if (!reminder) setReminder(msgs[Math.floor(Math.random() * msgs.length)]);
+      setReminder(prev => prev || pickMsg());
     }, 180000);
     return () => clearInterval(iv);
-  }, [phase, reminder]);
+  }, [phase]);
   // Generate daily tasks ONCE after checkin - mood-based with category rotation
   useEffect(() => {
     if (checkinDone && !tasksGenerated) {
