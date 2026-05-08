@@ -1,0 +1,44 @@
+{
+  "name": "HUXI",
+  "short_name": "HUXI",
+  "description": "Jouw persoonlijke welzijnsapp — adem, groei, wees aanwezig",
+  "start_url": "/huxi-app/",
+  "scope": "/huxi-app/",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#DC7553",
+  "orientation": "portrait-primary",
+  "lang": "nl",
+  "icons": [
+    {
+      "src": "/huxi-app/icons/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/huxi-app/icons/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/huxi-app/icons/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/huxi-app/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/huxi-app/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ]
+}
