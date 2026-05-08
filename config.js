@@ -5,6 +5,72 @@
 
 var FIREBASE_URL = "https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app";
 
+// ═══ FIREBASE APP CONFIG (voor FCM push notificaties) ═══
+// TODO: Vul in vanuit Firebase Console → Project Settings → General → Your apps
+var FIREBASE_CONFIG = {
+  apiKey: "AIzaSyDESfbeHRWA-xv0MEc_TiCgM2-Rt_ujlNA",
+  authDomain: "huxi-app-a1876.firebaseapp.com",
+  databaseURL: "https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "huxi-app-a1876",
+  storageBucket: "huxi-app-a1876.firebasestorage.app",
+  messagingSenderId: "699548699062",
+  appId: "1:699548699062:web:0f0b16510671d0b0e01917"
+};
+
+// TODO: Vul in vanuit Firebase Console → Project Settings → Cloud Messaging → Web configuration → Key pair
+var FCM_VAPID_KEY = "BNkliFPMhgdUuj-aF2H6wLgN2W-Lic1jKh2iFUuVlLiBS3qMLQm1dqSTp8HR5_STCacSrHdMRC9hHQOOfAklM9o";
+
+// ═══ FCM INITIALISATIE ═══
+// Wordt aangeroepen na inloggen — vraagt toestemming en slaat FCM token op
+var initFCM = async (userKey) => {
+  try {
+    // Controleer browser support
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      console.log('[FCM] Push notificaties niet ondersteund in deze browser');
+      return;
+    }
+
+    // Firebase app initialiseren (enkel de eerste keer)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(FIREBASE_CONFIG);
+    }
+
+    // Service worker registreren
+    const registration = await navigator.serviceWorker.register('/huxi-app/sw.js');
+    console.log('[FCM] Service worker geregistreerd');
+
+    // Toestemming vragen voor notificaties
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      console.log('[FCM] Notificatie toestemming geweigerd');
+      return;
+    }
+
+    // FCM token ophalen
+    const messaging = firebase.messaging();
+    const token = await messaging.getToken({
+      vapidKey: FCM_VAPID_KEY,
+      serviceWorkerRegistration: registration
+    });
+
+    if (token) {
+      console.log('[FCM] Token ontvangen, opslaan in Firebase');
+      // Sla token op in Firebase (apart veld, niet de volledige user data overschrijven)
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmToken.json", {
+        method: "PUT",
+        body: JSON.stringify(token)
+      });
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmUpdatedAt.json", {
+        method: "PUT",
+        body: JSON.stringify(Date.now())
+      });
+      console.log('[FCM] Token opgeslagen voor', userKey);
+    }
+  } catch(e) {
+    console.warn('[FCM] Initialisatie fout (niet kritiek):', e);
+  }
+};
+
 var firebaseSave = async (key, data) => {
   try {
     await fetch(FIREBASE_URL + "/users/" + key + ".json", {
@@ -116,7 +182,7 @@ var clientCompleteAssignment = async (clientKey, fbKey) => {
   } catch(e) { console.warn("Opdracht afronden fout:", e); return false; }
 };
 
-// Therapeut stuurt motivatiebericht naar cliënt
+// Therapeut stuurt motivatiebericht naar cliént
 var therapistSendMessage = async (clientKey, message, therapistName) => {
   try {
     var id = Date.now();
@@ -163,14 +229,14 @@ var firebaseDeleteTherapist = async (therapistKey, therapistCode) => {
     // 2. Verwijder therapeut registratie
     if (therapistCode) {
       await fetch(FIREBASE_URL + "/therapists/" + therapistCode + ".json", { method: "DELETE" });
-      // 3. Verwijder alle links (cliënten worden automatisch ontkoppeld)
+      // 3. Verwijder alle links (cliçnten worden automatisch ontkoppeld)
       await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json", { method: "DELETE" });
     }
     return true;
   } catch(e) { console.warn("Therapeut verwijderen fout:", e); return false; }
 };
 
-// Therapeut laadt al zijn gekoppelde cliënten + hun opdrachtstatus
+// Therapeut laadt al zijn gekoppelde cliénten + hun opdrachtstatus
 var therapistLoadClients = async (therapistCode) => {
   try {
     var res = await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json");
@@ -178,75 +244,4 @@ var therapistLoadClients = async (therapistCode) => {
     if (!links) return [];
     var clients = [];
     for (var clientKey of Object.keys(links)) {
-      if (!links[clientKey].consent) continue;
-      var clientData = await firebaseLoad(clientKey);
-      if (clientData) {
-        // Laad ook opdrachten van deze cliënt
-        var assignments = [];
-        try {
-          var aRes = await fetch(FIREBASE_URL + "/assignments/" + clientKey + ".json");
-          var aData = await aRes.json();
-          if (aData) assignments = Object.keys(aData).map(k => ({ ...aData[k], fbKey: k }));
-        } catch(e2) {}
-        clients.push({
-          key: clientKey,
-          userName: clientData.userName || "Onbekend",
-          treeName: clientData.treeName || "",
-          dailyMood: clientData.dailyMood,
-          moodHistory: clientData.moodHistory || [],
-          totalSessions: clientData.totalSessions || 0,
-          growth: clientData.growth || 0,
-          streakShields: clientData.streakShields || 0,
-          lastDay: clientData.lastDay,
-          dailyBreaths: clientData.dailyBreaths || 0,
-          reason: clientData.reason,
-          assignments: assignments
-        });
-      }
-    }
-    return clients;
-  } catch(e) { console.warn("Cliënten laden fout:", e); return []; }
-};
-
-// ═══ FEEDBACK SYSTEEM ═══
-
-// Gebruiker stuurt feedback (bug, suggestie, of algemeen)
-var feedbackSend = async (userKey, userName, feedback) => {
-  try {
-    var id = Date.now();
-    await fetch(FIREBASE_URL + "/feedback/" + id + ".json", {
-      method: "PUT",
-      body: JSON.stringify({
-        userKey: userKey,
-        userName: userName || "Anoniem",
-        type: feedback.type || "algemeen",
-        message: feedback.message,
-        page: feedback.page || "",
-        sentAt: id,
-        status: "nieuw"
-      })
-    });
-    return true;
-  } catch(e) { console.warn("Feedback sturen fout:", e); return false; }
-};
-
-// Therapeut/admin laadt alle feedback
-var feedbackLoadAll = async () => {
-  try {
-    var res = await fetch(FIREBASE_URL + "/feedback.json");
-    var data = await res.json();
-    if (!data) return [];
-    return Object.keys(data).map(k => ({ ...data[k], fbId: k })).sort((a,b) => b.sentAt - a.sentAt);
-  } catch(e) { console.warn("Feedback laden fout:", e); return []; }
-};
-
-// Therapeut markeert feedback als afgehandeld
-var feedbackUpdateStatus = async (fbId, newStatus) => {
-  try {
-    await fetch(FIREBASE_URL + "/feedback/" + fbId + ".json", {
-      method: "PATCH",
-      body: JSON.stringify({ status: newStatus })
-    });
-    return true;
-  } catch(e) { console.warn("Feedback status update fout:", e); return false; }
-};
+      if (
