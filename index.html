@@ -7,6 +7,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#DC7553">
   <title>HUXI</title>
+  <!-- PWA manifest — maakt de app installeerbaar als homescreen-app -->
+  <link rel="manifest" href="manifest.json">
+  <!-- iOS fallback (Safari herkent manifest niet volledig) -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="HUXI">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -14,12 +19,5 @@
 </head>
 <body>
   <div id="root"></div>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="config.js"></script>
-  <script src="data.js"></script>
-  <script src="helpers.js"></script>
-  <script src="world.js"></script>
-  <script src="app.js"></script>
-</body>
-</html>
+  <!-- Firebase SDK — enkel voor push notificaties (FCM) -->
+  <script src="https://ww
