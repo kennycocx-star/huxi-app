@@ -1,12 +1,12 @@
 // ================================================================
-// HUXI App â€” Firebase configuratie
+// HUXI App — Firebase configuratie
 // Firebase URL, opslaan en laden van gebruikersdata
 // ================================================================
 
 var FIREBASE_URL = "https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app";
 
-// â•â•â• FIREBASE APP CONFIG (voor FCM push notificaties) â•â•â•h
-// TODO: Vul in vanuit Firebase Console â†’ Project Settings â†’ General â†’ Your apps
+// ═══ FIREBASE APP CONFIG (voor FCM push notificaties) ═══
+// TODO: Vul in vanuit Firebase Console → Project Settings → General → Your apps
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyDESfbeHRWA-xv0MEc_TiCgM2-Rt_ujlNA",
   authDomain: "huxi-app-a1876.firebaseapp.com",
@@ -17,11 +17,11 @@ var FIREBASE_CONFIG = {
   appId: "1:699548699062:web:0f0b16510671d0b0e01917"
 };
 
-// TODO: Vul in vanuit Firebase Console â†’ Project Settings â†’ Cloud Messaging â†’ Web configuration â†’ Key pair
+// TODO: Vul in vanuit Firebase Console → Project Settings → Cloud Messaging → Web configuration → Key pair
 var FCM_VAPID_KEY = "BNkliFPMhgdUuj-aF2H6wLgN2W-Lic1jKh2iFUuVlLiBS3qMLQm1dqSTp8HR5_STCacSrHdMRC9hHQOOfAklM9o";
 
-// â•â•â• FCM INITIALISATIE â•â•â•
-// Wordt aangeroepen na inloggen â€” vraagt toestemming en slaat FCM token op
+// ═══ FCM INITIALISATIE ═══
+// Wordt aangeroepen na inloggen — vraagt toestemming en slaat FCM token op
 var initFCM = async (userKey) => {
   try {
     // Controleer browser support
@@ -35,19 +35,24 @@ var initFCM = async (userKey) => {
       firebase.initializeApp(FIREBASE_CONFIG);
     }
 
-    // Service worker registreren
+    // Service worker registreren en wachten tot hij écht actief is (max 15s)
     await navigator.serviceWorker.register('/huxi-app/sw.js');
-        const registration = await navigator.serviceWorker.ready;
-        console.log('[FCM] Service worker actief:', registration.active?.state);
+    const registration = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout na 15s')), 15000))
+    ]);
+    console.log('[FCM] Service worker actief:', registration.active?.state);
 
     // Toestemming vragen voor notificaties
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
       console.log('[FCM] Notificatie toestemming geweigerd');
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'permission_denied', t: Date.now() }) });
       return;
     }
 
     // FCM token ophalen
+    await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'getToken_start', t: Date.now() }) });
     const messaging = firebase.messaging();
     const token = await messaging.getToken({
       vapidKey: FCM_VAPID_KEY,
@@ -65,10 +70,19 @@ var initFCM = async (userKey) => {
         method: "PUT",
         body: JSON.stringify(Date.now())
       });
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'success', t: Date.now() }) });
       console.log('[FCM] Token opgeslagen voor', userKey);
+    } else {
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'token_null', t: Date.now() }) });
     }
   } catch(e) {
     console.warn('[FCM] Initialisatie fout (niet kritiek):', e);
+    try {
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", {
+        method: "PUT",
+        body: JSON.stringify({ stap: 'catch', msg: e.message, t: Date.now() })
+      });
+    } catch(e2) {}
   }
 };
 
@@ -91,9 +105,9 @@ var firebaseLoad = async (key) => {
 var makeKey = (name, pin) =>
   name.trim().toLowerCase().replace(/[^a-z0-9]/g, "_") + "_" + pin;
 
-// â•â•â• THERAPEUT KOPPELING â•â•â•
+// ═══ THERAPEUT KOPPELING ═══
 
-// Therapeut registreert zich â€” slaat koppelcode op
+// Therapeut registreert zich — slaat koppelcode op
 var therapistRegister = async (therapistKey, displayName) => {
   try {
     // Maak een 6-cijferige koppelcode
@@ -128,10 +142,10 @@ var therapistLookup = async (code) => {
   } catch(e) { console.warn("Therapeut lookup fout:", e); return null; }
 };
 
-// CliÃ«nt koppelt zich aan therapeut
+// Cliënt koppelt zich aan therapeut
 var clientLinkToTherapist = async (clientKey, therapistCode) => {
   try {
-    // Voeg cliÃ«nt toe aan therapeut's cliÃ«ntenlijst
+    // Voeg cliënt toe aan therapeut's cliëntenlijst
     await fetch(FIREBASE_URL + "/links/" + therapistCode + "/" + clientKey + ".json", {
       method: "PUT",
       body: JSON.stringify({ linked: Date.now(), consent: true })
@@ -140,7 +154,7 @@ var clientLinkToTherapist = async (clientKey, therapistCode) => {
   } catch(e) { console.warn("Koppeling fout:", e); return false; }
 };
 
-// CliÃ«nt ontkoppelt zich
+// Cliënt ontkoppelt zich
 var clientUnlinkTherapist = async (clientKey, therapistCode) => {
   try {
     await fetch(FIREBASE_URL + "/links/" + therapistCode + "/" + clientKey + ".json", {
@@ -150,7 +164,7 @@ var clientUnlinkTherapist = async (clientKey, therapistCode) => {
   } catch(e) { console.warn("Ontkoppeling fout:", e); return false; }
 };
 
-// Therapeut wijst oefening toe aan cliÃªît
+// Therapeut wijst oefening toe aan cliënt
 var therapistAssignExercise = async (therapistCode, clientKey, exercise) => {
   try {
     var id = Date.now();
@@ -162,7 +176,7 @@ var therapistAssignExercise = async (therapistCode, clientKey, exercise) => {
   } catch(e) { console.warn("Toewijzing fout:", e); return false; }
 };
 
-// CliÃ«nt laadt zijn toegewezen oefeningen
+// Cliënt laadt zijn toegewezen oefeningen
 var clientLoadAssignments = async (clientKey) => {
   try {
     var res = await fetch(FIREBASE_URL + "/assignments/" + clientKey + ".json");
@@ -172,7 +186,7 @@ var clientLoadAssignments = async (clientKey) => {
   } catch(e) { console.warn("Opdrachten laden fout:", e); return []; }
 };
 
-// CliÃ«nt markeert oefening als gedaan
+// Cliënt markeert oefening als gedaan
 var clientCompleteAssignment = async (clientKey, fbKey) => {
   try {
     await fetch(FIREBASE_URL + "/assignments/" + clientKey + "/" + fbKey + ".json", {
@@ -183,7 +197,7 @@ var clientCompleteAssignment = async (clientKey, fbKey) => {
   } catch(e) { console.warn("Opdracht afronden fout:", e); return false; }
 };
 
-// Therapeut stuurt motivatiebericht naar cliÃ«nt
+// Therapeut stuurt motivatiebericht naar cliënt
 var therapistSendMessage = async (clientKey, message, therapistName) => {
   try {
     var id = Date.now();
@@ -195,7 +209,7 @@ var therapistSendMessage = async (clientKey, message, therapistName) => {
   } catch(e) { console.warn("Bericht sturen fout:", e); return false; }
 };
 
-// CliÃªît laadt berichten van therapeut
+// Cliënt laadt berichten van therapeut
 var clientLoadMessages = async (clientKey) => {
   try {
     var res = await fetch(FIREBASE_URL + "/messages/" + clientKey + ".json");
@@ -205,7 +219,7 @@ var clientLoadMessages = async (clientKey) => {
   } catch(e) { console.warn("Berichten laden fout:", e); return []; }
 };
 
-// Volledige account verwijdering â€” ruimt ALLES op (user, assignments, messages, link)
+// Volledige account verwijdering — ruimt ALLES op (user, assignments, messages, link)
 var firebaseDeleteAccount = async (clientKey, linkedTherapist) => {
   try {
     // 1. Verwijder gebruikersdata
@@ -222,7 +236,7 @@ var firebaseDeleteAccount = async (clientKey, linkedTherapist) => {
   } catch(e) { console.warn("Account verwijderen fout:", e); return false; }
 };
 
-// Therapeut account verwijderen â€” ruimt ook therapeut-registratie en alle links op
+// Therapeut account verwijderen — ruimt ook therapeut-registratie en alle links op
 var firebaseDeleteTherapist = async (therapistKey, therapistCode) => {
   try {
     // 1. Verwijder gebruikersdata
@@ -230,14 +244,14 @@ var firebaseDeleteTherapist = async (therapistKey, therapistCode) => {
     // 2. Verwijder therapeut registratie
     if (therapistCode) {
       await fetch(FIREBASE_URL + "/therapists/" + therapistCode + ".json", { method: "DELETE" });
-      // 3. Verwijder alle links (cliÃªîten worden automatisch ontkoppeld)
+      // 3. Verwijder alle links (cliënten worden automatisch ontkoppeld)
       await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json", { method: "DELETE" });
     }
     return true;
   } catch(e) { console.warn("Therapeut verwijderen fout:", e); return false; }
 };
 
-// Therapeut laadt al zijn gekoppelde cliÃ«nten + hun opdrachtstatus
+// Therapeut laadt al zijn gekoppelde cliënten + hun opdrachtstatus
 var therapistLoadClients = async (therapistCode) => {
   try {
     var res = await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json");
@@ -257,5 +271,5 @@ var therapistLoadClients = async (therapistCode) => {
       }
     }
     return clients;
-  } catch(e) { console.warn("CliÃ«nten laden fout:", e); return []; }
+  } catch(e) { console.warn("Cliënten laden fout:", e); return []; }
 };
