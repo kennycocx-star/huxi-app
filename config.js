@@ -149,7 +149,7 @@ var clientUnlinkTherapist = async (clientKey, therapistCode) => {
   } catch(e) { console.warn("Ontkoppeling fout:", e); return false; }
 };
 
-// Therapeut wijst oefening toe aan cliënt
+// Therapeut wijst oefening toe aan cliê�t
 var therapistAssignExercise = async (therapistCode, clientKey, exercise) => {
   try {
     var id = Date.now();
@@ -182,7 +182,7 @@ var clientCompleteAssignment = async (clientKey, fbKey) => {
   } catch(e) { console.warn("Opdracht afronden fout:", e); return false; }
 };
 
-// Therapeut stuurt motivatiebericht naar cliént
+// Therapeut stuurt motivatiebericht naar cliënt
 var therapistSendMessage = async (clientKey, message, therapistName) => {
   try {
     var id = Date.now();
@@ -194,7 +194,7 @@ var therapistSendMessage = async (clientKey, message, therapistName) => {
   } catch(e) { console.warn("Bericht sturen fout:", e); return false; }
 };
 
-// Cliënt laadt berichten van therapeut
+// Cliê�t laadt berichten van therapeut
 var clientLoadMessages = async (clientKey) => {
   try {
     var res = await fetch(FIREBASE_URL + "/messages/" + clientKey + ".json");
@@ -229,14 +229,14 @@ var firebaseDeleteTherapist = async (therapistKey, therapistCode) => {
     // 2. Verwijder therapeut registratie
     if (therapistCode) {
       await fetch(FIREBASE_URL + "/therapists/" + therapistCode + ".json", { method: "DELETE" });
-      // 3. Verwijder alle links (cliçnten worden automatisch ontkoppeld)
+      // 3. Verwijder alle links (cliê�ten worden automatisch ontkoppeld)
       await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json", { method: "DELETE" });
     }
     return true;
   } catch(e) { console.warn("Therapeut verwijderen fout:", e); return false; }
 };
 
-// Therapeut laadt al zijn gekoppelde cliénten + hun opdrachtstatus
+// Therapeut laadt al zijn gekoppelde cliënten + hun opdrachtstatus
 var therapistLoadClients = async (therapistCode) => {
   try {
     var res = await fetch(FIREBASE_URL + "/links/" + therapistCode + ".json");
@@ -244,4 +244,17 @@ var therapistLoadClients = async (therapistCode) => {
     if (!links) return [];
     var clients = [];
     for (var clientKey of Object.keys(links)) {
-      if (
+      if (links[clientKey]) {
+        try {
+          var userRes = await fetch(FIREBASE_URL + "/users/" + clientKey + ".json");
+          var userData = await userRes.json();
+          var assignRes = await fetch(FIREBASE_URL + "/assignments/" + clientKey + ".json");
+          var assignData = await assignRes.json();
+          var assignments = assignData ? Object.keys(assignData).map(k => ({ ...assignData[k], fbKey: k })) : [];
+          clients.push({ key: clientKey, ...(userData || {}), assignments });
+        } catch(e) { /* skip */ }
+      }
+    }
+    return clients;
+  } catch(e) { console.warn("Cliënten laden fout:", e); return []; }
+};
