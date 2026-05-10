@@ -282,3 +282,23 @@ var therapistLoadClients = async (therapistCode) => {
     return clients;
   } catch(e) { console.warn("Cliënten laden fout:", e); return []; }
 };
+
+// ═══ FCM FALLBACK: trigger vanuit config.js als app.js de auto-login mist ═══
+// Config.js weten we dat het vers geladen is — wacht 4s en trigger FCM als er
+// een lastKey in localStorage staat en FCM nog niet geregistreerd is.
+setTimeout(async function() {
+  try {
+    var lastKey = localStorage.getItem('huxi-last-key');
+    if (!lastKey) return;
+    // Check of token al bestaat
+    var res = await fetch(FIREBASE_URL + "/users/" + lastKey + "/fcmToken.json");
+    var existing = await res.json();
+    if (existing) return; // al geregistreerd
+    // Check of het geen therapeut-account is
+    var userRes = await fetch(FIREBASE_URL + "/users/" + lastKey + "/accType.json");
+    var accType = await userRes.json();
+    if (accType === "therapist") return;
+    // Trigger FCM
+    await initFCM(lastKey);
+  } catch(e) {}
+}, 4000);
