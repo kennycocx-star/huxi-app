@@ -5,11 +5,7 @@
 
 var FIREBASE_URL = "https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app";
 
-// DEBUG: config.js geladen — schrijf tijdstip naar Firebase
-fetch(FIREBASE_URL + "/debug/configLoaded.json", { method: "PUT", body: JSON.stringify({ t: Date.now(), ua: navigator.userAgent.substring(0,80) }) }).catch(function(){});
-
 // ═══ FIREBASE APP CONFIG (voor FCM push notificaties) ═══
-// TODO: Vul in vanuit Firebase Console → Project Settings → General → Your apps
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyDESfbeHRWA-xv0MEc_TiCgM2-Rt_ujlNA",
   authDomain: "huxi-app-a1876.firebaseapp.com",
@@ -20,48 +16,27 @@ var FIREBASE_CONFIG = {
   appId: "1:699548699062:web:0f0b16510671d0b0e01917"
 };
 
-// TODO: Vul in vanuit Firebase Console → Project Settings → Cloud Messaging → Web configuration → Key pair
 var FCM_VAPID_KEY = "BNkliFPMhgdUuj-aF2H6wLgN2W-Lic1jKh2iFUuVlLiBS3qMLQm1dqSTp8HR5_STCacSrHdMRC9hHQOOfAklM9o";
 
 // ═══ FCM INITIALISATIE ═══
 // Wordt aangeroepen na inloggen — vraagt toestemming en slaat FCM token op
 var initFCM = async (userKey) => {
-  // Debug: log naar vast debug-pad (onafhankelijk van userKey)
   try {
-    await fetch(FIREBASE_URL + "/debug/fcmStep.json", {
-      method: "PUT", body: JSON.stringify({ stap: 'called', userKey: String(userKey), t: Date.now() })
-    });
-  } catch(e) {}
-  try {
-    // Controleer browser support
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
-      console.log('[FCM] Push notificaties niet ondersteund in deze browser');
-      return;
-    }
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
 
-    // Firebase app initialiseren (enkel de eerste keer)
     if (!firebase.apps.length) {
       firebase.initializeApp(FIREBASE_CONFIG);
     }
 
-    // Service worker registreren en wachten tot hij écht actief is (max 15s)
     await navigator.serviceWorker.register('/huxi-app/sw.js');
     const registration = await Promise.race([
       navigator.serviceWorker.ready,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout na 15s')), 15000))
+      new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 15000))
     ]);
-    console.log('[FCM] Service worker actief:', registration.active?.state);
 
-    // Toestemming vragen voor notificaties
     const permission = await Notification.requestPermission();
-    await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'permission_result', permission, userKey: String(userKey), t: Date.now() }) }).catch(function(){});
-    if (permission !== 'granted') {
-      console.log('[FCM] Notificatie toestemming geweigerd');
-      return;
-    }
+    if (permission !== 'granted') return;
 
-    // FCM token ophalen
-    await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'getToken_start', userKey: String(userKey), t: Date.now() }) }).catch(function(){});
     const messaging = firebase.messaging();
     const token = await messaging.getToken({
       vapidKey: FCM_VAPID_KEY,
@@ -69,23 +44,11 @@ var initFCM = async (userKey) => {
     });
 
     if (token) {
-      console.log('[FCM] Token ontvangen, opslaan in Firebase');
-      await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'success', userKey: String(userKey), t: Date.now() }) }).catch(function(){});
       await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmToken.json", { method: "PUT", body: JSON.stringify(token) });
       await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmUpdatedAt.json", { method: "PUT", body: JSON.stringify(Date.now()) });
-      console.log('[FCM] Token opgeslagen voor', userKey);
-    } else {
-      await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'token_null', userKey: String(userKey), t: Date.now() }) }).catch(function(){});
     }
   } catch(e) {
-    console.warn('[FCM] Initialisatie fout (niet kritiek):', e);
-    await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'catch', msg: e.message, userKey: String(userKey), t: Date.now() }) }).catch(function(){});
-    try {
-      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", {
-        method: "PUT",
-        body: JSON.stringify({ stap: 'catch', msg: e.message, t: Date.now() })
-      });
-    } catch(e2) {}
+    console.warn('[FCM] Initialisatie fout:', e);
   }
 };
 
