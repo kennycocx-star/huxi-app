@@ -5,6 +5,9 @@
 
 var FIREBASE_URL = "https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app";
 
+// DEBUG: config.js geladen — schrijf tijdstip naar Firebase
+fetch(FIREBASE_URL + "/debug/configLoaded.json", { method: "PUT", body: JSON.stringify({ t: Date.now(), ua: navigator.userAgent.substring(0,80) }) }).catch(function(){});
+
 // ═══ FIREBASE APP CONFIG (voor FCM push notificaties) ═══
 // TODO: Vul in vanuit Firebase Console → Project Settings → General → Your apps
 var FIREBASE_CONFIG = {
