@@ -26,10 +26,10 @@ var FCM_VAPID_KEY = "BNkliFPMhgdUuj-aF2H6wLgN2W-Lic1jKh2iFUuVlLiBS3qMLQm1dqSTp8H
 // ═══ FCM INITIALISATIE ═══
 // Wordt aangeroepen na inloggen — vraagt toestemming en slaat FCM token op
 var initFCM = async (userKey) => {
-  // Debug: eerste bewijs dat de functie aangeroepen wordt
+  // Debug: log naar vast debug-pad (onafhankelijk van userKey)
   try {
-    await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmCalled.json", {
-      method: "PUT", body: JSON.stringify(Date.now())
+    await fetch(FIREBASE_URL + "/debug/fcmStep.json", {
+      method: "PUT", body: JSON.stringify({ stap: 'called', userKey: String(userKey), t: Date.now() })
     });
   } catch(e) {}
   try {
@@ -54,14 +54,14 @@ var initFCM = async (userKey) => {
 
     // Toestemming vragen voor notificaties
     const permission = await Notification.requestPermission();
+    await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'permission_result', permission, userKey: String(userKey), t: Date.now() }) }).catch(function(){});
     if (permission !== 'granted') {
       console.log('[FCM] Notificatie toestemming geweigerd');
-      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'permission_denied', t: Date.now() }) });
       return;
     }
 
     // FCM token ophalen
-    await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'getToken_start', t: Date.now() }) });
+    await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'getToken_start', userKey: String(userKey), t: Date.now() }) }).catch(function(){});
     const messaging = firebase.messaging();
     const token = await messaging.getToken({
       vapidKey: FCM_VAPID_KEY,
@@ -70,22 +70,16 @@ var initFCM = async (userKey) => {
 
     if (token) {
       console.log('[FCM] Token ontvangen, opslaan in Firebase');
-      // Sla token op in Firebase (apart veld, niet de volledige user data overschrijven)
-      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmToken.json", {
-        method: "PUT",
-        body: JSON.stringify(token)
-      });
-      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmUpdatedAt.json", {
-        method: "PUT",
-        body: JSON.stringify(Date.now())
-      });
-      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'success', t: Date.now() }) });
+      await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'success', userKey: String(userKey), t: Date.now() }) }).catch(function(){});
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmToken.json", { method: "PUT", body: JSON.stringify(token) });
+      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmUpdatedAt.json", { method: "PUT", body: JSON.stringify(Date.now()) });
       console.log('[FCM] Token opgeslagen voor', userKey);
     } else {
-      await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", { method: "PUT", body: JSON.stringify({ stap: 'token_null', t: Date.now() }) });
+      await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'token_null', userKey: String(userKey), t: Date.now() }) }).catch(function(){});
     }
   } catch(e) {
     console.warn('[FCM] Initialisatie fout (niet kritiek):', e);
+    await fetch(FIREBASE_URL + "/debug/fcmStep.json", { method: "PUT", body: JSON.stringify({ stap: 'catch', msg: e.message, userKey: String(userKey), t: Date.now() }) }).catch(function(){});
     try {
       await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmError.json", {
         method: "PUT",
