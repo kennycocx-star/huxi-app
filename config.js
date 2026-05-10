@@ -54,8 +54,10 @@ var initFCM = async (userKey) => {
 
 var firebaseSave = async (key, data) => {
   try {
+    // PATCH ipv PUT: overschrijft alleen de meegestuurde velden.
+    // fcmToken wordt apart opgeslagen door initFCM en mag NOOIT overschreven worden door een algemene save.
     await fetch(FIREBASE_URL + "/users/" + key + ".json", {
-      method: "PUT", body: JSON.stringify(data)
+      method: "PATCH", body: JSON.stringify(data)
     });
   } catch(e) { console.warn("Firebase save fout:", e); }
 };
