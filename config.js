@@ -21,12 +21,17 @@ var FCM_VAPID_KEY = "BNkliFPMhgdUuj-aF2H6wLgN2W-Lic1jKh2iFUuVlLiBS3qMLQm1dqSTp8H
 // ═══ FCM INITIALISATIE ═══
 // Wordt aangeroepen na inloggen — vraagt toestemming en slaat FCM token op
 var initFCM = async (userKey) => {
+  var dbg = { step: 'start', ts: Date.now() };
+  var writeDbg = async (d) => {
+    try { await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmDebug.json", { method: "PUT", body: JSON.stringify(d) }); } catch(e) {}
+  };
   try {
-    if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-
-    if (!firebase.apps.length) {
-      firebase.initializeApp(FIREBASE_CONFIG);
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      await writeDbg({ step: 'no-api', ts: Date.now() }); return;
     }
+
+    dbg.step = 'sw-register'; await writeDbg(dbg);
+    if (!firebase.apps.length) { firebase.initializeApp(FIREBASE_CONFIG); }
 
     await navigator.serviceWorker.register('/huxi-app/sw.js');
     const registration = await Promise.race([
@@ -34,9 +39,12 @@ var initFCM = async (userKey) => {
       new Promise((_, reject) => setTimeout(() => reject(new Error('SW timeout')), 15000))
     ]);
 
+    dbg.step = 'permission'; await writeDbg(dbg);
     const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return;
+    dbg.permission = permission; await writeDbg(dbg);
+    if (permission !== 'granted') { dbg.step = 'permission-denied'; await writeDbg(dbg); return; }
 
+    dbg.step = 'get-token'; await writeDbg(dbg);
     const messaging = firebase.messaging();
     const token = await messaging.getToken({
       vapidKey: FCM_VAPID_KEY,
@@ -44,10 +52,14 @@ var initFCM = async (userKey) => {
     });
 
     if (token) {
+      dbg.step = 'token-ok'; dbg.tokenStart = token.substring(0,10); await writeDbg(dbg);
       await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmToken.json", { method: "PUT", body: JSON.stringify(token) });
       await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmUpdatedAt.json", { method: "PUT", body: JSON.stringify(Date.now()) });
+    } else {
+      dbg.step = 'token-empty'; await writeDbg(dbg);
     }
   } catch(e) {
+    await writeDbg({ step: 'error', msg: String(e), ts: Date.now() });
     console.warn('[FCM] Initialisatie fout:', e);
   }
 };
