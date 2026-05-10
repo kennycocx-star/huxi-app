@@ -23,6 +23,12 @@ var FCM_VAPID_KEY = "BNkliFPMhgdUuj-aF2H6wLgN2W-Lic1jKh2iFUuVlLiBS3qMLQm1dqSTp8H
 // ═══ FCM INITIALISATIE ═══
 // Wordt aangeroepen na inloggen — vraagt toestemming en slaat FCM token op
 var initFCM = async (userKey) => {
+  // Debug: eerste bewijs dat de functie aangeroepen wordt
+  try {
+    await fetch(FIREBASE_URL + "/users/" + userKey + "/fcmCalled.json", {
+      method: "PUT", body: JSON.stringify(Date.now())
+    });
+  } catch(e) {}
   try {
     // Controleer browser support
     if (!('Notification' in window) || !('serviceWorker' in navigator)) {
