@@ -940,7 +940,88 @@ function HuxiApp() {
             setGrowth(loginGrowth);
           }
           setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
+          // FCM initialiseren na auto-login (niet-therapeuten)
+          if (d.accType !== "therapist") {
+            initFCM(d.userKey || lastKey);
+          }
         }
+      } else if (lastKey) {
+        // localStorage is leeg (iOS wist het na 7 dagen) maar we kennen de key
+        // → automatisch inloggen via Firebase zonder dat de gebruiker iets hoeft te doen
+        firebaseLoad(lastKey).then(function(fbData) {
+          if (!fbData || !fbData.accType) return; // geen data → login scherm blijft
+          var d = fbData;
+          d.userKey = lastKey;
+          // Zet alle state — zelfde logica als login handler
+          setUserKey(lastKey);
+          setAccType(d.accType);
+          if (d.reason) setReason(d.reason);
+          if (d.experience) setExperience(d.experience);
+          if (d.treeName) setTreeName(d.treeName);
+          setUserName(d.userName || "");
+          setGrowth(d.growth || 0.01);
+          setCoins(d.coins || 0);
+          setDailyMood(d.dailyMood || null);
+          setTotalSessions(d.totalSessions || 0);
+          if (d.wi) setWi(d.wi);
+          var today2 = new Date().toDateString();
+          if (d.lastDay === today2) {
+            setLastDay(today2); setDailyActions(d.dailyActions || 0);
+            setDailyBreaths(d.dailyBreaths || 0); setDailyTasks(d.dailyTasks || []);
+            setTasksGenerated(d.tasksGenerated || false); setCheckinDone(d.checkinDone || false);
+            dailyGrowthGainedRef.current = d.dailyGrowthGained || 0;
+          } else {
+            setLastDay(today2); setDailyActions(0); setDailyBreaths(0);
+            setDailyTasks([]); setTasksGenerated(false); setCheckinDone(false); setDailyMood(null);
+            dailyGrowthGainedRef.current = 0;
+          }
+          setOwnedItems(Array.isArray(d.ownedItems) && d.ownedItems.length > 0 ? d.ownedItems : ["hat_none","shirt_none","pants_none","shoes_none","skin_light","hair_short","hairc_brown","acc_none","pet_none"]);
+          if (d.avatar) setAvatar(d.avatar);
+          setLetters(Array.isArray(d.letters) ? d.letters : []);
+          setDiary(Array.isArray(d.diary) ? d.diary : []);
+          setSeenEx(Array.isArray(d.seenEx) ? d.seenEx : []);
+          if (d.lastExId) setLastExId(d.lastExId);
+          if (d.lastTaskTexts) setLastTaskTexts(d.lastTaskTexts);
+          if (d.lastCheckinDate) setLastCheckinDate(d.lastCheckinDate);
+          if (d.streakShields !== undefined) setStreakShields(d.streakShields);
+          if (d.goalPeriod !== undefined) setGoalPeriod(d.goalPeriod);
+          if (d.lastBreathTime) setLastBreathTime(d.lastBreathTime);
+          if (d.lastTaskTime) setLastTaskTime(d.lastTaskTime);
+          if (d.secretQ !== undefined) setSecretQ(d.secretQ);
+          if (d.secretA) setSecretA(d.secretA);
+          if (d.goals) setGoals(d.goals);
+          if (d.buddy) setBuddy(d.buddy);
+          if (Array.isArray(d.moodHistory)) setMoodHistory(d.moodHistory);
+          if (d.petPositions && typeof d.petPositions === "object") setPetPositions(d.petPositions);
+          if (d.exPerEx && typeof d.exPerEx === "object") setExPerEx(d.exPerEx);
+          if (d.accType === "therapist") {
+            if (d.therapistCode) setTherapistCode(d.therapistCode);
+            setLinkedTherapist(null);
+          } else {
+            setTherapistCode(null);
+            if (d.linkedTherapist) {
+              setLinkedTherapist(d.linkedTherapist);
+              clientLoadAssignments(lastKey).then(a => setMyAssignments(a || []));
+              clientLoadMessages(lastKey).then(m => setMyMessages(m || []));
+            }
+          }
+          if (d.accType !== "therapist") {
+            var wb3 = getWelcomeBack(d.accType, d.userName, d.growth || 0.01, d.totalSessions || 0, d.wi ? d.wi.streakDays || 0 : 0);
+            setWelcomeBackMsg(wb3);
+            setShowWelcomeBack(true);
+            const loginAdd3 = Math.min(0.00025, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+            dailyGrowthGainedRef.current += loginAdd3;
+            setGrowth(Math.min(1, (d.growth || 0.01) + loginAdd3));
+          }
+          // Opslaan in localStorage zodat volgende keer weer snel werkt
+          try {
+            localStorage.setItem("huxi-last-key", lastKey);
+            localStorage.setItem("huxi-profile-" + lastKey, JSON.stringify({...d, userKey: lastKey}));
+          } catch(e2) {}
+          setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
+          // FCM token vernieuwen
+          if (d.accType !== "therapist") initFCM(lastKey);
+        }).catch(function() {});
       }
     } catch (e) {}
   };
@@ -1630,6 +1711,8 @@ function HuxiApp() {
                 localStorage.setItem("huxi-profile-" + key, JSON.stringify({ ...data, userKey: key }));
               } catch(e) {}
               setPhase(data.accType === "therapist" ? "therapist_dash" : "world");
+              // FCM initialiseren na inloggen (niet-therapeuten)
+              if (data.accType !== "therapist") initFCM(key);
             } else {
               setUserKey(key); setPhase("onboarding");
             }
