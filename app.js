@@ -369,6 +369,7 @@ function HuxiApp() {
   const allDone = !canDoTask && !canDoBreath && tasksGenerated;
   const [soundOn, setSoundOn] = useState(true);
   const [reminder, setReminder] = useState("");
+  const [notifMoment, setNotifMoment] = useState(null); // moment van notificatie-tik
   const [isPremium] = useState(true);
   const [coins, setCoins] = useState(0);
   const [ownedItems, setOwnedItems] = useState(["hat_none", "shirt_none", "pants_none", "shoes_none", "skin_light", "hair_short", "hairc_brown", "acc_none", "pet_none"]);
@@ -501,6 +502,28 @@ function HuxiApp() {
     }, 60000);
     return () => clearInterval(iv);
   }, [phase]);
+  // Notificatie-moment: URL-param bij koud openen + postMessage als app al open was
+  useEffect(() => {
+    // URL param (app was gesloten)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const m = params.get('moment');
+      if (m) {
+        setNotifMoment(decodeURIComponent(m));
+        window.history.replaceState({}, '', '/huxi-app/');
+      }
+    } catch(e) {}
+    // postMessage van SW (app was al open op achtergrond)
+    const handler = (event) => {
+      if (event.data && event.data.type === 'huxi-moment' && event.data.message) {
+        setNotifMoment(event.data.message);
+      }
+    };
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener('message', handler);
+      return () => navigator.serviceWorker.removeEventListener('message', handler);
+    }
+  }, []);
   // Reset daily state on new day - maar NIET als lastDay leeg is (dan laden we data)
   useEffect(() => {
     if (!lastDay) return; // Nog geen data geladen - niet resetten
@@ -3345,7 +3368,18 @@ function HuxiApp() {
   }, "\uD83D\uDC64 Avatar"), accType === "junior" && /*#__PURE__*/React.createElement("button", {
     className: "ab",
     onClick: () => setShowStreak(true)
-  }, "\uD83D\uDD25 " + (wi.streakDays || 0) + " dagen"))), curTask && /*#__PURE__*/React.createElement("div", {
+  }, "\uD83D\uDD25 " + (wi.streakDays || 0) + " dagen"))), notifMoment && phase === "world" && /*#__PURE__*/React.createElement("div", {
+    style: { ...F, zIndex: 50, background: "rgba(45,55,72,0.88)", display: "flex", alignItems: "center", justifyContent: "center" }
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "fadeIn",
+    style: { background: "rgba(255,255,255,0.97)", borderRadius: 28, padding: "36px 28px", textAlign: "center", maxWidth: 320, width: "90%" }
+  }, /*#__PURE__*/React.createElement("p", { style: { fontSize: 11, color: "#A0AEC0", marginBottom: 14, letterSpacing: 1, textTransform: "uppercase" } }, "Jouw moment \uD83C\uDF31"),
+  /*#__PURE__*/React.createElement("p", { style: { fontSize: 19, fontWeight: 700, color: "#2D3748", lineHeight: 1.5, marginBottom: 28 } }, notifMoment),
+  /*#__PURE__*/React.createElement("button", {
+    className: "mb",
+    style: { padding: "12px 40px", fontSize: 15 },
+    onClick: () => setNotifMoment(null)
+  }, "Klaar \u2713"))), curTask && /*#__PURE__*/React.createElement("div", {
     style: {
       ...F,
       zIndex: 30,
@@ -5399,88 +5433,4 @@ function HuxiApp() {
       ),
       /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
         /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
-          "\uD83D\uDE42 " + (cl.mood === "calm" ? "Kalm" : cl.mood === "ok" ? "Oké" : cl.mood === "restless" ? "Rusteloos" : cl.mood === "tense" ? "Gespannen" : cl.mood === "overwhelmed" ? "Overweldigd" : "Geen check-in")),
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
-          "\uD83C\uDF2C\uFE0F " + cl.sessions + " sessies"),
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
-          "\uD83C\uDF31 " + Math.round(cl.growth * 100) + "% groei"),
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
-          "\uD83D\uDCA7 " + cl.dailyBreaths + "x geademd vandaag")
-      ),
-      cl.moodHistory && cl.moodHistory.length > 0 && /*#__PURE__*/React.createElement("div", { style: { marginTop: 8, display: "flex", gap: 3, alignItems: "flex-end" } },
-        /*#__PURE__*/React.createElement("span", { style: { fontSize: 10, color: g5, marginRight: 4 } }, "Stemming:"),
-        cl.moodHistory.filter(m => m.type === "daily").slice(-7).map((m, j) => /*#__PURE__*/React.createElement("div", {
-          key: j,
-          style: { width: 8, height: m.mood === "calm" ? 20 : m.mood === "ok" ? 16 : m.mood === "restless" ? 12 : m.mood === "tense" ? 8 : 4,
-            background: m.mood === "calm" ? "#70BCBC" : m.mood === "ok" ? "#70BCBC" : m.mood === "restless" ? "#E8A840" : m.mood === "tense" ? "#E07850" : "#DC7553",
-            borderRadius: 3, opacity: 0.8 }
-        }))
-      )
-    )),
-    /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, marginTop: 12 } },
-      /*#__PURE__*/React.createElement("button", {
-        className: "mb",
-        style: { flex: 1, padding: "10px 0" },
-        onClick: async () => {
-          if (!therapistCode) return;
-          setTherapistLoading(true);
-          var cls = await therapistLoadClients(therapistCode);
-          setTherapistClients(cls);
-          setTherapistLoading(false);
-        }
-      }, "\uD83D\uDD04 Vernieuwen"),
-      /*#__PURE__*/React.createElement("button", {
-        className: "mb",
-        style: { flex: 1, padding: "10px 0" },
-        onClick: () => setShowTherapistPanel(false)
-      }, "Sluiten")
-    )
-  )),
-
-  // ═══ SOS NOODKNOP ═══
-  sosActive && /*#__PURE__*/React.createElement("div", {
-    style: { ...F, background: "linear-gradient(160deg, #1A2B3A 0%, #162430 100%)", zIndex: 900, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", padding: 30 }
-  },
-    /*#__PURE__*/React.createElement("div", { style: { textAlign: "center", maxWidth: 340 } },
-      /*#__PURE__*/React.createElement("span", { style: { fontSize: 48 } }, ["\uD83D\uDC41\uFE0F", "\uD83D\uDC42", "\u270B", "\uD83D\uDC43", "\uD83D\uDC45"][sosStep] || "\uD83C\uDF1F"),
-      /*#__PURE__*/React.createElement("h2", { style: { color: "#fff", fontSize: 22, fontWeight: 700, margin: "16px 0 8px" } },
-        sosStep === 0 ? "Noem 5 dingen die je ZIET" :
-        sosStep === 1 ? "Noem 4 dingen die je HOORT" :
-        sosStep === 2 ? "Noem 3 dingen die je VOELT" :
-        sosStep === 3 ? "Noem 2 dingen die je RUIKT" :
-        sosStep === 4 ? "Noem 1 ding dat je PROEFT" :
-        "Je bent hier. Je bent veilig."
-      ),
-      /*#__PURE__*/React.createElement("p", { style: { color: "rgba(255,255,255,0.6)", fontSize: 14, marginBottom: 30 } },
-        sosStep < 5 ? "Neem de tijd. Adem rustig." : "De storm gaat voorbij. Jij bent sterker."
-      ),
-      sosStep < 5
-        ? /*#__PURE__*/React.createElement("button", {
-            onClick: () => {
-              setSosStep(sosStep + 1);
-              if (sosStep < 4) breathAudio.sosTone(3);
-              else breathAudio.done();
-            },
-            style: { padding: "14px 40px", borderRadius: 50, background: "linear-gradient(135deg,#70BCBC,#DC7553)", color: "#fff", fontSize: 16, fontWeight: 700, border: "none", cursor: "pointer" }
-          }, "Volgende \u2192")
-        : /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" } },
-            /*#__PURE__*/React.createElement("button", {
-              onClick: () => { setSosActive(false); setSosStep(0); breathAudio.stopAll(); },
-              style: { padding: "14px 30px", borderRadius: 50, background: "#70BCBC", color: "#fff", fontSize: 14, fontWeight: 700, border: "none", cursor: "pointer" }
-            }, "\uD83C\uDF3F Ik voel me beter"),
-            /*#__PURE__*/React.createElement("button", {
-              onClick: () => { setSosStep(0); breathAudio.sosTone(4); },
-              style: { padding: "14px 30px", borderRadius: 50, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 14, fontWeight: 600, border: "none", cursor: "pointer" }
-            }, "\uD83D\uDD04 Nog een keer")
-          )
-    )
-  ),
-
-  // SOS knop — altijd zichtbaar in world
-  phase === "world" && !showEx && !sosActive && /*#__PURE__*/React.createElement("button", {
-    onClick: () => { setSosActive(true); setSosStep(0); breathAudio.sosTone(4); },
-    style: { position: "absolute", top: 12, left: 12, zIndex: 50, width: 40, height: 40, borderRadius: "50%", background: "linear-gradient(135deg,#DC7553,#E07850)", color: "#fff", fontSize: 14, fontWeight: 800, border: "none", cursor: "pointer", boxShadow: "0 2px 8px rgba(220,117,83,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }
-  }, "SOS"));
-}
-// Render de HUXI app
-ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(HuxiApp));
+          "\uD83D\uDE42 " + (cl.mood === "calm" ? "Kalm" : cl.mood === "ok" ? "Oké" : cl.mood === "restless" ?
