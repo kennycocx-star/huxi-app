@@ -5433,4 +5433,14 @@ function HuxiApp() {
       ),
       /*#__PURE__*/React.createElement("div", { style: { display: "flex", gap: 8, flexWrap: "wrap" } },
         /*#__PURE__*/React.createElement("span", { style: { fontSize: 11, color: g5, background: "#fff", borderRadius: 8, padding: "3px 8px" } },
-          "\uD83D\uDE42 " + (cl.mood === "calm" ? "Kalm" : cl.mood === "ok" ? "Oké" : cl.mood === "restless" ?
+          "\uD83D\uDE42 " + (cl.mood === "calm" ? "Kalm" : cl.mood === "ok" ? "Oké" : cl.mood === "restless" ?"Onrustig" : "Neutraal")
+      )
+    ))),
+    /*#__PURE__*/React.createElement("button", {
+      className: "mb",
+      style: { width: "100%", marginTop: 16, padding: "10px 0" },
+      onClick: () => setShowTherapistPanel(false)
+    }, "Sluiten")
+  ))
+);
+}
