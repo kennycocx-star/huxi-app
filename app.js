@@ -849,6 +849,7 @@ function HuxiApp() {
       if (k) {
         localStorage.setItem("huxi-profile-" + k, JSON.stringify({ ...data, userKey: k }));
         localStorage.setItem("huxi-last-key", k);
+        setCookie("huxi-key", k, 365); // Backup voor iOS localStorage-wipe
       }
     } catch(e) {}
   };
@@ -873,13 +874,14 @@ function HuxiApp() {
     try {
       localStorage.setItem("huxi-profile-" + data.userKey, JSON.stringify(data));
       localStorage.setItem("huxi-last-key", data.userKey);
+      setCookie("huxi-key", data.userKey, 365); // Backup voor iOS localStorage-wipe
     } catch(e) {}
     firebaseSave(data.userKey, data);
   };
   var loadData = () => {
     try {
-      // Probeer per-account key, fallback naar oude "huxi-profile"
-      var lastKey = localStorage.getItem("huxi-last-key");
+      // Probeer per-account key — cookie als backup als localStorage gewist is door iOS
+      var lastKey = localStorage.getItem("huxi-last-key") || getCookie("huxi-key");
       var raw = lastKey ? localStorage.getItem("huxi-profile-" + lastKey) : null;
       if (!raw) raw = localStorage.getItem("huxi-profile"); // oude migratie
       if (raw) {
@@ -1036,10 +1038,11 @@ function HuxiApp() {
             dailyGrowthGainedRef.current += loginAdd3;
             setGrowth(Math.min(1, (d.growth || 0.01) + loginAdd3));
           }
-          // Opslaan in localStorage zodat volgende keer weer snel werkt
+          // Opslaan in localStorage + cookie zodat volgende keer weer snel werkt
           try {
             localStorage.setItem("huxi-last-key", lastKey);
             localStorage.setItem("huxi-profile-" + lastKey, JSON.stringify({...d, userKey: lastKey}));
+            setCookie("huxi-key", lastKey, 365); // Backup voor iOS localStorage-wipe
           } catch(e2) {}
           setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
           // FCM token vernieuwen
@@ -1728,10 +1731,11 @@ function HuxiApp() {
                 var loginGrowth2 = Math.min(1, (data.growth || 0.01) + loginAdd2);
                 setGrowth(loginGrowth2);
               }
-              // Sla per-account op in localStorage
+              // Sla per-account op in localStorage + cookie
               try {
                 localStorage.setItem("huxi-last-key", key);
                 localStorage.setItem("huxi-profile-" + key, JSON.stringify({ ...data, userKey: key }));
+                setCookie("huxi-key", key, 365); // Backup voor iOS localStorage-wipe
               } catch(e) {}
               setPhase(data.accType === "therapist" ? "therapist_dash" : "world");
               // FCM initialiseren na inloggen (niet-therapeuten)
