@@ -5,6 +5,29 @@
 
 var FIREBASE_URL = "https://huxi-app-a1876-default-rtdb.europe-west1.firebasedatabase.app";
 
+// ═══ COOKIE HELPERS ═══
+// iOS Safari wist localStorage na 7 dagen inactiviteit.
+// Cookies blijven tot 1 jaar bewaard — wij gebruiken ze als backup voor de userKey.
+// Zo kan de app de gebruiker automatisch herstellen uit Firebase, zelfs na een iOS-wipe.
+var setCookie = (name, value, days) => {
+  try {
+    var expires = new Date();
+    expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+    document.cookie = name + "=" + encodeURIComponent(value) + ";expires=" + expires.toUTCString() + ";path=/;SameSite=Lax";
+  } catch(e) {}
+};
+var getCookie = (name) => {
+  try {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for (var i = 0; i < ca.length; i++) {
+      var c = ca[i].trim();
+      if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length));
+    }
+  } catch(e) {}
+  return null;
+};
+
 // ═══ FIREBASE APP CONFIG (voor FCM push notificaties) ═══
 var FIREBASE_CONFIG = {
   apiKey: "AIzaSyDESfbeHRWA-xv0MEc_TiCgM2-Rt_ujlNA",
