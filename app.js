@@ -324,6 +324,16 @@ function HuxiApp() {
   const [sosStep, setSosStep] = useState(0);
   const [lastDay, setLastDay] = useState(() => new Date().toDateString());
   const [totalSessions, setTotalSessions] = useState(0);
+  // ── Therapeut e-mail-login (fase 1, additief) ──
+  const [tEmail, setTEmail] = useState("");
+  const [tPass, setTPass] = useState("");
+  const [tAuthMode, setTAuthMode] = useState("login"); // "login" | "register"
+  const [tAuthErr, setTAuthErr] = useState("");
+  const [tAuthLoading, setTAuthLoading] = useState(false);
+  const [tNeedLink, setTNeedLink] = useState(false);
+  const [tUid, setTUid] = useState(null);
+  const [tLinkName, setTLinkName] = useState("");
+  const [tLinkPin, setTLinkPin] = useState("");
   // Invisible level: based on total sessions completed, not shown to user
   // Level 1 (0-4 sessions): check-in + 1 ademhaling + 1 taak, max 2 acties
   // Welzijnsniveau based on mood + reason + experience
@@ -851,7 +861,7 @@ function HuxiApp() {
         localStorage.setItem("huxi-last-key", k);
         setCookie("huxi-key", k, 365); // Backup voor iOS localStorage-wipe
       }
-    } catch(e) {}
+    } catch(e) { console.warn("[HUXI data] saveToLocal mislukt:", e); }
   };
   // saveDataRef houdt altijd de MEEST RECENTE state bij - geen stale closure
   const saveDataRef = useRef({});
@@ -875,7 +885,7 @@ function HuxiApp() {
       localStorage.setItem("huxi-profile-" + data.userKey, JSON.stringify(data));
       localStorage.setItem("huxi-last-key", data.userKey);
       setCookie("huxi-key", data.userKey, 365); // Backup voor iOS localStorage-wipe
-    } catch(e) {}
+    } catch(e) { console.warn("[HUXI data] saveData (localStorage) mislukt:", e); }
     firebaseSave(data.userKey, data);
   };
   var loadData = () => {
@@ -1043,13 +1053,13 @@ function HuxiApp() {
             localStorage.setItem("huxi-last-key", lastKey);
             localStorage.setItem("huxi-profile-" + lastKey, JSON.stringify({...d, userKey: lastKey}));
             setCookie("huxi-key", lastKey, 365); // Backup voor iOS localStorage-wipe
-          } catch(e2) {}
+          } catch(e2) { console.warn("[HUXI data] loadData (opnieuw opslaan na Firebase-load) mislukt:", e2); }
           setPhase(d.accType === "therapist" ? "therapist_dash" : "world");
           // FCM token vernieuwen
           if (d.accType !== "therapist") initFCM(lastKey);
-        }).catch(function() {});
+        }).catch(function(err) { console.warn("[HUXI data] loadData Firebase-fallback mislukt:", err); });
       }
-    } catch (e) {}
+    } catch (e) { console.warn("[HUXI data] loadData mislukt:", e); }
   };
   useEffect(() => {
     loadData();
@@ -1627,6 +1637,102 @@ function HuxiApp() {
   const g5 = "rgba(61,74,88,0.5)";
   const g3 = "rgba(61,74,88,0.3)";
 
+  // ═══ THERAPEUT E-MAIL-LOGIN (fase 1, additief — raakt cliënt-login niet) ═══
+  const authErrText = (code) => {
+    if (code === "auth/invalid-email") return "Dat is geen geldig e-mailadres.";
+    if (code === "auth/email-already-in-use") return "Er bestaat al een account met dit e-mailadres. Log in in plaats van aanmaken.";
+    if (code === "auth/weak-password") return "Wachtwoord te zwak (minstens 6 tekens).";
+    if (code === "auth/wrong-password" || code === "auth/invalid-credential") return "Onjuist e-mailadres of wachtwoord.";
+    if (code === "auth/user-not-found") return "Geen account gevonden met dit e-mailadres.";
+    if (code === "auth/too-many-requests") return "Te veel pogingen. Probeer het later opnieuw.";
+    if (code === "firebase") return "Kon geen verbinding maken. Probeer opnieuw.";
+    return "Er ging iets mis. Probeer opnieuw.";
+  };
+  const enterTherapistDash = async (oldKey) => {
+    const data = await firebaseLoad(oldKey);
+    setUserKey(oldKey);
+    setAccType("therapist");
+    if (data) {
+      if (data.therapistCode) setTherapistCode(data.therapistCode);
+      if (data.userName) setUserName(data.userName);
+      if (data.treeName) setTreeName(data.treeName);
+    }
+    setLinkedTherapist(null);
+    try {
+      localStorage.setItem("huxi-last-key", oldKey);
+      localStorage.setItem("huxi-profile-" + oldKey, JSON.stringify({ ...(data || {}), userKey: oldKey, accType: "therapist" }));
+      setCookie("huxi-key", oldKey, 365);
+    } catch(e) { console.warn("[HUXI auth] therapeut lokaal opslaan mislukt:", e); }
+    setPhase("therapist_dash");
+  };
+  const doTherapistAuth = async () => {
+    setTAuthErr("");
+    if (!tEmail.trim() || tPass.length < 6) { setTAuthErr("Vul je e-mail en een wachtwoord van minstens 6 tekens in."); return; }
+    setTAuthLoading(true);
+    const res = tAuthMode === "register"
+      ? await therapistAuthRegister(tEmail, tPass)
+      : await therapistAuthLogin(tEmail, tPass);
+    if (!res.ok) { setTAuthLoading(false); setTAuthErr(authErrText(res.error)); return; }
+    const oldKey = await therapistAuthGetMapping(res.uid);
+    if (oldKey) { setTAuthLoading(false); await enterTherapistDash(oldKey); }
+    else { setTUid(res.uid); setTNeedLink(true); setTAuthLoading(false); }
+  };
+  const doTherapistLink = async () => {
+    setTAuthErr("");
+    if (!tLinkName.trim() || tLinkPin.length !== 4) { setTAuthErr("Vul je oude naam en pincode (4 cijfers) in."); return; }
+    setTAuthLoading(true);
+    const oldKey = makeKey(tLinkName, tLinkPin);
+    const data = await firebaseLoad(oldKey);
+    if (data && data.accType === "therapist") {
+      await therapistAuthSetMapping(tUid, oldKey);
+      setTNeedLink(false); setTAuthLoading(false);
+      await enterTherapistDash(oldKey);
+    } else if (data && data.accType) {
+      setTAuthLoading(false);
+      setTAuthErr("Dat account is geen therapeut-account. Controleer je oude naam en pincode.");
+    } else {
+      setTAuthLoading(false);
+      setTAuthErr("Geen bestaande praktijk gevonden met die naam en pincode.");
+    }
+  };
+  const renderTherapistLogin = () => {
+    const E = React.createElement, F = React.Fragment;
+    const card = { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "24px 20px", marginBottom: 16 };
+    const lbl = { color: "#A8D5B5", fontSize: 13, fontWeight: 600, margin: "0 0 8px", textAlign: "left" };
+    const inp = { width: "100%", padding: "12px 14px", borderRadius: 12, border: "1.5px solid rgba(112,188,188,0.3)", fontSize: 15, outline: "none", marginBottom: 14, boxSizing: "border-box", color: "#45545E", background: "white" };
+    const primaryBtn = { width: "100%", padding: "14px 0", borderRadius: 14, background: tAuthLoading ? "#666" : "linear-gradient(135deg,#DC7553,#70BCBC)", color: "white", fontSize: 15, fontWeight: 700, border: "none", cursor: "pointer", marginBottom: 12 };
+    const linkBtn = { background: "none", border: "none", color: "rgba(168,213,181,0.6)", fontSize: 12, cursor: "pointer", display: "block", width: "100%", textAlign: "center", marginBottom: 6 };
+    if (tNeedLink) {
+      return E(F, null,
+        E("div", { style: card },
+          E("p", { style: { color: "#A8D5B5", fontSize: 14, fontWeight: 700, margin: "0 0 6px" } }, "🔗 Koppel je bestaande praktijk"),
+          E("p", { style: { color: "rgba(168,213,181,0.6)", fontSize: 12, margin: "0 0 14px", lineHeight: 1.5 } }, "Vul éénmalig je oude naam en pincode in. We koppelen je bestaande dashboard aan dit account — daarna hoeft dit nooit meer."),
+          E("p", { style: lbl }, "Oude naam"),
+          E("input", { type: "text", value: tLinkName, onChange: e => setTLinkName(e.target.value), placeholder: "Naam waarmee je inlogde", style: inp }),
+          E("p", { style: lbl }, "Oude pincode (4 cijfers)"),
+          E("input", { type: "number", value: tLinkPin, onChange: e => setTLinkPin(e.target.value.slice(0,4)), placeholder: "1234", style: { ...inp, marginBottom: 4 } })
+        ),
+        tAuthErr && E("p", { style: { color: "#E07850", fontSize: 12, textAlign: "center", marginBottom: 10 } }, tAuthErr),
+        E("button", { onClick: doTherapistLink, disabled: tAuthLoading, style: primaryBtn }, tAuthLoading ? "Even koppelen..." : "Koppel mijn praktijk 🔗"),
+        E("button", { onClick: async () => { setTAuthErr(""); const nk = "therapeut_" + (tUid ? String(tUid).slice(0,12) : Date.now()); await therapistAuthSetMapping(tUid, nk); setUserKey(nk); setAccType("therapist"); setTNeedLink(false); setPhase("planting"); }, style: linkBtn }, "Nog geen HUXI-praktijk? Maak een nieuwe aan"),
+        E("button", { onClick: async () => { await therapistAuthLogout(); setTNeedLink(false); setTUid(null); setTAuthErr(""); setLoginMode("login"); }, style: linkBtn }, "← Annuleren")
+      );
+    }
+    return E(F, null,
+      E("div", { style: card },
+        E("p", { style: { color: "#A8D5B5", fontSize: 14, fontWeight: 700, margin: "0 0 12px" } }, tAuthMode === "register" ? "🔬 Therapeut-account aanmaken" : "🔬 Therapeut inloggen"),
+        E("p", { style: lbl }, "E-mailadres"),
+        E("input", { type: "email", value: tEmail, onChange: e => setTEmail(e.target.value), placeholder: "jij@praktijk.be", autoCapitalize: "none", style: inp }),
+        E("p", { style: lbl }, "Wachtwoord"),
+        E("input", { type: "password", value: tPass, onChange: e => setTPass(e.target.value), placeholder: "Minstens 6 tekens", style: { ...inp, marginBottom: 4 }, onKeyDown: e => { if (e.key === "Enter") doTherapistAuth(); } })
+      ),
+      tAuthErr && E("p", { style: { color: "#E07850", fontSize: 12, textAlign: "center", marginBottom: 10 } }, tAuthErr),
+      E("button", { onClick: doTherapistAuth, disabled: tAuthLoading, style: primaryBtn }, tAuthLoading ? "Even laden..." : (tAuthMode === "register" ? "Account aanmaken 🔬" : "Inloggen 🔬")),
+      E("button", { onClick: () => { setTAuthMode(tAuthMode === "register" ? "login" : "register"); setTAuthErr(""); }, style: linkBtn }, tAuthMode === "register" ? "Heb je al een account? Inloggen" : "Nog geen account? Aanmaken"),
+      E("button", { onClick: () => { setLoginMode("login"); setTAuthErr(""); }, style: linkBtn }, "← Terug (ik ben cliënt)")
+    );
+  };
+
   // WELCOME
   if (phase === "login") return /*#__PURE__*/React.createElement("div", {
     style: W
@@ -1751,7 +1857,11 @@ function HuxiApp() {
         /*#__PURE__*/React.createElement("button", {
           onClick: () => { setLoginMode("forgot"); setLoginError(""); },
           style: { background: "none", border: "none", color: "rgba(168,213,181,0.5)", fontSize: 12, cursor: "pointer", display: "block", marginBottom: 6 }
-        }, "Pincode vergeten?")
+        }, "Pincode vergeten?"),
+        /*#__PURE__*/React.createElement("button", {
+          onClick: () => { setLoginMode("therapist"); setLoginError(""); setTAuthErr(""); },
+          style: { background: "none", border: "none", color: "rgba(112,188,188,0.75)", fontSize: 12, cursor: "pointer", display: "block", width: "100%", textAlign: "center", marginTop: 2 }
+        }, "Ik ben therapeut →")
       ),
       loginMode === "forgot" && /*#__PURE__*/React.createElement(React.Fragment, null,
         /*#__PURE__*/React.createElement("div", { style: { background: "rgba(255,255,255,0.07)", borderRadius: 20, padding: "24px 20px", marginBottom: 16 } },
@@ -1775,7 +1885,8 @@ function HuxiApp() {
           onClick: () => { setLoginMode("login"); setLoginError(""); setLoginPin(""); },
           style: { background: "none", border: "none", color: "rgba(168,213,181,0.5)", fontSize: 12, cursor: "pointer", marginBottom: 8, display: "block", width: "100%", textAlign: "center" }
         }, "\u2190 Terug naar inloggen")
-      )
+      ),
+      loginMode === "therapist" && renderTherapistLogin()
     )
   ));
 
