@@ -224,7 +224,7 @@ function HuxiApp() {
   const [season, setSeason] = useState(getRealSeason());
   const [tod, setTod] = useState(getRealTod());
   const [growth, setGrowth] = useState(0.01);
-  const DAILY_GROWTH_CAP = 0.008; // Max groei per dag — zorgt dat de boom ~4 maanden duurt bij intensief gebruik
+  const DAILY_GROWTH_CAP = 0.015; // Max groei per dag (was 0.008) — hoger zodat ook licht gebruik (check-ins, reminders) zichtbaar optelt
   const dailyGrowthGainedRef = useRef(0); // Bijhouden hoeveel groei er vandaag al bij is gekomen
   // Granular world items - each earned one by one
   const [wi, setWi] = useState({
@@ -1158,11 +1158,21 @@ function HuxiApp() {
 
   // ═══ MICRO GROWTH — kleine groei bij elke actie ═══
   var microGrow = (amount) => {
+    // Front-load: in het begin (< 15% groei, ~eerste 2 weken) groeit alles sneller zodat nieuwe gebruikers meteen verschil zien.
+    const earlyBoost = growth < 0.15 ? 1.6 : 1;
     const remaining = Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current);
-    const actual = Math.min(amount, remaining);
+    const actual = Math.min(amount * earlyBoost, remaining);
     var ng = Math.min(1, growth + actual);
     dailyGrowthGainedRef.current += actual;
     setGrowth(ng);
+    return ng;
+  };
+  // Groei toekennen EN meteen persistent opslaan — voor lichte acties (reminder-moment) die anders niet bewaard worden.
+  const growAndSave = (amount) => {
+    const ng = microGrow(amount);
+    const data = { ...saveDataRef.current, growth: ng, dailyGrowthGained: dailyGrowthGainedRef.current };
+    try { saveToLocal(data); } catch(e) { console.warn("[HUXI data] growAndSave lokaal mislukt:", e); }
+    if (data.userKey) firebaseSave(data.userKey, data);
     return ng;
   };
 
@@ -1387,7 +1397,8 @@ function HuxiApp() {
     const yesterday = new Date(Date.now() - 86400000).toDateString();
     const twoDaysAgo = new Date(Date.now() - 2*86400000).toDateString();
     // Bereken alle nieuwe waarden INLINE zodat de save correct is
-    const checkinAdd = Math.min(0.00025, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
+    const checkinBase = growth < 0.15 ? 0.006 : 0.004; // check-in telt nu echt mee (was 0.00025), extra in het begin
+    const checkinAdd = Math.min(checkinBase, Math.max(0, DAILY_GROWTH_CAP - dailyGrowthGainedRef.current));
     dailyGrowthGainedRef.current += checkinAdd;
     const newGrowthC = Math.min(1, growth + checkinAdd);
     let newStreak = wi.streakDays || 0;
@@ -3021,7 +3032,7 @@ function HuxiApp() {
       zIndex: 22,
       cursor: "pointer"
     },
-    onClick: () => setReminder("")
+    onClick: () => { if (reminder) growAndSave(0.003); setReminder(""); }
   }, /*#__PURE__*/React.createElement("p", {
     style: {
       background: "rgba(255,255,255,0.95)",
