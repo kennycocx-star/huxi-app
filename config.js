@@ -282,3 +282,62 @@ setTimeout(async function() {
     await initFCM(lastKey);
   } catch(e) {}
 }, 4000);
+
+// ═══════════════════════════════════════════════════════════════
+// THERAPEUT-AUTHENTICATIE (echte login — fase 1)
+// Additief: raakt de bestaande naam+pincode-login NIET.
+// Therapeut logt in met e-mail+wachtwoord (Firebase Auth). De eerste
+// keer koppelen we zijn bestaande praktijkdata (onder naam_pincode) via
+// een uid -> oude-sleutel mapping. Data wordt NIET verplaatst.
+// ═══════════════════════════════════════════════════════════════
+var ensureFirebaseApp = () => {
+  try { if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); return true; }
+  catch(e) { console.warn("[HUXI auth] Firebase init mislukt:", e); return false; }
+};
+
+// Nieuw therapeut-account aanmaken
+var therapistAuthRegister = async (email, password) => {
+  if (!ensureFirebaseApp()) return { ok:false, error:"firebase" };
+  try {
+    var cred = await firebase.auth().createUserWithEmailAndPassword(email.trim(), password);
+    return { ok:true, uid: cred.user.uid };
+  } catch(e) {
+    console.warn("[HUXI auth] registratie mislukt:", e);
+    return { ok:false, error: e.code || "onbekend" };
+  }
+};
+
+// Inloggen met bestaand therapeut-account
+var therapistAuthLogin = async (email, password) => {
+  if (!ensureFirebaseApp()) return { ok:false, error:"firebase" };
+  try {
+    var cred = await firebase.auth().signInWithEmailAndPassword(email.trim(), password);
+    return { ok:true, uid: cred.user.uid };
+  } catch(e) {
+    console.warn("[HUXI auth] login mislukt:", e);
+    return { ok:false, error: e.code || "onbekend" };
+  }
+};
+
+// Uitloggen uit het Auth-account
+var therapistAuthLogout = async () => {
+  if (!ensureFirebaseApp()) return;
+  try { await firebase.auth().signOut(); } catch(e) { console.warn("[HUXI auth] uitloggen mislukt:", e); }
+};
+
+// uid -> bestaande therapeut-sleutel (naam_pincode) ophalen
+var therapistAuthGetMapping = async (uid) => {
+  try {
+    var r = await fetch(FIREBASE_URL + "/therapistAuth/" + uid + ".json");
+    var d = await r.json();
+    return (d && typeof d === "string") ? d : null;
+  } catch(e) { console.warn("[HUXI auth] mapping ophalen mislukt:", e); return null; }
+};
+
+// uid -> bestaande therapeut-sleutel opslaan (eenmalige koppeling)
+var therapistAuthSetMapping = async (uid, oldKey) => {
+  try {
+    await fetch(FIREBASE_URL + "/therapistAuth/" + uid + ".json", { method:"PUT", body: JSON.stringify(oldKey) });
+    return true;
+  } catch(e) { console.warn("[HUXI auth] mapping opslaan mislukt:", e); return false; }
+};
